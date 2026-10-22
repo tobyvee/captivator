@@ -58,6 +58,7 @@ These are the last non-cuttable tickets on each path, so every feature the check
 Cuttable tickets (T-022, T-026, T-028 and the stretch tickets) are deliberately not dependencies; check them if they shipped.
 
 ## Notes
+- **From T-034:** drag a block by its handle on a real phone and with a mouse, in the narrow column too; check the up/down buttons, and keyboard drag (Space, arrows, Space) with VoiceOver.
 - **From T-032:** search Unsplash for real in the Photo tab (needs the key in `.dev.vars` locally, or production), pick a photo, and check the preview, the credit line and that the export inlines it.
 - **From T-033:** drag the focus dot on a real phone and with a mouse, including from its edge and at the box's corners; check the arrow keys move it and a screen reader announces the position.
 - **From T-028:** on Sponsor, check there's no fold line or "Too tall for small phones" out of the box, that one extra text block shows both, that five more show both and removing them clears it ([`T-028-manual-fit-check-in-t029.md`](../decisions/T-028-manual-fit-check-in-t029.md), [`T-028-sponsor-one-pixel-inside-fold.md`](../decisions/T-028-sponsor-one-pixel-inside-fold.md)).
