@@ -3,7 +3,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { BLANK, Design } from "../lib/design-schema";
 import type { BackgroundSpec, RenderMode, TextBlockSpec } from "../lib/types";
-import { TermsSheet } from "./TermsSheet";
+import { connectButtonStyle } from "./Form";
+import { TERMS_LINK_ID, TermsSheet } from "./TermsSheet";
 
 const heading = (colour: string): TextBlockSpec => ({
   id: "h",
@@ -20,6 +21,7 @@ const design = (
     background?: BackgroundSpec;
     blocks?: Design["blocks"];
     outline?: boolean;
+    fg?: string;
   } = {},
 ): Design => {
   const d = structuredClone(BLANK.design);
@@ -29,7 +31,7 @@ const design = (
   if (opts.background) d.background = opts.background;
   if (opts.blocks) d.blocks = opts.blocks;
   if (opts.outline)
-    d.form.button = { label: "Go", bg: "#F97316", fg: "#111111", variant: "outline" };
+    d.form.button = { label: "Go", bg: "#F97316", fg: opts.fg ?? "#111111", variant: "outline" };
   return Design.parse(d);
 };
 
@@ -38,9 +40,13 @@ const html = (d: Design, mode: RenderMode = "preview") =>
 
 // The `color` in an inline style attribute's value (not `background-color` or similar).
 const colourIn = (style = "") => style.match(/(?:^|;)color:(#[0-9A-Fa-f]{6})/)?.[1];
-const titleColour = (markup: string) => colourIn(markup.match(/<h2[^>]*style="([^"]*)"/)?.[1]);
-// The scrollable area wrapping the paragraphs carries the body colour.
-const bodyColour = (markup: string) => colourIn(markup.match(/style="([^"]*)"><p[ >]/)?.[1]);
+// The sheet sets the text colour once; the title, body and version inherit it.
+const textColour = (markup: string) =>
+  colourIn(markup.match(/style="([^"]*border-radius:22px 22px 0 0[^"]*)"/)?.[1]);
+const titleStyle = (markup: string) => markup.match(/<h2[^>]*style="([^"]*)"/)?.[1] ?? "";
+// The scrollable area wrapping the paragraphs.
+const bodyStyle = (markup: string) => markup.match(/style="([^"]*)"><p[ >]/)?.[1] ?? "";
+const closeStyle = (markup: string) => markup.match(/<button[^>]*style="([^"]*)"[^>]*>CLOSE</)?.[1] ?? "";
 
 // TermsSheet uses no hooks, so its element tree can be walked to reach the click handlers.
 function elements(node: ReactNode): ReactElement<Record<string, unknown>>[] {
@@ -97,8 +103,13 @@ describe("TermsSheet colours", () => {
       design({ background: navy, blocks: [heading("#C6F432"), heading("#FF0000")] }),
     );
     expect(markup).toContain("background:#0F2A44");
-    expect(titleColour(markup)).toBe("#C6F432");
-    expect(bodyColour(markup)).toBe("#C6F432");
+    expect(textColour(markup)).toBe("#C6F432");
+  });
+
+  it("sets the text colour on the sheet only, so the title and body inherit it", () => {
+    const markup = html(design({ background: navy, blocks: [heading("#C6F432")] }));
+    expect(colourIn(titleStyle(markup))).toBeUndefined();
+    expect(colourIn(bodyStyle(markup))).toBeUndefined();
   });
 
   it("falls back to bestTextColour for the title and body when the first heading fails 4.5:1", () => {
@@ -106,38 +117,62 @@ describe("TermsSheet colours", () => {
       design({ background: { type: "colour", colour: "#FFFFFF" }, blocks: [heading("#EEEEEE")] }),
     );
     expect(markup).toContain("background:#FFFFFF");
-    expect(titleColour(markup)).toBe("#111111");
-    expect(bodyColour(markup)).toBe("#111111");
+    expect(textColour(markup)).toBe("#111111");
+  });
+
+  it("falls back to black on a mid-grey sheet where neither #111111 nor white reaches 4.5:1", () => {
+    // White heading on #777777 is 4.48:1, and bestTextColour's #FFFFFF is too.
+    const markup = html(
+      design({ background: { type: "colour", colour: "#777777" }, blocks: [heading("#FFFFFF")] }),
+    );
+    expect(markup).toContain("background:#777777");
+    expect(textColour(markup)).toBe("#000000");
   });
 
   it("falls back to bestTextColour when there is no heading", () => {
     const markup = html(design({ background: { type: "colour", colour: "#000000" } }));
-    expect(titleColour(markup)).toBe("#FFFFFF");
-    expect(bodyColour(markup)).toBe("#FFFFFF");
+    expect(textColour(markup)).toBe("#FFFFFF");
   });
 
+  const photo: BackgroundSpec = {
+    type: "image",
+    src: "data:image/png;base64,iVBORw0KGgo=",
+    fit: "fill",
+    zoom: 1,
+    focus: { x: 50, y: 50 },
+    backdrop: "#1A1A2E",
+    overlay: null,
+  };
+
   it("uses a photo's backdrop as the sheet colour", () => {
-    const photo: BackgroundSpec = {
-      type: "image",
-      src: "data:image/png;base64,iVBORw0KGgo=",
-      fit: "fill",
-      zoom: 1,
-      focus: { x: 50, y: 50 },
-      backdrop: "#1A1A2E",
-      overlay: null,
-    };
     const markup = html(design({ background: photo }));
     expect(markup).toContain("background:#1A1A2E");
-    expect(titleColour(markup)).toBe("#FFFFFF");
+    expect(textColour(markup)).toBe("#FFFFFF");
   });
 
   it("styles CLOSE like an outline Connect button: bg border, fg text, no fill", () => {
-    const markup = html(design({ outline: true }));
-    const close = markup.match(/<button[^>]*>CLOSE<\/button>/)?.[0] ?? "";
+    const close = closeStyle(html(design({ outline: true })));
     expect(close).toContain("border:2px solid #F97316");
     expect(close).toContain("background:transparent");
-    expect(close).toContain("color:#111111");
+    expect(colourIn(close)).toBe("#111111");
     expect(close).toContain("width:66%");
+  });
+
+  it("draws an outline CLOSE in the sheet's text colour when fg fails 4.5:1 on the sheet", () => {
+    const markup = html(design({ background: photo, outline: true, fg: "#111111" }));
+    const close = closeStyle(markup);
+    expect(textColour(markup)).toBe("#FFFFFF");
+    expect(colourIn(close)).toBe("#FFFFFF");
+    expect(close).toContain("border:2px solid #FFFFFF");
+    expect(close).toContain("background:transparent");
+  });
+
+  it.each([false, true])("CLOSE carries Connect's own style (outline: %s)", (outline) => {
+    const d = design({ outline });
+    const close = elements(TermsSheet({ design: d, mode: "preview" })).find(
+      (el) => el.props.children === "CLOSE",
+    );
+    expect(close?.props.style).toMatchObject(connectButtonStyle(d.form.button));
   });
 });
 
@@ -152,6 +187,26 @@ describe("TermsSheet render modes", () => {
       expect(markup).toMatch(/>CLOSE<\/button>/);
       expect(markup).not.toContain("<a ");
       expect(markup).not.toContain("class=");
+      // Nothing that moves focus on its own in the editor.
+      expect(markup).not.toMatch(/tabindex="-1"|autofocus/i);
+    },
+  );
+
+  it.each<RenderMode>(["edit", "preview", "export"])(
+    "%s mode: the sheet sits in a fixed, viewport-sized overlay",
+    (mode) => {
+      const markup = html(design(), mode);
+      expect(markup).toMatch(/^<section[^>]*style="position:fixed;inset:0;z-index:10"/);
+      expect(markup).toMatch(/style="position:absolute;left:0;right:0;bottom:0;height:82%/);
+    },
+  );
+
+  it.each<RenderMode>(["edit", "preview", "export"])(
+    "%s mode: the scrolling body is a labelled, keyboard-focusable region",
+    (mode) => {
+      expect(html(design(), mode)).toMatch(
+        /<div role="region" aria-labelledby="cv-terms-title" tabindex="0" style="[^"]*overflow-y:auto[^"]*"><p/,
+      );
     },
   );
 
@@ -173,20 +228,31 @@ describe("TermsSheet render modes", () => {
     },
   );
 
-  it("export mode renders a #terms section with cv-terms, # close links and no inline display", () => {
+  it("export mode renders a focusable modal #terms section with cv-terms and no inline display", () => {
     const markup = html(design(), "export");
     const section = markup.match(/^<section[^>]*>/)?.[0] ?? "";
     expect(section).toContain('id="terms"');
     expect(section).toContain('class="cv-terms"');
     expect(section).toContain('role="dialog"');
+    expect(section).toContain('aria-modal="true"');
     expect(section).toContain('aria-labelledby="cv-terms-title"');
+    expect(section).toContain('tabindex="-1"');
     expect(section).toMatch(/style="position:fixed;inset:0;z-index:10"/);
     expect(section).not.toMatch(/display/);
-    expect(markup.match(/<a href="#"/g)).toHaveLength(2);
-    expect(markup).toMatch(/<a href="#" aria-label="Close terms"/);
-    expect(markup).toMatch(/>CLOSE<\/a>/);
     expect(markup).not.toContain("<button");
     expect(markup.match(/class="/g)).toEqual(['class="']);
+  });
+
+  it("export mode: ×, CLOSE and the dim layer link back to the terms link, never to #", () => {
+    const markup = html(design(), "export");
+    const href = `href="#${TERMS_LINK_ID}"`;
+    expect(TERMS_LINK_ID).toBe("cv-terms-link");
+    expect(markup.match(/href="[^"]*"/g)).toEqual([href, href, href]);
+    expect(markup).toMatch(
+      new RegExp(`^<section[^>]*><a ${href} aria-hidden="true" tabindex="-1" style="position:absolute;inset:0;background:rgba\\(0,0,0,0.55\\)"></a>`),
+    );
+    expect(markup).toContain(`<a ${href} aria-label="Close terms"`);
+    expect(markup).toMatch(/>CLOSE<\/a>/);
   });
 
   it("export mode attaches no click handlers", () => {

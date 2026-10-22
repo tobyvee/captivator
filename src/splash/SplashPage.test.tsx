@@ -11,7 +11,7 @@ import { SplashPage } from "./SplashPage";
 // Form keeps its real implementation; one test swaps in a clickable child for a single render.
 vi.mock("./Form", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./Form")>();
-  return { Form: vi.fn(actual.Form) };
+  return { ...actual, Form: vi.fn(actual.Form) };
 });
 
 const PNG = "data:image/png;base64,iVBORw0KGgo=";
@@ -101,6 +101,30 @@ describe("SplashPage render modes", () => {
     expect(container.firstElementChild).toHaveAttribute("class", "cv-root");
     expect(container.querySelectorAll("[class]")).toHaveLength(1);
   });
+
+  // cv-terms is the export's only other class (T-021-cv-terms-second-export-class).
+  it("export mode with terms on adds only cv-terms, on section#terms", () => {
+    const { container } = render(
+      <SplashPage design={design(MIXED.blocks, "checkbox")} screen="landing" mode="export" />,
+    );
+    const classed = [...container.querySelectorAll("[class]")];
+    expect(classed.map((el) => `${el.tagName.toLowerCase()}#${el.id}.${el.className}`)).toEqual([
+      "div#.cv-root",
+      "section#terms.cv-terms",
+    ]);
+    expect(classed[0]).toBe(container.firstElementChild);
+  });
+
+  it.each<RenderMode>(["edit", "preview"])(
+    "%s mode with the terms sheet open renders no class names",
+    (mode) => {
+      const { container } = render(
+        <SplashPage design={design(MIXED.blocks, "checkbox")} screen="terms" mode={mode} />,
+      );
+      expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+      expect(container.querySelectorAll("[class]")).toHaveLength(0);
+    },
+  );
 });
 
 describe("SplashPage edit-mode selection", () => {
@@ -191,6 +215,25 @@ describe("SplashPage screens", () => {
     expect(heading.closest('[aria-hidden="true"]')).toHaveAttribute("inert");
   });
 
+  it("edit: clicking the dim layer closes the sheet without selecting the background", () => {
+    const onSelect = vi.fn();
+    const onScreenChange = vi.fn();
+    const { container } = render(
+      <SplashPage
+        design={design([text("t", "heading")], "checkbox")}
+        screen="terms"
+        mode="edit"
+        onSelect={onSelect}
+        onScreenChange={onScreenChange}
+      />,
+    );
+    const dim = container.querySelector('[role="dialog"] > [aria-hidden="true"]');
+    if (!dim) throw new Error("dim layer not found");
+    fireEvent.click(dim);
+    expect(onScreenChange).toHaveBeenCalledWith("landing");
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
   it("renders plain landing on the terms screen when terms are off", () => {
     render(<SplashPage design={design([text("t", "heading")])} screen="terms" mode="preview" />);
     expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
@@ -263,6 +306,20 @@ describe("SplashPage photo credit", () => {
   it("renders on the connected screen too", () => {
     const { container } = render(<SplashPage design={withCredit()} screen="connected" mode="export" />);
     expect(creditLine(container)).toHaveTextContent("Photo: Alex S. / Unsplash");
+  });
+
+  it("export with terms on carries the #terms sheet after the credit", () => {
+    const { container } = render(<SplashPage design={withCredit()} screen="landing" mode="export" />);
+    const sheet = container.querySelector("#terms");
+    if (!sheet) throw new Error("#terms not found");
+    expect(follows(sheet, creditLine(container))).toBe(true);
+  });
+
+  it("export with terms off has no #terms sheet", () => {
+    const { container } = render(
+      <SplashPage design={withCredit("off")} screen="landing" mode="export" />,
+    );
+    expect(container.querySelector("#terms")).toBeNull();
   });
 
   it("is absent for a photo without a credit", () => {
