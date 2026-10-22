@@ -12,7 +12,7 @@ touches:
   - src/lib/store.undo.test.ts
   - src/editor/UndoRedo.tsx
 cut_rank:
-updated: 2026-10-22
+updated: 2026-10-23
 tags: [project, captivator, ticket, store, editor]
 ---
 # T-025: Undo and redo with shortcuts
@@ -33,6 +33,7 @@ Build step 8, "Undo/redo with shortcuts" ([spec → Data model and store → Und
   - A `window` `keydown` listener, registered while mounted: Cmd/Ctrl+Z → undo; Shift+Cmd/Ctrl+Z or Ctrl+Y → redo; `preventDefault` when handled.
   - The listener ignores events whose target is an `input`, `textarea`, `select` or `contenteditable`, so native text undo works.
 - **`store.undo.test.ts`** (node environment, fake timers).
+- **`updateForm`:** when `selection.kind === "terms"` and the patch turns `terms.mode` to `"checkbox"`, also set `screen: "terms"`, with a test in `store.test.ts` or `store.undo.test.ts` ([`T-025-terms-switch-shows-terms-screen.md`](../decisions/T-025-terms-switch-shows-terms-screen.md), from the T-008 review).
 - **Out of scope:** gesture-based grouping (rejected in the decision); any other store change.
 
 ## Acceptance criteria
@@ -57,3 +58,4 @@ The store only writes to storage when `design` or `name` changes by reference ([
 - [`T-004-store-owns-all-actions.md`](../decisions/T-004-store-owns-all-actions.md): store.ts is created once with every action, and only the undo ticket edits it later
 - [`T-008-editor-shell-creates-slots.md`](../decisions/T-008-editor-shell-creates-slots.md): The editor shell owns Inspector.tsx and TopBar.tsx and creates every later editor component as a stub
 - [`general-undo-leading-edge-debounce.md`](../decisions/general-undo-leading-edge-debounce.md): Undo history uses a leading-edge debounce, not a throttle
+- [`T-025-terms-switch-shows-terms-screen.md`](../decisions/T-025-terms-switch-shows-terms-screen.md): turning terms on while Terms is selected shows the Terms screen
