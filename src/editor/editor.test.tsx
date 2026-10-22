@@ -38,15 +38,20 @@ describe("EditorPage", () => {
     const container = document.createElement("div");
     container.innerHTML = html;
     document.body.appendChild(container); // append() is retyped by the Workers globals
-    act(() => {
-      hydrateRoot(container, <EditorPage />, { onRecoverableError: mismatch });
-    });
+    let root: ReturnType<typeof hydrateRoot> | undefined;
+    try {
+      act(() => {
+        root = hydrateRoot(container, <EditorPage />, { onRecoverableError: mismatch });
+      });
 
-    expect(mismatch).not.toHaveBeenCalled();
-    expect(errors).not.toHaveBeenCalled();
-    expect(within(container).getByRole("textbox", { name: "Design name" })).toBeInTheDocument();
-    expect(within(container).queryByText("Loading your design…")).not.toBeInTheDocument();
-    container.remove();
+      expect(mismatch).not.toHaveBeenCalled();
+      expect(errors).not.toHaveBeenCalled();
+      expect(within(container).getByRole("textbox", { name: "Design name" })).toBeInTheDocument();
+      expect(within(container).queryByText("Loading your design…")).not.toBeInTheDocument();
+    } finally {
+      act(() => root?.unmount());
+      container.remove();
+    }
   });
 
   it("restores the saved name and design after mount", () => {
@@ -61,16 +66,27 @@ describe("EditorPage", () => {
     expect(useStore.getState().design.blocks.map((b) => b.id)).not.toContain(LOGO_ID);
   });
 
-  it("lays out the block list, preview and inspector inside main", () => {
+  it("lays out the block list, the preview in main and the inspector as sibling landmarks", () => {
     render(<EditorPage />);
     const main = screen.getByRole("main");
-    expect(within(main).getByRole("complementary", { name: "Blocks" })).toBeInTheDocument();
+    const blocks = screen.getByRole("complementary", { name: "Blocks" });
+    const inspector = screen.getByRole("complementary", { name: "Background settings" });
     expect(within(main).getByRole("region", { name: "Preview" })).toBeInTheDocument();
-    expect(within(main).getByRole("complementary", { name: "Background settings" })).toBeInTheDocument();
+    expect(main).not.toContainElement(blocks);
+    expect(main).not.toContainElement(inspector);
+    // Each landmark sits in its own column of the same row, in reading order.
+    const columns = [blocks.parentElement, main, inspector.parentElement];
+    expect(new Set(columns.map((column) => column?.parentElement)).size).toBe(1);
+    expect(Array.from(main.parentElement?.children ?? [])).toEqual(columns);
   });
 });
 
 describe("TopBar", () => {
+  it("names the app in the page's top-level heading", () => {
+    render(<TopBar />);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Captivator");
+  });
+
   it("edits the design name through the store, capped at 60 characters", () => {
     render(<TopBar />);
     const input = screen.getByRole("textbox", { name: "Design name" });
@@ -126,7 +142,10 @@ describe("Inspector", () => {
     select(selection);
     expect(heading()).toHaveTextContent(title);
     expect(screen.getByRole("complementary", { name: `${title} settings` })).toBeInTheDocument();
-    if (subtitle) expect(screen.getByText(subtitle)).toBeInTheDocument();
+    // The subtitle is the paragraph right after the heading; the Connect button has none.
+    const next = heading().nextElementSibling;
+    if (subtitle) expect(next).toHaveTextContent(subtitle);
+    else expect(next).toBeNull();
     expect(screen.getByText(/settings are coming soon/)).toBeInTheDocument();
   });
 
@@ -160,6 +179,7 @@ describe("Inspector", () => {
     expect(useStore.getState().design.blocks.map((b) => b.id)).not.toContain(HEADING_ID);
     expect(useStore.getState().selection).toEqual({ kind: "background" });
     expect(heading()).toHaveTextContent("Background");
+    expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Background" }));
   });
 
   it("offers Delete only for blocks", () => {

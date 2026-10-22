@@ -23,7 +23,7 @@ export function TopBar() {
     <header className="flex flex-wrap items-center gap-4 border-b border-zinc-200 bg-white px-5 py-2.5">
       <div className="flex min-w-0 items-center gap-2.5">
         <Wifi size={22} strokeWidth={2} aria-hidden="true" className="shrink-0" />
-        <span className="text-[15px] font-bold">Captivator</span>
+        <h1 className="text-[15px] font-bold">Captivator</h1>
         <span aria-hidden="true" className="text-zinc-500">
           /
         </span>

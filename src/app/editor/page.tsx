@@ -8,12 +8,14 @@ import { TopBar } from "@/editor/TopBar";
 import { useHydrated } from "@/lib/store";
 
 // The page owns the three columns' sizes and surfaces, so the skeleton and the editor share
-// one layout and each column's component only fills its slot (T-008-page-owns-column-layout).
+// one layout and each column's component only fills its slot (T-008-landmarks-are-siblings).
 // Below md every column takes the full width, so the stack reads as one column.
 const SIDE = "flex flex-col bg-white border-zinc-200 max-md:max-w-none max-md:border-b";
 const BLOCKS_COLUMN = `${SIDE} flex-[1_1_272px] max-w-[300px] md:border-r`;
 const STAGE_COLUMN = "flex flex-col flex-[1_1_480px] min-w-0";
-const INSPECTOR_COLUMN = `${SIDE} flex-[1_1_300px] max-w-[340px] md:border-l`;
+// The flex bases sum to 272 + 480 + 300 = 1052px, so below 1052px the inspector wraps onto
+// its own row: it fills that row and borders the stage above it instead of its left side.
+const INSPECTOR_COLUMN = `${SIDE} flex-[1_1_300px] max-w-[340px] border-l max-[1052px]:max-w-none max-[1052px]:border-l-0 max-[1052px]:border-t`;
 
 type Slots = Record<"top" | "blocks" | "stage" | "inspector", ReactNode>;
 
@@ -21,11 +23,11 @@ function Layout({ top, blocks, stage, inspector }: Slots) {
   return (
     <div className="flex min-h-screen flex-col">
       {top}
-      <main className="flex grow flex-wrap items-stretch">
+      <div className="flex grow flex-wrap items-stretch">
         <div className={BLOCKS_COLUMN}>{blocks}</div>
-        <div className={STAGE_COLUMN}>{stage}</div>
+        <main className={STAGE_COLUMN}>{stage}</main>
         <div className={INSPECTOR_COLUMN}>{inspector}</div>
-      </main>
+      </div>
     </div>
   );
 }

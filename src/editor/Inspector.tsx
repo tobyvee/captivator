@@ -1,6 +1,8 @@
 "use client";
 
 import { Trash } from "lucide-react";
+import { type RefObject, useRef } from "react";
+import { flushSync } from "react-dom";
 import { useShallow } from "zustand/react/shallow";
 import type { Design } from "@/lib/design-schema";
 import { useStore } from "@/lib/store";
@@ -94,13 +96,18 @@ function Panel({ view }: { view: View }) {
   }
 }
 
-function DeleteBlock({ id }: { id: string }) {
+function DeleteBlock({ id, headingRef }: { id: string; headingRef: RefObject<HTMLHeadingElement | null> }) {
   const removeBlock = useStore((s) => s.removeBlock);
   return (
     <button
       type="button"
       aria-label="Delete block"
-      onClick={() => removeBlock(id)}
+      onClick={() => {
+        // Deleting unmounts this button, which would drop focus to <body>. flushSync renders the
+        // Background view first, so focus lands on its heading.
+        flushSync(() => removeBlock(id));
+        headingRef.current?.focus();
+      }}
       className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-red-700 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
     >
       <Trash size={16} aria-hidden="true" />
@@ -124,15 +131,22 @@ function TermsSwitch() {
 export function Inspector() {
   const view = useStore(useShallow((s) => viewFor(s.selection, s.design.blocks)));
   const { title, subtitle } = headerFor(view);
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   return (
     <aside aria-label={`${title} settings`} className="flex flex-1 flex-col gap-[18px] px-[18px] py-4">
       <div className="flex items-center gap-2.5">
         <div className="flex min-w-0 grow flex-col">
-          <h2 className="text-[15px] font-bold">{title}</h2>
+          <h2
+            ref={headingRef}
+            tabIndex={-1}
+            className="text-[15px] font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+          >
+            {title}
+          </h2>
           {subtitle && <p className="text-xs text-zinc-600">{subtitle}</p>}
         </div>
-        {(view.kind === "text" || view.kind === "image") && <DeleteBlock id={view.id} />}
+        {(view.kind === "text" || view.kind === "image") && <DeleteBlock id={view.id} headingRef={headingRef} />}
         {view.kind === "terms" && <TermsSwitch />}
       </div>
       <Panel view={view} />
