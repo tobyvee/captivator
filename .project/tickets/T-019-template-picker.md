@@ -37,7 +37,7 @@ Build step 5 ([spec → Editor UI → Template picker](../spec/Captivator%20MVP%
 ## Acceptance criteria
 - [x] Four cards (Sponsor, Photo hero, Minimal, Blank) render live thumbnails that match the editor preview.
 - [x] "Use" loads the template and opens `/editor`; each template loads (spec checklist).
-- [ ] With a saved design, "Continue your design" shows first, and "Use" asks before switching. Switching keeps an uploaded logo (spec checklist). *Met for a design saved before a reload (tested). A design edited in this session isn't treated as saved yet; T-025 fixes it in the store ([`T-025-store-marks-in-session-saves.md`](../decisions/T-025-store-marks-in-session-saves.md)).*
+- [x] With a saved design, "Continue your design" shows first, and "Use" asks before switching. Switching keeps an uploaded logo (spec checklist). *Met after a reload, and since T-025 (`593d0fb`) for a design edited in this session too; both tested ([`T-025-saved-means-written-this-session.md`](../decisions/T-025-saved-means-written-this-session.md)).*
 - [x] With no saved design, there's no Continue card and no confirm.
 - [x] No hydration warning; the page renders a neutral placeholder until `useHydrated()` is true.
 - [x] Buttons are real `<button>`s with at least 44px tap targets; credit links have `rel="noopener noreferrer"`.
@@ -70,3 +70,4 @@ Build step 5 ([spec → Editor UI → Template picker](../spec/Captivator%20MVP%
 - [`T-019-template-card-test-file-added.md`](../decisions/T-019-template-card-test-file-added.md): adds `TemplateCard.test.tsx`
 - [`T-019-saved-design-means-restored.md`](../decisions/T-019-saved-design-means-restored.md): a saved design means `restored`
 - [`T-025-store-marks-in-session-saves.md`](../decisions/T-025-store-marks-in-session-saves.md): the in-session saved case moves to T-025
+- [`T-025-saved-means-written-this-session.md`](../decisions/T-025-saved-means-written-this-session.md): `hasSaved` replaces `restored`; the picker reads it

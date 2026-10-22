@@ -58,6 +58,7 @@ These are the last non-cuttable tickets on each path, so every feature the check
 Cuttable tickets (T-022, T-026, T-028 and the stretch tickets) are deliberately not dependencies; check them if they shipped.
 
 ## Notes
+- **From T-025:** in Safari and Chrome, type in the design-name input and a panel textarea, press Cmd+Z (Ctrl+Z where available): the text undoes and the design doesn't ([`T-025-native-text-undo-check-in-t029.md`](../decisions/T-025-native-text-undo-check-in-t029.md)).
 - **From T-024 and the milestone 7 review:** download the export in Safari, Chrome and on iOS and check the file name; open the file and confirm DevTools' Network panel is empty; check `:target` opens and closes the terms sheet, native `required` messages show, and the `:focus-visible` ring appears; check `100dvh` in the iOS Captive Network Assistant and Android's login WebView; and note the real export size for Sponsor with two uploads on Safari's JPEG path (T-023's audit measured 98.1 KB) ([`T-024-browser-download-check-in-t029.md`](../decisions/T-024-browser-download-check-in-t029.md)).
 
 ## Decisions

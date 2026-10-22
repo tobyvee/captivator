@@ -2,7 +2,7 @@
 title: "T-025: Undo and redo with shortcuts"
 type: ticket
 project: captivator
-status: todo
+status: done
 priority: P1
 milestone: 8
 estimate: 20
@@ -11,6 +11,11 @@ touches:
   - src/lib/store.ts
   - src/lib/store.undo.test.ts
   - src/editor/UndoRedo.tsx
+  - src/editor/UndoRedo.test.tsx
+  - src/app/page.tsx
+  - src/lib/store.test.ts
+  - src/editor/TemplateCard.test.tsx
+  - src/editor/editor.test.tsx
 cut_rank:
 updated: 2026-10-23
 tags: [project, captivator, ticket, store, editor]
@@ -37,17 +42,23 @@ Build step 8, "Undo/redo with shortcuts" ([spec → Data model and store → Und
 - **Out of scope:** gesture-based grouping (rejected in the decision); any other store change.
 
 ## Acceptance criteria
-- [ ] With fake timers, 20 colour updates spread over 2 seconds (100ms apart) make one undo step; undo restores the original colour (test).
-- [ ] Two bursts separated by a 500ms pause make two steps (test).
-- [ ] Selection, device and screen changes aren't undoable (test).
-- [ ] History is capped at 100 (test).
-- [ ] T-004's `store.test.ts` still passes unchanged.
-- [ ] Buttons disable correctly. Cmd+Z in the design-name input or a textarea undoes text, not the design (spec checklist).
-- [ ] `npm test`, `npx tsc --noEmit` and `npm run lint` pass.
+- [x] With fake timers, 20 colour updates spread over 2 seconds (100ms apart) make one undo step; undo restores the original colour (test).
+- [x] Two bursts separated by a 500ms pause make two steps (test).
+- [x] Selection, device and screen changes aren't undoable (test).
+- [x] History is capped at 100 (test).
+- [x] T-004's `store.test.ts` still passes unchanged.
+- [x] Buttons disable correctly. Cmd+Z in the design-name input or a textarea undoes text, not the design (spec checklist). *The handler skips text-entry targets and leaves the event to the browser (tested in jsdom); the real-browser text undo is on T-029's checklist ([`T-025-native-text-undo-check-in-t029.md`](../decisions/T-025-native-text-undo-check-in-t029.md)).*
+- [x] `npm test`, `npx tsc --noEmit` and `npm run lint` pass.
 
 ## Dependencies
 - T-004: the store this ticket wraps.
 - T-008: the `UndoRedo` stub in the top bar.
+
+## Outcome
+- **Built:** zundo `temporal` inside `persist`, tracking only `design` by reference, with a timestamp-based leading-edge debounce (400ms) so one drag is one step, a limit of 100, history cleared after rehydration and kept in memory only. `UndoRedo` has two 44px icon buttons, natively disabled with no history, and Cmd/Ctrl+Z, Shift+Cmd/Ctrl+Z and Ctrl+Y shortcuts that skip text entry. Turning terms on with Terms selected shows the Terms screen. 655 tests pass; `tsc` and lint are clean.
+- **Added scope:** the store's `restored` flag is now `hasSaved`, also set when the first edit after hydration is written, so the picker offers "Continue your design" and asks before switching without a reload (`593d0fb`, [`T-025-saved-means-written-this-session.md`](../decisions/T-025-saved-means-written-this-session.md)). This closes T-019's open criterion.
+- **Review:** one must-fix, fixed in `92a0472` by nextjs-specialist and re-reviewed: undo and redo now keep the preview on a screen the design can show, through one `screenAfter` rule shared by `updateForm` and a store subscriber ([`T-025-undo-keeps-screen-valid.md`](../decisions/T-025-undo-keeps-screen-valid.md)). The re-review's test should-fix and nit are fixed in `94e35be`.
+- **Security:** audited (store persistence is a trust boundary). No findings: undo and redo can't bring in a design that skipped the schema, history is never persisted, and a failed restore still isn't overwritten before an edit.
 
 ## Notes
 - **Added scope from T-019 and the milestone 5 review:** treat a design edited in this session as saved, so the picker shows "Continue your design" and asks before switching without a reload. The main session adds it when landing T-025 ([`T-025-store-marks-in-session-saves.md`](../decisions/T-025-store-marks-in-session-saves.md)).
@@ -60,3 +71,13 @@ The store only writes to storage when `design` or `name` changes by reference ([
 - [`T-008-editor-shell-creates-slots.md`](../decisions/T-008-editor-shell-creates-slots.md): The editor shell owns Inspector.tsx and TopBar.tsx and creates every later editor component as a stub
 - [`general-undo-leading-edge-debounce.md`](../decisions/general-undo-leading-edge-debounce.md): Undo history uses a leading-edge debounce, not a throttle
 - [`T-025-terms-switch-shows-terms-screen.md`](../decisions/T-025-terms-switch-shows-terms-screen.md): turning terms on while Terms is selected shows the Terms screen
+- [`T-025-persist-wraps-temporal.md`](../decisions/T-025-persist-wraps-temporal.md): persist wraps temporal; hydration clears history
+- [`T-025-undo-gate-reopens-after-undo.md`](../decisions/T-025-undo-gate-reopens-after-undo.md): the timestamp debounce always records the first change after undo, redo or clear
+- [`T-025-shortcuts-skip-text-entry-only.md`](../decisions/T-025-shortcuts-skip-text-entry-only.md): shortcuts skip text entry, not sliders
+- [`T-025-undo-buttons-native-disabled.md`](../decisions/T-025-undo-buttons-native-disabled.md): native `disabled` on the undo buttons
+- [`T-025-undoredo-test-file-added.md`](../decisions/T-025-undoredo-test-file-added.md): adds `UndoRedo.test.tsx`
+- [`T-025-terms-on-means-mode-change.md`](../decisions/T-025-terms-on-means-mode-change.md): only a real off-to-checkbox change shows the Terms screen
+- [`T-025-store-marks-in-session-saves.md`](../decisions/T-025-store-marks-in-session-saves.md): the in-session saved case moves into T-025 (superseded)
+- [`T-025-saved-means-written-this-session.md`](../decisions/T-025-saved-means-written-this-session.md): `hasSaved` replaces `restored`
+- [`T-025-undo-keeps-screen-valid.md`](../decisions/T-025-undo-keeps-screen-valid.md): undo and redo keep the screen valid
+- [`T-025-native-text-undo-check-in-t029.md`](../decisions/T-025-native-text-undo-check-in-t029.md): the real-browser text undo check moves to T-029
