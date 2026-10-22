@@ -1,7 +1,7 @@
 import type { CSSProperties, JSX, ReactNode } from "react";
-import { bestTextColour, contrastRatio } from "../lib/contrast";
+import { bestTextColour, contrastRatio, mainBackgroundColour } from "../lib/contrast";
 import type { Design } from "../lib/design-schema";
-import type { BackgroundSpec, RenderMode, TextBlockSpec } from "../lib/types";
+import type { RenderMode, TextBlockSpec } from "../lib/types";
 import { connectButtonStyle } from "./Form";
 
 export type TermsSheetProps = { design: Design; mode: RenderMode; onClose?: () => void };
@@ -75,18 +75,6 @@ const BODY: CSSProperties = {
   lineHeight: 1.55,
 };
 
-/** The sheet's colour: the background's colour, the gradient's first stop or the photo's backdrop. */
-function sheetColour(bg: BackgroundSpec): string {
-  switch (bg.type) {
-    case "colour":
-      return bg.colour;
-    case "gradient":
-      return bg.from;
-    case "image":
-      return bg.backdrop;
-  }
-}
-
 /**
  * The first heading's colour when it reads at 4.5:1 on the sheet, otherwise near-black or white,
  * or pure black on mid-greys where neither reaches 4.5:1 (black always reaches 4.58:1).
@@ -122,7 +110,7 @@ function closeControl(
 export function TermsSheet({ design, mode, onClose }: TermsSheetProps): JSX.Element {
   const { terms, button } = design.form;
   const exporting = mode === "export";
-  const sheet = sheetColour(design.background);
+  const sheet = mainBackgroundColour(design.background);
   const text = textColour(design, sheet);
   // An outline label sits on the sheet, not on `bg`; when `fg` can't be read there, CLOSE takes
   // the sheet's text colour (T-021-outline-close-uses-sheet-text).

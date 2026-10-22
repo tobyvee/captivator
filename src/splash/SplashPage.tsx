@@ -4,6 +4,7 @@ import type { RenderMode, Screen, Selection, TextBlockSpec } from "../lib/types"
 import { Background, Credit } from "./Background";
 import { Connected } from "./Connected";
 import { Form } from "./Form";
+import { COLUMN } from "./layout";
 import { TermsSheet } from "./TermsSheet";
 import { ImageBlock } from "./blocks/ImageBlock";
 import { TextBlock } from "./blocks/TextBlock";
@@ -26,22 +27,6 @@ type BlockSpec = Design["blocks"][number];
 
 const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 const SELECT_BLUE = "#2563EB";
-
-const COLUMN: CSSProperties = {
-  position: "relative",
-  zIndex: 1,
-  flex: "1 0 auto",
-  width: "100%",
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  gap: 18,
-  maxWidth: 420,
-  margin: "0 auto",
-  padding: "56px 28px 40px",
-  boxSizing: "border-box",
-  textAlign: "center",
-};
 
 // Wraps the landing page under the open terms sheet. Not positioned, so the background layers
 // still anchor to the root. `inert` keeps its content out of focus and clicks.

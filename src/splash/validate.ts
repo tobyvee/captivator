@@ -1,5 +1,5 @@
 // Guest-side checks for the editor's Error and Connected screens. Pure: no DOM, no React.
-import type { FieldKindSpec, FormSpec } from "../lib/types";
+import type { FieldKindSpec } from "../lib/types";
 
 /** What a failed Connect says, per field and for unticked terms (T-022-error-copy-follows-spec). */
 export const ERROR_COPY = {
@@ -20,11 +20,6 @@ export type GuestCheck = { ok: boolean; field?: FieldKindSpec; terms?: boolean }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_CHARS = /^[+\d\s()-]*$/;
-
-/** Whether a guest can fail Connect at all: a field to fill in or a box to tick. */
-export function canFail(form: FormSpec): boolean {
-  return form.fields.length > 0 || form.terms.mode === "checkbox";
-}
 
 function fieldValid(kind: FieldKindSpec, value: string): boolean {
   const v = value.trim();

@@ -1,8 +1,8 @@
 "use client";
 
+import { canFail } from "@/lib/screens";
 import { useStore } from "@/lib/store";
 import type { Screen } from "@/lib/types";
-import { canFail } from "@/splash/validate";
 import { Segmented, type SegmentedOption } from "./controls/Segmented";
 
 const LANDING: SegmentedOption<Screen> = { value: "landing", label: "Landing" };

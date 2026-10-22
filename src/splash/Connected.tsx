@@ -1,29 +1,12 @@
 import type { CSSProperties, JSX } from "react";
-import { backgroundColours, bestTextColour } from "../lib/contrast";
+import { backgroundColours, bestTextColour, mainBackgroundColour } from "../lib/contrast";
 import type { Design } from "../lib/design-schema";
-import type { BackgroundSpec, ImageBlockSpec, RenderMode, TextBlockSpec } from "../lib/types";
+import type { ImageBlockSpec, RenderMode, TextBlockSpec } from "../lib/types";
 import { connectButtonStyle } from "./Form";
 import { ImageBlock } from "./blocks/ImageBlock";
+import { COLUMN } from "./layout";
 
 export type ConnectedProps = { design: Design; mode: RenderMode; onContinue?: () => void };
-
-// SplashPage's column, so the logo sits where it does on the landing page. Its 40px bottom
-// padding keeps CONTINUE clear of the photo credit in the bottom-right corner.
-const COLUMN: CSSProperties = {
-  position: "relative",
-  zIndex: 1,
-  flex: "1 0 auto",
-  width: "100%",
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  gap: 18,
-  maxWidth: 420,
-  margin: "0 auto",
-  padding: "56px 28px 40px",
-  boxSizing: "border-box",
-  textAlign: "center",
-};
 
 const SPACER: CSSProperties = { flex: 1 };
 
@@ -36,18 +19,6 @@ const BADGE: CSSProperties = {
   justifyContent: "center",
   borderRadius: 36,
 };
-
-/** The background's main colour, as for the terms sheet: colour, gradient start or backdrop. */
-function mainColour(bg: BackgroundSpec): string {
-  switch (bg.type) {
-    case "colour":
-      return bg.colour;
-    case "gradient":
-      return bg.from;
-    case "image":
-      return bg.backdrop;
-  }
-}
 
 /** "You're online": the logo, a tick badge, the sponsor when there is one, and CONTINUE. */
 export function Connected({ design, mode, onContinue }: ConnectedProps): JSX.Element {
@@ -68,7 +39,7 @@ export function Connected({ design, mode, onContinue }: ConnectedProps): JSX.Ele
       <div aria-hidden="true" style={SPACER} />
       <div
         aria-hidden="true"
-        style={{ ...BADGE, background: accent, color: mainColour(design.background) }}
+        style={{ ...BADGE, background: accent, color: mainBackgroundColour(design.background) }}
       >
         <svg
           width="36"

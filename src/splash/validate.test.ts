@@ -1,25 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { BLANK, type Design } from "../lib/design-schema";
 import type { FieldKindSpec } from "../lib/types";
-import { canFail, ERROR_COPY, EXAMPLE_INVALID, validateGuest } from "./validate";
-
-const form = (fields: FieldKindSpec[], terms: "off" | "checkbox"): Design["form"] => ({
-  ...BLANK.design.form,
-  fields,
-  terms: { ...BLANK.design.form.terms, mode: terms },
-});
-
-describe("canFail", () => {
-  it("is false with no fields and terms off", () => {
-    expect(canFail(form([], "off"))).toBe(false);
-  });
-
-  it("is true with a field or with terms on", () => {
-    expect(canFail(form(["email"], "off"))).toBe(true);
-    expect(canFail(form([], "checkbox"))).toBe(true);
-    expect(canFail(form(["name", "phone"], "checkbox"))).toBe(true);
-  });
-});
+import { ERROR_COPY, EXAMPLE_INVALID, validateGuest } from "./validate";
 
 describe("validateGuest", () => {
   it.each([

@@ -8,6 +8,7 @@ import {
   formatRatio,
   isLargeText,
   luminance,
+  mainBackgroundColour,
   requiredRatio,
   worstRatio,
 } from "./contrast";
@@ -112,6 +113,16 @@ describe("backgroundColours", () => {
   it("returns the base alone when there is no overlay", () => {
     expect(backgroundColours(photo(null))).toEqual(["#808080"]);
     expect(backgroundColours(photo(null), "#123456")).toEqual(["#123456"]);
+  });
+});
+
+describe("mainBackgroundColour", () => {
+  it("is the colour, the gradient's first stop or the photo's backdrop", () => {
+    expect(mainBackgroundColour({ type: "colour", colour: NAVY })).toBe(NAVY);
+    expect(
+      mainBackgroundColour({ type: "gradient", from: NAVY, to: YELLOW, direction: "down" }),
+    ).toBe(NAVY);
+    expect(mainBackgroundColour(photo(null))).toBe("#808080");
   });
 });
 

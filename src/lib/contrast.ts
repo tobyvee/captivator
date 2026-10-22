@@ -70,6 +70,21 @@ export function backgroundColours(bg: BackgroundSpec, photoAverage?: string): st
   }
 }
 
+/**
+ * The background's main colour: its colour, the gradient's first stop or the photo's backdrop.
+ * The terms sheet's colour and the Connected screen's tick use it (general-guest-screen-fallbacks.md).
+ */
+export function mainBackgroundColour(bg: BackgroundSpec): string {
+  switch (bg.type) {
+    case "colour":
+      return bg.colour;
+    case "gradient":
+      return bg.from;
+    case "image":
+      return bg.backdrop;
+  }
+}
+
 /** The lowest ratio of `fg` against any of `bgs`, which must be non-empty (`backgroundColours` always is). */
 export function worstRatio(fg: string, bgs: string[]): number {
   return Math.min(...bgs.map((bg) => contrastRatio(fg, bg)));

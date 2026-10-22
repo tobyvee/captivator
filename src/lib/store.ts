@@ -6,6 +6,7 @@ import { persist, type PersistStorage } from "zustand/middleware";
 import { temporal } from "zundo";
 import { Design, type Template } from "./design-schema";
 import { createDebouncedStorage } from "./persist-storage";
+import { canFail } from "./screens";
 import { SPONSOR, TEMPLATES } from "./templates";
 import type {
   BackgroundSpec,
@@ -85,7 +86,7 @@ function screenAfter(
   const termsOn = form.terms.mode === "checkbox";
   if (selection.kind === "terms" && termsOn && prev.terms.mode !== "checkbox") return "terms";
   if (screen === "terms" && !termsOn) return "landing";
-  if (screen === "error" && !termsOn && form.fields.length === 0) return "landing";
+  if (screen === "error" && !canFail(form)) return "landing";
   return screen;
 }
 
