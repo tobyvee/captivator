@@ -1,10 +1,9 @@
 "use client";
 
-import { TriangleAlert } from "lucide-react";
-import type { ReactNode } from "react";
 import { useStore } from "@/lib/store";
 import { SplashPage } from "@/splash/SplashPage";
 import { ReadabilityCheck } from "./checks/ReadabilityCheck";
+import { Notice } from "./controls/Notice";
 import { useFitCheck } from "./checks/useFitCheck";
 import { BrowserFrame } from "./frames/BrowserFrame";
 import { PhoneFrame } from "./frames/PhoneFrame";
@@ -15,18 +14,6 @@ const CAPTIONS = {
   desktop:
     "1280 × 800 laptop browser. The content column stays 420 px wide; the photo fills the window.",
 } as const;
-
-function Notice({ title, children }: { title: string; children?: ReactNode }) {
-  return (
-    <div className="flex max-w-[420px] items-start gap-2.5 rounded-lg border border-[#FDE68A] bg-[#FFFBEB] px-3 py-2.5">
-      <TriangleAlert size={18} strokeWidth={2.2} aria-hidden="true" className="mt-px shrink-0 text-[#92400E]" />
-      <div className="flex min-w-0 flex-col gap-0.5">
-        <span className="text-[13px] font-semibold text-[#78350F]">{title}</span>
-        {children}
-      </div>
-    </div>
-  );
-}
 
 /** The live preview: the screen switcher, the device frame around SplashPage, and the notes under it. */
 export function PreviewStage() {
@@ -80,7 +67,7 @@ export function PreviewStage() {
           appears. When it's empty, its negative margin cancels the stage's gap. */}
       <div role="status" className="flex flex-col items-center gap-4 empty:-mt-4">
         {fit.tooTall && (
-          <Notice title="Too tall for small phones">
+          <Notice className="max-w-[420px]" title="Too tall for small phones">
             <span className="text-xs leading-[1.45] text-[#92400E]">
               On a small phone like an iPhone SE, guests have to scroll to reach Connect. Shorten
               text, remove a block or use smaller images.
@@ -88,10 +75,12 @@ export function PreviewStage() {
           </Notice>
         )}
 
-        {saveFailed && <Notice title="Couldn't save locally. Your changes stay in this tab only." />}
+        {saveFailed && (
+          <Notice className="max-w-[420px]" title="Couldn't save locally. Your changes stay in this tab only." />
+        )}
 
         {restoreFailed && (
-          <Notice title="Couldn't restore your saved design.">
+          <Notice className="max-w-[420px]" title="Couldn't restore your saved design.">
             <button
               type="button"
               onClick={dismissRestoreFailed}

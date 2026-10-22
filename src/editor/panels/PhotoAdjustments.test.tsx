@@ -9,7 +9,7 @@ import { PhotoAdjustments } from "./PhotoAdjustments";
 
 const PHOTO: ImageBackground = {
   type: "image",
-  src: `data:image/webp;base64,${"A".repeat(40960)}`, // 30 KB once decoded
+  src: `data:image/webp;base64,${"A".repeat(40960)}`, // 40 KB of the page as base64
   fit: "fill",
   zoom: 1.15,
   focus: { x: 50, y: 50 },
@@ -123,7 +123,7 @@ describe("PhotoAdjustments", () => {
   it("shows an uploaded photo's share of the budget", () => {
     setBackground(PHOTO);
     render(<PhotoAdjustments />);
-    expect(screen.getByText("Photo is 30 KB of your budget")).toBeInTheDocument();
+    expect(screen.getByText("Photo is 40 KB of your budget")).toBeInTheDocument();
   });
 
   it("shows no budget note for a template or https photo", () => {
