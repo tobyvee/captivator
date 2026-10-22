@@ -42,7 +42,9 @@ describe("checkDesign", () => {
     const result = checkDesign(design({ blocks: [text({ colour: "#FFFFFF" })] }));
     expect(result.status).toBe("fail");
     expect(result.message).toBe("Heading: 1.0:1 on the background");
-    expect(result.failures).toEqual([{ label: "Heading", ratio: 1, required: 3, target: { kind: "block", id: "t1" } }]);
+    expect(result.failures).toEqual([
+      { label: "Heading", ratio: 1, required: 3, target: { kind: "block", id: "t1" }, against: ["#FFFFFF"] },
+    ]);
   });
 
   it("checks a gradient at its worse stop", () => {
@@ -139,7 +141,7 @@ describe("checkDesign", () => {
     const result = checkDesign(design({ form: { fields: ["name"] } })); // Blank's white fields on white
     expect(result.message).toBe("Fields: 1.0:1 on the background");
     expect(result.failures).toEqual([
-      { label: "Fields", ratio: 1, required: 3, target: { kind: "inputs" } },
+      { label: "Fields", ratio: 1, required: 3, target: { kind: "inputs" }, against: ["#FFFFFF"] },
     ]);
     const both = checkDesign(design({ form: { fields: ["name"], inputText: "#FFFFFF" } }));
     expect(both.failures.map((f) => f.label)).toEqual(["Field text", "Fields"]);
@@ -164,6 +166,37 @@ describe("checkDesign", () => {
       ["Field text", { kind: "inputs" }],
       ["Fields", { kind: "inputs" }],
     ]);
+  });
+
+  it("records the colours each failure was rated against", () => {
+    const white = "#FFFFFF";
+    const form: Partial<FormSpec> = {
+      fields: ["email"],
+      inputBg: "#18181B",
+      inputText: "#18181B",
+      terms: { ...BLANK.design.form.terms, mode: "checkbox", textColour: white },
+      button: { ...BLANK.design.form.button, bg: "#1E3A8A", fg: "#1E40AF" },
+    };
+    // A fitted photo: its average, then the backdrop around it (T-027-fitted-photo-checks-backdrop.md).
+    const fitted = checkDesign(
+      design({ background: { ...PHOTO, fit: "fit", backdrop: white }, blocks: [text({ colour: "#555555" })], form }),
+      "#333333",
+    );
+    expect(fitted.failures.map((f) => [f.label, f.against])).toEqual([
+      ["Heading", ["#333333", white]],
+      ["Terms checkbox", ["#333333", white]],
+      ["Connect button", ["#1E3A8A"]], // a solid button's label sits on its fill
+      ["Field text", ["#18181B"]],
+      ["Fields", ["#333333", white]], // the inputs' edge sits on the page
+    ]);
+    // An outline button's label sits on the page.
+    const outline = checkDesign(
+      design({
+        background: { type: "gradient", from: "#000000", to: white, direction: "down" },
+        form: { button: { ...BLANK.design.form.button, variant: "outline", fg: "#777777" } },
+      }),
+    );
+    expect(outline.failures).toMatchObject([{ label: "Connect button", against: ["#000000", white] }]);
   });
 
   it("fails only on the unrounded ratio", () => {

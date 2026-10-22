@@ -223,6 +223,17 @@ describe("ReadabilityCheck Fix", () => {
     expect(anyFix()).not.toBeInTheDocument();
   });
 
+  it("offers no Fix when every colour it could pick reads worse than the current one", () => {
+    // #777777 reads at 4.48:1 on the white stop; near-black and black would read about 1:1 on the
+    // black one, so a Fix would make the text harder to read.
+    const d = design({ type: "gradient", from: "#000000", to: "#FFFFFF", direction: "down" }, [
+      { ...heading("#777777"), role: "body", size: 16 },
+    ]);
+    start(d);
+    expect(screen.getByText("Text: 4.4:1 on the background")).toBeInTheDocument();
+    expect(anyFix()).not.toBeInTheDocument();
+  });
+
   it("picks for a fitted photo's backdrop as well as its average", async () => {
     getColorAsync.mockResolvedValue({ hex: "#333333" });
     const user = userEvent.setup();
@@ -233,5 +244,9 @@ describe("ReadabilityCheck Fix", () => {
 
     await user.click(screen.getByRole("button", { name: "Fix Heading" }));
     expect(state().design.blocks[0]).toMatchObject({ colour: "#000000" });
+    // Black is the best there is, but at 1.6:1 on the dark average the line still warns.
+    expect(screen.getByRole("status")).toHaveTextContent("Heading is hard to read");
+    expect(screen.getByText("Heading: 1.6:1 on the background")).toBeInTheDocument();
+    expect(anyFix()).not.toBeInTheDocument();
   });
 });

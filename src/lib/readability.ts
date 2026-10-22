@@ -10,7 +10,17 @@ export type ReadabilityTarget =
   | { kind: "terms" }
   | { kind: "button" }
   | { kind: "inputs" };
-export type ReadabilityFailure = { label: string; ratio: number; required: number; target: ReadabilityTarget };
+/**
+ * One failing check. `against` holds the colours the text was rated against, so a fix can be
+ * measured on exactly the same ground (T-035-failure-carries-colours.md).
+ */
+export type ReadabilityFailure = {
+  label: string;
+  ratio: number;
+  required: number;
+  target: ReadabilityTarget;
+  against: string[];
+};
 export type ReadabilityResult = {
   status: "ok" | "approximate" | "fail";
   message: string;
@@ -72,6 +82,7 @@ export function checkDesign(design: Design, photoAverage?: string): ReadabilityR
       ratio: worstRatio(block.colour, page),
       required: requiredRatio(block.size, WEIGHT[block.role]),
       target: { kind: "block", id: block.id },
+      against: page,
       on: "background",
     });
   }
@@ -82,17 +93,20 @@ export function checkDesign(design: Design, photoAverage?: string): ReadabilityR
       ratio: worstRatio(terms.textColour, page),
       required: requiredRatio(TERMS_TEXT.size, TERMS_TEXT.weight),
       target: { kind: "terms" },
+      against: page,
       on: "background",
     });
   }
 
   // An outline button has no fill, so its label sits on the page (T-007-outline-button-colours.md).
   const outline = button.variant === "outline";
+  const buttonGround = outline ? page : [button.bg];
   checks.push({
     label: "Connect button",
-    ratio: outline ? worstRatio(button.fg, page) : contrastRatio(button.fg, button.bg),
+    ratio: worstRatio(button.fg, buttonGround),
     required: requiredRatio(BUTTON.size, BUTTON.weight),
     target: { kind: "button" },
+    against: buttonGround,
     on: outline ? "background" : "button",
   });
 
@@ -103,6 +117,7 @@ export function checkDesign(design: Design, photoAverage?: string): ReadabilityR
         ratio: contrastRatio(inputText, inputBg),
         required: requiredRatio(INPUT.size, INPUT.weight),
         target: { kind: "inputs" },
+        against: [inputBg],
         on: "field",
       },
       {
@@ -110,6 +125,7 @@ export function checkDesign(design: Design, photoAverage?: string): ReadabilityR
         ratio: worstRatio(inputBg, page),
         required: EDGE_RATIO,
         target: { kind: "inputs" },
+        against: page,
         on: "background",
       },
     );
@@ -117,7 +133,13 @@ export function checkDesign(design: Design, photoAverage?: string): ReadabilityR
 
   // Pass/fail uses the unrounded ratio, never the displayed one (T-003-format-ratio-rounds-down.md).
   const failing = checks.filter((c) => c.ratio < c.required);
-  const failures = failing.map(({ label, ratio, required, target }) => ({ label, ratio, required, target }));
+  const failures = failing.map(({ label, ratio, required, target, against }) => ({
+    label,
+    ratio,
+    required,
+    target,
+    against,
+  }));
 
   if (failing.length > 0) {
     const first = failing[0];
