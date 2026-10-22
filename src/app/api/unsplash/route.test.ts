@@ -417,8 +417,22 @@ describe("cross-site requests", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("refuses a ping with no content type with 415 and no outbound fetch", async () => {
+    // A string body would make Fetch add text/plain, so send bytes, which get no content type.
+    const req = new Request("https://app.example/api/unsplash", {
+      method: "POST",
+      headers: { "cf-connecting-ip": CLIENT_IP },
+      body: new TextEncoder().encode(JSON.stringify({ downloadLocation: DOWNLOAD })),
+    });
+    expect(req.headers.get("Content-Type")).toBeNull();
+
+    const res = await POST(req);
+
+    expect(res.status).toBe(415);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it.each([
-    ["no content type", {}],
     ["a form content type", { "Content-Type": "application/x-www-form-urlencoded" }],
     ["a JSON-like suffix", { "Content-Type": "application/json-patch+json" }],
   ])("refuses a ping with %s with 415", async (_label, headers) => {
