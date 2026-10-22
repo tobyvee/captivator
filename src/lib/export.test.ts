@@ -332,6 +332,21 @@ describe("buildExportHtml: final check", () => {
     await expect(buildWith(form, withForm(["email"]))).rejects.toThrow(MSG_UNSAFE_OUTPUT);
   });
 
+  it("refuses a form without action or method post, which would GET guest details to the page's host", async () => {
+    const fields = withForm(["email"]);
+    const email = createElement("input", { name: "email" });
+    await expect(buildWith(createElement("form", { method: "post" }, email), fields)).rejects.toThrow(
+      MSG_UNSAFE_OUTPUT,
+    );
+    await expect(buildWith(createElement("form", null, email), fields)).rejects.toThrow(MSG_UNSAFE_OUTPUT);
+    await expect(
+      buildWith(createElement("form", { action: "[PORTAL_SUBMIT_URL]", method: "get" }, email), fields),
+    ).rejects.toThrow(MSG_UNSAFE_OUTPUT);
+    await expect(
+      buildWith(createElement("form", { action: "[PORTAL_SUBMIT_URL]" }, email), fields),
+    ).rejects.toThrow(MSG_UNSAFE_OUTPUT);
+  });
+
   // Raw markup skips React's quoting and escaping, so it can't be read the way React output is.
   const raw = (__html: string) => createElement("div", { dangerouslySetInnerHTML: { __html } });
 

@@ -175,7 +175,7 @@ const VALUE = String.raw`"(?:[^"<>&]|&(?:amp|quot|#x27|lt|gt);)*"`;
 const TAG = new RegExp(String.raw`<(\/?)([a-zA-Z][a-zA-Z0-9]*)((?: [^\s"'<>/=]+(?:=${VALUE})?)*)\/?>`, "y");
 const ATTR = /([^\s"'<>/=]+)(?:="([^"]*)")?/g;
 
-type Tag = { name: string; attrs: [name: string, value: string][] };
+type Tag = { name: string; closing: boolean; attrs: [name: string, value: string][] };
 
 /** Every tag in `markup`, names lower-cased and values unescaped. Fails if any `<` doesn't start one. */
 function parseTags(markup: string): Tag[] {
@@ -188,7 +188,7 @@ function parseTags(markup: string): Tag[] {
       name.toLowerCase(),
       value.replace(/&(?:amp|quot|#x27|lt|gt);/g, (e) => REACT_ESCAPES[e]),
     ]);
-    tags.push({ name: m[2].toLowerCase(), attrs });
+    tags.push({ name: m[2].toLowerCase(), closing: m[1] === "/", attrs });
     at = TAG.lastIndex - 1;
   }
   return tags;
@@ -203,8 +203,14 @@ function parseTags(markup: string): Tag[] {
  */
 function assertSelfContained(markup: string, action: FormAction): void {
   const rules = valueRules(action);
-  for (const { name, attrs } of parseTags(markup)) {
+  for (const { name, closing, attrs } of parseTags(markup)) {
     if (!ALLOWED_TAGS.has(name)) throw new ExportError(MSG_UNSAFE_OUTPUT);
+    // A form missing either would GET the guest's details to whatever host serves the page.
+    if (name === "form" && !closing) {
+      const has = (attr: string, value?: string) =>
+        attrs.some(([a, v]) => a === attr && (value === undefined || v.toLowerCase() === value));
+      if (!has("action") || !has("method", "post")) throw new ExportError(MSG_UNSAFE_OUTPUT);
+    }
     for (const [attr, value] of attrs) {
       if (!ALLOWED_ATTRS.has(attr) || rules[attr]?.(value) === false) throw new ExportError(MSG_UNSAFE_OUTPUT);
     }
@@ -212,6 +218,7 @@ function assertSelfContained(markup: string, action: FormAction): void {
 }
 
 async function renderPage(design: Design, name: string): Promise<string> {
+  // Static markup has no `<!-- -->` text separators; renderToString would add them and fail the guard.
   const { renderToStaticMarkup } = await import("react-dom/server");
   let markup = renderToStaticMarkup(createElement(SplashPage, { design, screen: "landing", mode: "export" }));
   const action = formAction(design);
