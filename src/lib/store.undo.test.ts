@@ -224,6 +224,7 @@ describe("undo and redo keep the screen valid", () => {
     state().setSelection({ kind: "terms" });
     state().updateForm({ terms: { mode: "checkbox" } });
     history().undo();
+    expect(state().screen).toBe("landing");
 
     history().redo();
     expect(state().design.form.terms.mode).toBe("checkbox");
@@ -254,7 +255,7 @@ describe("undo and redo keep the screen valid", () => {
     expect(state().screen).toBe("error");
   });
 
-  it("writes the undone design to storage once", () => {
+  it("saves the undone design when undo also resets the screen", () => {
     state().setSelection({ kind: "terms" });
     state().updateForm({ terms: { mode: "off" } });
     vi.advanceTimersByTime(500);
@@ -264,6 +265,8 @@ describe("undo and redo keep the screen valid", () => {
 
     history().undo();
     vi.advanceTimersByTime(300);
+    // One write either way: the 300ms storage debounce merges writes, so this doesn't prove the
+    // screen fix-up adds none (the `synced` guard's own tests cover that).
     expect(storage.setItem).toHaveBeenCalledTimes(1);
     expect(readStored().state.design.form.terms.mode).toBe("off");
   });
