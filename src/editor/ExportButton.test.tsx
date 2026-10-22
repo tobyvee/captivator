@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildExportHtml, downloadHtml, ExportError, MSG_IMAGE_FAILED, type ExportResult } from "@/lib/export";
@@ -36,7 +36,14 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
+
+// Plain fake timers stall here: RTL's async act wrapper waits on a real setTimeout, which only
+// its Jest detection skips. So the clock also follows real time, and the "still showing" check
+// leaves a margin no CI pause will eat.
+const FAKE_TIMERS = { shouldAdvanceTime: true };
+const MARGIN_MS = 2000;
 
 const button = () => screen.getByRole("button", { name: /Export HTML|Exporting…/ });
 const status = () => screen.getByRole("status");
@@ -47,19 +54,22 @@ describe("ExportButton", () => {
     expect(button().tagName).toBe("BUTTON");
     expect(button()).toHaveAttribute("type", "button");
     expect(button()).toBeEnabled();
+    expect(button()).toHaveAttribute("aria-disabled", "false");
     expect(button()).toHaveClass("min-h-11");
     expect(status()).toBeEmptyDOMElement();
   });
 
-  it("is busy and disabled while exporting, then downloads and reports the size", async () => {
+  it("is busy and disabled while exporting, keeping focus, then downloads and reports the size", async () => {
     let resolve!: (r: ExportResult) => void;
     build.mockReturnValue(new Promise((r) => (resolve = r)));
     const user = userEvent.setup();
     render(<ExportButton />);
 
-    await user.click(button());
+    await user.tab();
+    await user.keyboard("{Enter}");
     expect(button()).toHaveTextContent("Exporting…");
-    expect(button()).toBeDisabled();
+    expect(button()).toHaveAttribute("aria-disabled", "true");
+    expect(button()).toHaveFocus();
     const { design, name } = useStore.getState();
     expect(build).toHaveBeenCalledWith(design, name);
     expect(download).not.toHaveBeenCalled();
@@ -69,10 +79,11 @@ describe("ExportButton", () => {
     expect(status()).toHaveTextContent("Downloaded harbourside-summit.html: 42 KB of 100 KB");
     expect(status()).not.toHaveTextContent("Photo shrunk");
     expect(button()).toHaveTextContent("Export HTML");
-    expect(button()).toBeEnabled();
+    expect(button()).toHaveAttribute("aria-disabled", "false");
+    expect(button()).toHaveFocus();
   });
 
-  it("exports the design and name as they are at the click, not at render", async () => {
+  it("exports the store's current design and name", async () => {
     build.mockResolvedValue(result());
     const user = userEvent.setup();
     render(<ExportButton />);
@@ -89,6 +100,27 @@ describe("ExportButton", () => {
     expect(status()).toHaveTextContent("Downloaded cafe-wifi.html");
   });
 
+  it("keeps the click's design and name when they change while the build runs", async () => {
+    let resolve!: (r: ExportResult) => void;
+    build.mockReturnValue(new Promise((r) => (resolve = r)));
+    const user = userEvent.setup();
+    render(<ExportButton />);
+
+    await user.click(button());
+    const clicked = build.mock.calls[0][0];
+    act(() => {
+      useStore.getState().setName("Renamed Mid Build");
+      useStore.getState().updateBackground({ type: "colour", colour: "#123456" });
+    });
+    expect(useStore.getState().design).not.toBe(clicked);
+
+    await act(async () => resolve(result()));
+    expect(build).toHaveBeenCalledWith(clicked, "Harbourside Summit");
+    expect(download).toHaveBeenCalledWith(expect.any(String), "Harbourside Summit");
+    expect(status()).toHaveTextContent("Downloaded harbourside-summit.html");
+    expect(status()).not.toHaveTextContent("renamed-mid-build");
+  });
+
   it("notes when the photo was shrunk to fit", async () => {
     build.mockResolvedValue(result({ bytes: 98 * 1024, reencoded: true }));
     const user = userEvent.setup();
@@ -99,23 +131,26 @@ describe("ExportButton", () => {
   });
 
   it("hides a within-budget toast after about 6 seconds", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    build.mockResolvedValue(result());
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) });
+    vi.useFakeTimers(FAKE_TIMERS);
+    let resolve!: (r: ExportResult) => void;
+    build.mockReturnValue(new Promise((r) => (resolve = r)));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<ExportButton />);
 
     await user.click(button());
+    // Resolving inside act flushes the effect that starts the hide timer before the clock moves.
+    await act(async () => resolve(result()));
     expect(status()).toHaveTextContent("Downloaded");
-    act(() => vi.advanceTimersByTime(TOAST_MS - 100));
+    act(() => vi.advanceTimersByTime(TOAST_MS - MARGIN_MS));
     expect(status()).toHaveTextContent("Downloaded");
-    act(() => vi.advanceTimersByTime(200));
+    act(() => vi.advanceTimersByTime(MARGIN_MS));
     expect(status()).toBeEmptyDOMElement();
   });
 
   it("still downloads over budget, and warns until dismissed", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.useFakeTimers(FAKE_TIMERS);
     build.mockResolvedValue(result({ bytes: 131 * 1024, overBudget: true, reencoded: true }));
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<ExportButton />);
 
     await user.click(button());
@@ -132,6 +167,7 @@ describe("ExportButton", () => {
   });
 
   it("reports an image failure, downloads nothing and never stays busy", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     build.mockRejectedValue(new ExportError(MSG_IMAGE_FAILED));
     const user = userEvent.setup();
     render(<ExportButton />);
@@ -142,7 +178,8 @@ describe("ExportButton", () => {
       "Export failed: we couldn't load one of the images. Try again, or replace it.",
     );
     expect(button()).toHaveTextContent("Export HTML");
-    expect(button()).toBeEnabled();
+    expect(button()).toHaveAttribute("aria-disabled", "false");
+    expect(logged).not.toHaveBeenCalled(); // an expected failure, already explained
 
     // A retry clears the failure and can succeed.
     build.mockResolvedValue(result());
@@ -161,10 +198,12 @@ describe("ExportButton", () => {
     expect(status().querySelector("img")).toBeNull();
   });
 
-  it("gives a generic failure for an unexpected error, including a failed download", async () => {
+  it("gives a generic failure for an unexpected error, including a failed download, and logs it", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    const err = new Error("createObjectURL is not a function");
     build.mockResolvedValue(result());
     download.mockImplementation(() => {
-      throw new Error("createObjectURL is not a function");
+      throw err;
     });
     const user = userEvent.setup();
     render(<ExportButton />);
@@ -172,17 +211,23 @@ describe("ExportButton", () => {
     await user.click(button());
     expect(status()).toHaveTextContent("Export failed: something went wrong. Try again.");
     expect(status()).not.toHaveTextContent("createObjectURL");
-    expect(button()).toBeEnabled();
+    expect(button()).toHaveAttribute("aria-disabled", "false");
+    expect(logged).toHaveBeenCalledWith(err);
   });
 
   it("runs one export at a time", async () => {
     let resolve!: (r: ExportResult) => void;
     build.mockReturnValue(new Promise((r) => (resolve = r)));
-    const user = userEvent.setup();
     render(<ExportButton />);
 
-    await user.click(button());
-    await user.click(button());
+    // Two clicks in one tick, before `busy` re-renders: only the `running` ref can stop the second.
+    fireEvent.click(button());
+    fireEvent.click(button());
+    expect(build).toHaveBeenCalledTimes(1);
+    // And a click once it shows as busy does nothing either.
+    await act(async () => {});
+    expect(button()).toHaveAttribute("aria-disabled", "true");
+    fireEvent.click(button());
     expect(build).toHaveBeenCalledTimes(1);
 
     await act(async () => resolve(result()));

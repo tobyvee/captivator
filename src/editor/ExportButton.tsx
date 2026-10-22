@@ -8,7 +8,7 @@ import { useStore } from "@/lib/store";
 /** How long a within-budget toast stays up. Warnings and failures stay until dismissed. */
 export const TOAST_MS = 6000;
 
-type Toast = { id: number; tone: "ok" | "warn" | "error"; text: string };
+type Toast = { tone: "ok" | "warn" | "error"; text: string };
 
 const BUDGET_KB = Math.round(PAGE_BUDGET / 1024);
 const kb = (bytes: number) => Math.round(bytes / 1024);
@@ -31,8 +31,8 @@ const TONES: Record<Toast["tone"], string> = {
 export function ExportButton() {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
+  // The real double-export guard: `busy` only reaches the DOM after a re-render.
   const running = useRef(false);
-  const nextId = useRef(0);
 
   // A within-budget toast hides itself; a new toast restarts the timer.
   useEffect(() => {
@@ -48,7 +48,6 @@ export function ExportButton() {
     setToast(null);
     // The design and name as they are at the click: that's what the customer asked to export.
     const { design, name } = useStore.getState();
-    const id = ++nextId.current;
     try {
       const { html, bytes, overBudget, reencoded } = await buildExportHtml(design, name);
       downloadHtml(html, name);
@@ -56,18 +55,18 @@ export function ExportButton() {
       setToast(
         overBudget
           ? {
-              id,
               tone: "warn",
               text: `Downloaded ${file}: ${kb(bytes)} KB, over the ${BUDGET_KB} KB budget. Guests on slow WiFi may wait; try a simpler photo.`,
             }
           : {
-              id,
               tone: "ok",
               text: `Downloaded ${file}: ${kb(bytes)} KB of ${BUDGET_KB} KB${reencoded ? ". Photo shrunk to fit." : ""}`,
             },
       );
     } catch (err) {
-      setToast({ id, tone: "error", text: failureText(err) });
+      // An ExportError is expected and already explained to the customer; anything else is a bug.
+      if (!(err instanceof ExportError)) console.error(err);
+      setToast({ tone: "error", text: failureText(err) });
     } finally {
       running.current = false;
       setBusy(false);
@@ -76,26 +75,31 @@ export function ExportButton() {
 
   return (
     <>
+      {/* aria-disabled, not disabled, so keyboard focus stays on the button while it runs
+          (T-024-aria-disabled-keeps-focus); `running` ignores clicks meanwhile. */}
       <button
         type="button"
-        disabled={busy}
+        aria-disabled={busy}
         onClick={onExport}
-        className="min-h-11 rounded-lg bg-[#18181B] px-4 text-[13px] font-semibold text-white hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
+        className="min-h-11 rounded-lg bg-[#18181B] px-4 text-[13px] font-semibold text-white hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 aria-disabled:cursor-not-allowed aria-disabled:opacity-60 aria-disabled:hover:bg-[#18181B]"
       >
         {busy ? "Exporting…" : "Export HTML"}
       </button>
 
-      {/* Always mounted, so a toast appearing inside it is announced (T-009-notices-one-live-region). */}
-      <div
-        role="status"
-        className="pointer-events-none fixed right-4 bottom-4 left-4 z-50 flex justify-end sm:left-auto"
-      >
-        {toast && (
-          <div
-            key={toast.id}
-            className={`pointer-events-auto flex max-w-sm items-start gap-1 rounded-lg border py-1 pl-3.5 pr-1 shadow-lg ${TONES[toast.tone]}`}
-          >
-            <p className="min-w-0 py-2.5 text-[13px] leading-[1.45]">{toast.text}</p>
+      <div className="pointer-events-none fixed right-4 bottom-4 left-4 z-50 flex justify-end sm:left-auto">
+        <div
+          className={
+            toast
+              ? `pointer-events-auto flex max-w-sm items-start gap-1 rounded-lg border py-1 pl-3.5 pr-1 shadow-lg ${TONES[toast.tone]}`
+              : undefined
+          }
+        >
+          {/* Always mounted and holding only the text, so a new toast is announced without
+              "Dismiss, button" (T-024-toast-status-holds-only-text). */}
+          <p role="status" className="min-w-0 py-2.5 text-[13px] leading-[1.45] empty:py-0">
+            {toast?.text}
+          </p>
+          {toast && (
             <button
               type="button"
               aria-label="Dismiss"
@@ -104,8 +108,8 @@ export function ExportButton() {
             >
               <X size={16} aria-hidden="true" />
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </>
   );
