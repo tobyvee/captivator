@@ -5,7 +5,14 @@ import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { BLANK, Design } from "../lib/design-schema";
 import type { ImageBlockSpec, RenderMode, TextBlockSpec } from "../lib/types";
+import { Form } from "./Form";
 import { SplashPage } from "./SplashPage";
+
+// Form keeps its real implementation; one test swaps in a clickable child for a single render.
+vi.mock("./Form", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./Form")>();
+  return { Form: vi.fn(actual.Form) };
+});
 
 const PNG = "data:image/png;base64,iVBORw0KGgo=";
 
@@ -66,6 +73,21 @@ describe("SplashPage render modes", () => {
     expect(container.querySelectorAll("[class]")).toHaveLength(0);
   });
 
+  it("inFrame lets the root grow from the frame's full height, with no scrolling of its own", () => {
+    const { container } = render(<SplashPage design={MIXED} screen="landing" mode="edit" inFrame />);
+    const root = container.firstElementChild as HTMLElement; // the render's only root element
+    expect(root.style.minHeight).toBe("100%");
+    expect(root.style.height).toBe("");
+    expect(root.style.overflow).toBe("");
+    expect(root.style.overflowY).toBe("");
+    expect(root.style.position).toBe("relative");
+  });
+
+  it("without inFrame the root takes its natural content height", () => {
+    const { container } = render(<SplashPage design={MIXED} screen="landing" mode="preview" />);
+    expect((container.firstElementChild as HTMLElement).style.minHeight).toBe("");
+  });
+
   it("export mode puts cv-root on the root and no other class anywhere", () => {
     const { container } = render(<SplashPage design={MIXED} screen="landing" mode="export" />);
     expect(container.firstElementChild).toHaveAttribute("class", "cv-root");
@@ -89,6 +111,30 @@ describe("SplashPage edit-mode selection", () => {
     );
     fireEvent.click(container.firstElementChild!);
     expect(onSelect).toHaveBeenCalledWith({ kind: "background" });
+  });
+
+  it("clicking the empty column or the spacer selects the background", () => {
+    const onSelect = vi.fn();
+    render(<SplashPage design={MIXED} screen="landing" mode="edit" onSelect={onSelect} />);
+    // text element -> block wrapper -> column
+    const column = screen.getByText("title").parentElement?.parentElement;
+    const spacer = column?.querySelector(':scope > [aria-hidden="true"]');
+    if (!column || !spacer) throw new Error("column or spacer not found");
+    fireEvent.click(column);
+    fireEvent.click(spacer);
+    expect(onSelect.mock.calls).toEqual([[{ kind: "background" }], [{ kind: "background" }]]);
+  });
+
+  it("a click inside a non-block child does not select the background", () => {
+    vi.mocked(Form).mockImplementationOnce(() => (
+      <button type="button">
+        <span>Connect</span>
+      </button>
+    ));
+    const onSelect = vi.fn();
+    render(<SplashPage design={MIXED} screen="landing" mode="edit" onSelect={onSelect} />);
+    fireEvent.click(screen.getByText("Connect"));
+    expect(onSelect).not.toHaveBeenCalled();
   });
 
   it("shows a name chip on the selected block only", () => {
@@ -123,9 +169,18 @@ describe("SplashPage edit-mode selection", () => {
 });
 
 describe("SplashPage screens", () => {
-  it("hides the landing page from assistive tech under the open terms sheet", () => {
-    render(<SplashPage design={design([text("t", "heading")], "checkbox")} screen="terms" mode="preview" />);
-    expect(screen.queryByRole("heading")).toBeNull();
+  it("renders the landing page under the open terms sheet but hides it and makes it inert", () => {
+    render(
+      <SplashPage
+        design={design([text("t", "heading", "Welcome")], "checkbox")}
+        screen="terms"
+        mode="preview"
+      />,
+    );
+    const heading = screen.getByRole("heading", { level: 1, hidden: true });
+    expect(heading).toHaveTextContent("Welcome");
+    expect(screen.queryByRole("heading", { name: "Welcome" })).toBeNull();
+    expect(heading.closest('[aria-hidden="true"]')).toHaveAttribute("inert");
   });
 
   it("renders plain landing on the terms screen when terms are off", () => {
@@ -150,13 +205,18 @@ describe("src/splash stays portable", () => {
   });
 
   it.each(sources)("%s never injects HTML", (_, src) => {
-    expect(src).not.toMatch(/dangerouslySetInnerHTML|innerHTML/);
+    expect(src).not.toMatch(/dangerouslySetInnerHTML|innerHTML|srcDoc/);
   });
 
-  it.each(sources)("%s imports nothing from next, the editor or the store", (_, src) => {
-    const imports = [...src.matchAll(/from\s+["']([^"']+)["']/g)].map((m) => m[1]);
+  // Static, side-effect, dynamic and require imports, including index imports like "../editor".
+  it.each(sources)("%s imports nothing from next, the editor, the store or CSS", (_, src) => {
+    const imports = [
+      ...src.matchAll(/(?:from|import)\s*\(?\s*["']([^"']+)["']/g),
+      ...src.matchAll(/require\(\s*["']([^"']+)/g),
+    ].map((m) => m[1]);
     for (const path of imports) {
-      expect(path).not.toMatch(/^next(\/|$)|editor\/|lib\/store/);
+      expect(path).not.toMatch(/^next(\/|$)|(^|\/)editor(\/|$)|(^|\/)lib\/store(\/|$)/);
+      expect(path).not.toMatch(/\.css$/);
     }
   });
 });

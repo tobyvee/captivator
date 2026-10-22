@@ -1,6 +1,6 @@
 import { Fragment, type CSSProperties, type JSX, type MouseEvent } from "react";
 import type { Design } from "../lib/design-schema";
-import type { RenderMode, Screen, Selection } from "../lib/types";
+import type { RenderMode, Screen, Selection, TextBlockSpec } from "../lib/types";
 import { Background } from "./Background";
 import { Connected } from "./Connected";
 import { Form } from "./Form";
@@ -44,7 +44,7 @@ const COLUMN: CSSProperties = {
 };
 
 // Wraps the landing page under the open terms sheet. Not positioned, so the background layers
-// and the sheet still anchor to the root.
+// and the sheet still anchor to the root. `inert` keeps its content out of focus and clicks.
 const UNDER_SHEET: CSSProperties = { flex: "1 0 auto", display: "flex", flexDirection: "column" };
 
 const CHIP: CSSProperties = {
@@ -62,10 +62,11 @@ const CHIP: CSSProperties = {
   pointerEvents: "none",
 };
 
-function chipLabel(block: BlockSpec): string {
-  if (block.kind === "image") return "Image";
-  return { heading: "Heading", subheading: "Subheading", body: "Text" }[block.role];
-}
+const CHIP_LABEL: Record<TextBlockSpec["role"], string> = {
+  heading: "Heading",
+  subheading: "Subheading",
+  body: "Text",
+};
 
 export function SplashPage({
   design,
@@ -79,6 +80,16 @@ export function SplashPage({
 }: SplashPageProps): JSX.Element {
   const firstHeadingId = design.blocks.find((b) => b.kind === "text" && b.role === "heading")?.id;
   const termsOn = design.form.terms.mode === "checkbox";
+
+  // In edit mode, a click selects the background only when it lands on the empty area of the
+  // root, the column or the spacer itself, so clicks inside blocks, the form or the sheet keep
+  // their own selection without having to stop propagation.
+  const selectBackground =
+    mode === "edit"
+      ? (e: MouseEvent) => {
+          if (e.target === e.currentTarget) onSelect?.({ kind: "background" });
+        }
+      : undefined;
 
   function renderBlock(block: BlockSpec): JSX.Element {
     const content =
@@ -105,10 +116,7 @@ export function SplashPage({
     return (
       <div
         key={block.id}
-        onClick={(e: MouseEvent) => {
-          e.stopPropagation();
-          onSelect?.({ kind: "block", id: block.id });
-        }}
+        onClick={() => onSelect?.({ kind: "block", id: block.id })}
         style={{
           position: "relative",
           maxWidth: "100%",
@@ -119,7 +127,7 @@ export function SplashPage({
         {content}
         {selected && (
           <span aria-hidden="true" style={CHIP}>
-            {chipLabel(block)}
+            {block.kind === "image" ? "Image" : CHIP_LABEL[block.role]}
           </span>
         )}
       </div>
@@ -131,9 +139,9 @@ export function SplashPage({
   const landing = (
     <>
       {background}
-      <div style={COLUMN}>
+      <div onClick={selectBackground} style={COLUMN}>
         {design.blocks.map(renderBlock)}
-        {!compact && <div aria-hidden="true" style={{ flex: 1 }} />}
+        {!compact && <div aria-hidden="true" onClick={selectBackground} style={{ flex: 1 }} />}
         <Form
           design={design}
           mode={mode}
@@ -164,7 +172,7 @@ export function SplashPage({
   } else if (screen === "terms" && termsOn) {
     page = (
       <>
-        <div aria-hidden="true" style={UNDER_SHEET}>
+        <div aria-hidden="true" inert style={UNDER_SHEET}>
           {landing}
         </div>
         <TermsSheet design={design} mode={mode} onClose={() => onScreenChange?.("landing")} />
@@ -177,14 +185,16 @@ export function SplashPage({
   return (
     <div
       className={mode === "export" ? "cv-root" : undefined}
-      onClick={mode === "edit" ? () => onSelect?.({ kind: "background" }) : undefined}
+      onClick={selectBackground}
       style={{
         position: "relative",
         display: "flex",
         flexDirection: "column",
         boxSizing: "border-box",
         fontFamily: FONT,
-        ...(inFrame ? { height: "100%", overflowY: "auto" } : null),
+        // In a device frame the root fills the viewport and grows with its content; the frame
+        // scrolls, so the background layers cover the full content height.
+        ...(inFrame ? { minHeight: "100%" } : null),
       }}
     >
       {page}
