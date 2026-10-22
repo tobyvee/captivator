@@ -18,7 +18,6 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is bein
 ## Outstanding
 
 - [ ] Cloudflare setup (user): an API token from the "Edit Cloudflare Workers" template, plus `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as GitHub Actions secrets, then re-run the Deploy workflow for T-001's push
-- [ ] T-003: Contrast helpers
 
 ## Planned
 
@@ -62,3 +61,4 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is bein
 - [x] T-002: Blank and Sponsor templates (2026-10-22)
 - [x] T-005: SplashPage skeleton with text and image blocks (2026-10-22)
 - [x] T-011: Image upload pipeline and ImageUpload control (2026-10-22)
+- [x] T-003: Contrast helpers (2026-10-22)
