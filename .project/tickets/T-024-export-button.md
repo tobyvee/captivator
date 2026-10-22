@@ -10,7 +10,7 @@ depends_on: [T-008, T-023]
 touches:
   - src/editor/ExportButton.tsx
 cut_rank:
-updated: 2026-10-22
+updated: 2026-10-23
 tags: [project, captivator, ticket, editor, export]
 ---
 # T-024: Export HTML button and size toast
@@ -40,6 +40,7 @@ Build step 7, "the Export button, size toast" ([spec → Export HTML](../spec/Ca
 - T-023: `buildExportHtml`, `downloadHtml`, `exportFileName`, `PAGE_BUDGET`.
 
 ## Notes
+- **From the wave 4 audit:** pass the store's `name` (already capped at 60) to `buildExportHtml` and `downloadHtml`, and show an `ExportError`'s message as text, never as markup. Its messages (`MSG_IMAGE_FAILED`, `MSG_UNSAFE_OUTPUT`) are written for the customer.
 `kb` = `Math.round(bytes / 1024)`. Opening the file on a real phone is in T-029's checklist.
 
 ## Decisions
