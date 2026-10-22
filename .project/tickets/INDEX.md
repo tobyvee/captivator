@@ -34,7 +34,7 @@ Waves follow the greedy rules in `/prioritise-tickets`, with one override: `T-02
 
 | ID | Title | Priority | Estimate | Touches |
 |---|---|---|---|---|
-| [T-004](T-004-store-and-persistence.md) | Store with every action, and localStorage persistence | P0 | 30 | `src/lib/store.ts`, `src/lib/store.test.ts`, `src/lib/persist-storage.ts`, `src/lib/persist-storage.test.ts` |
+| [T-004](T-004-store-and-persistence.md) | Store with every action, and localStorage persistence | P0 | 30 | `src/lib/store.ts`, `src/lib/store.test.ts`, `src/lib/persist-storage.ts`, `src/lib/persist-storage.test.ts`, `src/lib/store.hydration.test.tsx` |
 | [T-007](T-007-form-renderer.md) | Form renderer: fields, terms row, Connect and render modes | P0 | 15 | `src/splash/Form.tsx`, `src/splash/Form.test.tsx` |
 | [T-006](T-006-background-renderer.md) | Background renderer: colour, gradient and photo | P0 | 10 | `src/splash/Background.tsx`, `src/splash/Background.test.tsx` |
 | [T-021](T-021-terms-sheet.md) | Terms sheet for the preview and the no-JS export | P1 | 15 | `src/splash/TermsSheet.tsx`, `src/splash/TermsSheet.test.tsx` |
@@ -126,7 +126,7 @@ None. Every dependency exists, there are no cycles, every `todo` ticket has `tou
 | 2 | [T-005](T-005-splashpage-skeleton.md) | SplashPage skeleton with text and image blocks | P0 | 2 | 15 | T-001 | done |
 | 2 | [T-011](T-011-image-upload-pipeline.md) | Image upload pipeline and ImageUpload control | P0 | 3 | 20 | T-001 | done |
 | 2 | [T-003](T-003-contrast-helpers.md) | Contrast helpers | P1 | 1 | 10 | T-001 | done |
-| 3 | [T-004](T-004-store-and-persistence.md) | Store with every action, and localStorage persistence | P0 | 1 | 30 | T-002 | todo |
+| 3 | [T-004](T-004-store-and-persistence.md) | Store with every action, and localStorage persistence | P0 | 1 | 30 | T-002 | done |
 | 3 | [T-007](T-007-form-renderer.md) | Form renderer: fields, terms row, Connect and render modes | P0 | 2 | 15 | T-005 | todo |
 | 3 | [T-006](T-006-background-renderer.md) | Background renderer: colour, gradient and photo | P0 | 2 | 10 | T-005 | todo |
 | 3 | [T-021](T-021-terms-sheet.md) | Terms sheet for the preview and the no-JS export | P1 | 6 | 15 | T-003, T-005 | todo |

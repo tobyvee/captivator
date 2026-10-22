@@ -2,7 +2,7 @@
 title: "T-004: Store with every action, and localStorage persistence"
 type: ticket
 project: captivator
-status: todo
+status: done
 priority: P0
 milestone: 1
 estimate: 30
@@ -12,6 +12,7 @@ touches:
   - src/lib/store.test.ts
   - src/lib/persist-storage.ts
   - src/lib/persist-storage.test.ts
+  - src/lib/store.hydration.test.tsx
 cut_rank:
 updated: 2026-10-22
 tags: [project, captivator, ticket, store, security]
@@ -43,18 +44,18 @@ Build step 1, "store with persist" ([spec → Data model and store](../spec/Capt
 - **Out of scope:** zundo undo/redo (T-025 adds `temporal` to this file); any UI.
 
 ## Acceptance criteria
-- [ ] `addBlock` refuses a third image (returns `null`, design unchanged).
-- [ ] `moveBlock` stops at the ends (moving the first block up and the last block down are no-ops).
-- [ ] `removeBlock` clears a stale selection to `{ kind: "background" }`.
-- [ ] Fields cap at 2: `updateForm({ fields: ["name", "email", "phone"] })` returns `false` and leaves fields unchanged; a duplicate field is refused too.
-- [ ] `loadTemplate` keeps uploaded images and text (fixture templates): customer text and a data-URL image carry by position; a text equal to a template default doesn't carry.
-- [ ] `setSelection({ kind: "terms" })` with terms on sets `screen: "terms"`; selecting a block afterwards returns `screen` to `"landing"`.
-- [ ] Persistence: corrupt JSON in `captivator:v2` falls back to Sponsor without throwing; an older `version` migrates to Sponsor.
-- [ ] **Security:** a schema-invalid stored design (e.g. an image `src` of `javascript:alert(1)`) is not used, the Sponsor design stays, and `restoreFailed` is `true` (test).
-- [ ] A storage whose `setItem` throws `QuotaExceededError` sets `saveFailed` instead of crashing, both from the timer and from `flush()` (test).
-- [ ] A pending debounced write is flushed on `pagehide` and on `visibilitychange` to hidden (test with injected event targets).
-- [ ] Nothing except `{ design, name }` is written to storage (test the written JSON).
-- [ ] `npm test` and `npx tsc --noEmit` pass.
+- [x] `addBlock` refuses a third image (returns `null`, design unchanged).
+- [x] `moveBlock` stops at the ends (moving the first block up and the last block down are no-ops).
+- [x] `removeBlock` clears a stale selection to `{ kind: "background" }`.
+- [x] Fields cap at 2: `updateForm({ fields: ["name", "email", "phone"] })` returns `false` and leaves fields unchanged; a duplicate field is refused too.
+- [x] `loadTemplate` keeps uploaded images and text (fixture templates): customer text and a data-URL image carry by position; a text equal to a template default doesn't carry.
+- [x] `setSelection({ kind: "terms" })` with terms on sets `screen: "terms"`; selecting a block afterwards returns `screen` to `"landing"`.
+- [x] Persistence: corrupt JSON in `captivator:v2` falls back to Sponsor without throwing; an older `version` migrates to Sponsor.
+- [x] **Security:** a schema-invalid stored design (e.g. an image `src` of `javascript:alert(1)`) is not used, the Sponsor design stays, and `restoreFailed` is `true` (test).
+- [x] A storage whose `setItem` throws `QuotaExceededError` sets `saveFailed` instead of crashing, both from the timer and from `flush()` (test).
+- [x] A pending debounced write is flushed on `pagehide` and on `visibilitychange` to hidden (test with injected event targets).
+- [x] Nothing except `{ design, name }` is written to storage (test the written JSON).
+- [x] `npm test` and `npx tsc --noEmit` pass.
 
 ## Dependencies
 - T-002: `SPONSOR`, `TEMPLATES` and the `Template` type for the default design and `loadTemplate`'s default-content set.
@@ -113,7 +114,31 @@ export function useHydrated(): boolean;
 - Keep `store.ts` free of React components; `useHydrated` is the only hook. Don't import `contrast.ts` (callers pass complete blocks).
 - With `skipHydration`, nothing reads localStorage at import time, so the module is safe to import on the server.
 
+**Outcome (2026-10-22):**
+- **The code review required changes, fixed in `14419a6`:**
+  - The store writes to storage only when `design` or `name` changes. An untouched visit no longer saves Sponsor, which would have made "Continue your design" appear. A saved design that fails to restore is no longer overwritten before the customer sees the notice.
+  - `migrate` now reports an older version as a failed restore, not a success.
+  - `JSON.stringify` runs once per debounced write, not on every change.
+  - `useHydrated`'s run-once guard is tested in `src/lib/store.hydration.test.tsx`, which was added to `touches`.
+  - All of this is in [`T-004-write-only-on-design-change.md`](../decisions/T-004-write-only-on-design-change.md) and [`T-004-hydration-test-file-added.md`](../decisions/T-004-hydration-test-file-added.md).
+- **Security audit:** one low finding (SEC-1: `loadTemplate`'s fallback skipped the schema check), fixed in the same commit. A second audit and the re-review confirmed it ([`2026-10-22-security-T-004-review.md`](../review/2026-10-22-security-T-004-review.md)).
+- **Re-review nits, not fixed:**
+  - After `persist.clearStorage()`, nothing is written until the design or name changes. That matches a fresh visit, and "Start over" would load a template, which is a change.
+  - A stored value with no `state` falls back without setting `restoreFailed`.
+  - If localStorage itself throws (storage blocked by the browser), the customer sees "Couldn't restore your saved design" though nothing was saved. `removeItem` isn't guarded either, though nothing calls it yet (milestone review).
+  - The decision file's Context says hydration's merge writes, but in zustand 5.0.16 only the write after a migrate and `onRehydrateStorage`'s `setState` do. The code is right.
+- **For later tickets:**
+  - Design changes create new objects throughout `design`, so select primitives or use `useShallow`.
+  - `store.ts` is for client components only.
+  - Nothing bumps `form.terms.version`, as T-020 intends.
+  - T-025 must clear the undo history after rehydration (its ticket already says so) and set history objects rather than mutate them (noted on T-025).
+
 ## Decisions
+- [`T-004-carry-defaults-include-target.md`](../decisions/T-004-carry-defaults-include-target.md): The carry rule's template defaults include the template being loaded
+- [`T-004-hydrate-once-on-store-flag.md`](../decisions/T-004-hydrate-once-on-store-flag.md): useHydrated rehydrates only while the store's own hasHydrated flag is false
+- [`T-004-hydration-test-file-added.md`](../decisions/T-004-hydration-test-file-added.md): T-004 adds store.hydration.test.tsx to its touches for the jsdom hydration tests
+- [`T-004-store-keeps-parsed-design.md`](../decisions/T-004-store-keeps-parsed-design.md): Store actions save the schema's parsed output, not the candidate object
+- [`T-004-write-only-on-design-change.md`](../decisions/T-004-write-only-on-design-change.md): Persistence writes only when the design or name changes, and stringifies only when the debounce fires
 - [`T-004-default-design-is-sponsor.md`](../decisions/T-004-default-design-is-sponsor.md): The store starts from the Sponsor template
 - [`T-004-store-owns-all-actions.md`](../decisions/T-004-store-owns-all-actions.md): store.ts is created once with every action, and only the undo ticket edits it later
 - [`T-004-store-rejects-invalid-designs.md`](../decisions/T-004-store-rejects-invalid-designs.md): Store actions drop any update that would make the design fail the schema

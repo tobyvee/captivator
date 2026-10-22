@@ -51,6 +51,8 @@ Build step 8, "Undo/redo with shortcuts" ([spec → Data model and store → Und
 ## Notes
 Pick the middleware order (`temporal(persist(…))` or `persist(temporal(…))`) so that `useStore.persist` and `useStore.temporal` both exist and persist's `partialize`/`merge` are unchanged. Say which you chose in your report.
 
+The store only writes to storage when `design` or `name` changes by reference ([`T-004-write-only-on-design-change.md`](../decisions/T-004-write-only-on-design-change.md)). Undo and redo must set `design` to the stored history object, as zundo does, never mutate it in place, or the undone state won't be saved. Add a test that undo followed by a 300ms wait writes the earlier design.
+
 ## Decisions
 - [`T-004-store-owns-all-actions.md`](../decisions/T-004-store-owns-all-actions.md): store.ts is created once with every action, and only the undo ticket edits it later
 - [`T-008-editor-shell-creates-slots.md`](../decisions/T-008-editor-shell-creates-slots.md): The editor shell owns Inspector.tsx and TopBar.tsx and creates every later editor component as a stub
