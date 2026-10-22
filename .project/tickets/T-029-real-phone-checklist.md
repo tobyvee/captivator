@@ -2,7 +2,7 @@
 title: "T-029: Real-phone testing checklist"
 type: ticket
 project: captivator
-status: todo
+status: done
 priority: P1
 milestone: 9
 estimate: 10
@@ -32,7 +32,7 @@ Build step 9, "Run through the testing checklist on a real phone" ([spec → Tes
 - **Out of scope:** code changes; the README (T-030).
 
 ## Acceptance criteria
-- [ ] Every item in the spec's checklist has a recorded result:
+- [x] Every item in the spec's checklist has a recorded result:
   - Brief items.
   - Live preview in Mobile and Desktop.
   - Refresh restores; cleared storage falls back without errors.
@@ -41,9 +41,9 @@ Build step 9, "Run through the testing checklist on a real phone" ([spec → Tes
   - Templates load and switching keeps the logo.
   - Contrast and fit warnings.
   - Keyboard-only use, with announced switch and segmented states.
-- [ ] Items for cut tickets are marked "cut" rather than failed.
-- [ ] The exported file and mobile-data checks are recorded.
-- [ ] Any failure has a follow-up ticket ID next to it.
+- [x] Items for cut tickets are marked "cut" rather than failed.
+- [x] The exported file and mobile-data checks are recorded.
+- [x] Any failure has a follow-up ticket ID next to it.
 
 ## Dependencies
 These are the last non-cuttable tickets on each path, so every feature the checklist exercises is merged:
@@ -56,6 +56,9 @@ These are the last non-cuttable tickets on each path, so every feature the check
 - T-027 (readability, which brings in T-009).
 
 Cuttable tickets (T-022, T-026, T-028 and the stretch tickets) are deliberately not dependencies; check them if they shipped.
+
+## Outcome
+Run by the user against production on 2026-10-23 and written up in [`phone-checklist.md`](../review/phone-checklist.md). 14 checks passed and 8 were skipped. The skipped ones are recorded as unverified, each with the unit tests that cover it ([`T-029-skipped-checks-unverified.md`](../decisions/T-029-skipped-checks-unverified.md)). The page recorded no failures. The one failure reported in chat, the preview being pushed down when Unsplash results load, became [T-036](T-036-editor-columns-scroll-independently.md), which has landed. No shipped feature was cut, so no item is marked "cut". The skipped items are: limits and the 4 MB photo, keyboard and VoiceOver, the exported file on the phone (layout, terms sheet, `required`, inputs), a real Wi-Fi login sheet, and mobile data.
 
 ## Notes
 - **From T-034:** drag a block by its handle on a real phone and with a mouse, in the narrow column too; check the up/down buttons, and keyboard drag (Space, arrows, Space) with VoiceOver.
@@ -76,3 +79,4 @@ Cuttable tickets (T-022, T-026, T-028 and the stretch tickets) are deliberately 
 - [`T-029-phone-checklist-at-step-9.md`](../decisions/T-029-phone-checklist-at-step-9.md): The real-phone checklist is its own ticket at build step 9, run by the main session
 - [`general-deploy-cloudflare-vinext.md`](../decisions/general-deploy-cloudflare-vinext.md): The MVP deploys to Cloudflare Workers with vinext, not Vercel
 - [`T-024-browser-download-check-in-t029.md`](../decisions/T-024-browser-download-check-in-t029.md): T-024's download and open check is done here
+- [`T-029-skipped-checks-unverified.md`](../decisions/T-029-skipped-checks-unverified.md): Skipped checks are recorded as unverified, not failed or blocked

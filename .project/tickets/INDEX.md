@@ -155,6 +155,6 @@ None. Every dependency exists, there are no cycles, every `todo` ticket has `tou
 | 9 | [T-035](T-035-one-tap-contrast-fix.md) | One-tap contrast Fix | P2 | 8 | 10 | T-027 | done |
 | 9 | [T-032](T-032-unsplash-search-ui.md) | Unsplash search in the Photo tab | P2 | 8 | 15 | T-016, T-031 | done |
 | 9 | [T-034](T-034-dnd-kit-reorder.md) | Drag to reorder blocks with dnd-kit | P2 | 8 | 15 | T-012 | done |
-| 10 | [T-029](T-029-real-phone-checklist.md) | Real-phone testing checklist | P1 | 9 | 10 | T-012, T-013, T-014, T-015, T-017, T-019, T-020, T-024, T-025, T-027 | todo |
+| 10 | [T-029](T-029-real-phone-checklist.md) | Real-phone testing checklist | P1 | 9 | 10 | T-012, T-013, T-014, T-015, T-017, T-019, T-020, T-024, T-025, T-027 | done |
 | 10 | [T-036](T-036-editor-columns-scroll-independently.md) | Editor columns scroll independently, so the preview stays put | P1 | 9 | 15 | — | done |
 | 11 | [T-030](T-030-readme-and-final-deploy.md) | README and final deploy | P1 | 9 | 10 | T-029 | todo |
