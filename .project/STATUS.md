@@ -11,20 +11,20 @@ tags: [project, captivator, status]
 
 ## Summary
 
-Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is being built. The PRD, tech spec and editor canvas are done. The build is split into 35 tickets in 11 parallel-safe waves (`tickets/INDEX.md`), with nothing cut and the stretch work scheduled. The app deploys to Cloudflare Workers with vinext, because Vercel couldn't be used, and each ticket is pushed and deployed as it lands. Wave 1 is done: `T-001` scaffolded the app on vinext with Vitest, the schema tests and the deploy workflow. Its first deploy needs the user's Cloudflare secrets. The next step is wave 2: `T-002`, `T-005`, `T-011` and `T-003`.
+Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is being built. The PRD, tech spec and editor canvas are done. The build is split into 35 tickets in 11 parallel-safe waves (`tickets/INDEX.md`), with nothing cut and the stretch work scheduled. The app deploys to Cloudflare Workers with vinext, because Vercel couldn't be used, and each ticket is pushed as it lands. Waves 1 and 2 are done: the scaffold (`T-001`), the Blank and Sponsor templates (`T-002`), the `SplashPage` skeleton (`T-005`), the image upload pipeline (`T-011`) and the contrast helpers (`T-003`). Each is reviewed and security-audited, and 137 tests pass. The deploy workflow builds and tests every push, but can't deploy until the user adds the Cloudflare secrets. The next step is wave 3: `T-004`, `T-007`, `T-006` and `T-021`.
 
 ## In progress
 
 ## Outstanding
 
-- [ ] Cloudflare setup (user): an API token from the "Edit Cloudflare Workers" template, plus `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as GitHub Actions secrets, then re-run the Deploy workflow for T-001's push
-
-## Planned
-
+- [ ] Cloudflare setup (user): an API token from the "Edit Cloudflare Workers" template, plus `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as GitHub Actions secrets, then re-run the latest Deploy run (`gh run rerun` on the newest run in `gh run list --workflow deploy.yml`)
 - [ ] T-004: Store with every action, and localStorage persistence
 - [ ] T-007: Form renderer: fields, terms row, Connect and render modes
 - [ ] T-006: Background renderer: colour, gradient and photo
 - [ ] T-021: Terms sheet for the preview and the no-JS export
+
+## Planned
+
 - [ ] T-008: Editor shell, top bar, inspector router and component slots
 - [ ] T-010: ColourField and Slider controls
 - [ ] T-023: Export HTML builder
