@@ -13,6 +13,10 @@ export default defineConfig({
     },
     env: {
       ASSETS: bindings.assets(),
+      // vinext's data cache (kvDataAdapter in vite.config.ts); Cloudflare provisions it on deploy.
+      VINEXT_KV_CACHE: bindings.kv(),
+      // Optional. A Worker secret in production and a .dev.vars entry locally, never a plain variable.
+      UNSPLASH_ACCESS_KEY: bindings.secret(),
     },
   }),
 });
