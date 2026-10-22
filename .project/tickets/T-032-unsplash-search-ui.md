@@ -10,7 +10,7 @@ depends_on: [T-016, T-031]
 touches:
   - src/editor/panels/UnsplashSearch.tsx
 cut_rank: 1
-updated: 2026-10-22
+updated: 2026-10-23
 tags: [project, captivator, ticket, editor, security]
 ---
 # T-032: Unsplash search in the Photo tab
@@ -41,8 +41,13 @@ Stretch, cut order item 1 ([spec → Images and Unsplash → Unsplash → Client
 - T-016: the stub, and the photo branch it sits in.
 - T-031: the route and its response shape.
 
+## Notes
+- **From T-016:** build the background with `withPhoto(useStore.getState().design.background, src, credit)` from `BackgroundPanel.tsx`; it holds the new-photo defaults ([`T-016-with-photo-helper.md`](../decisions/T-016-with-photo-helper.md)). `UnsplashSearch` takes no props and reads the store itself.
+- **From the T-016 security audit:** `updateBackground` returns `false` when the schema rejects the background (for example a credit URL off `unsplash.com`). Check it and show an error; don't loosen the credit schema.
+
 ## Decisions
 - [`T-004-store-rejects-invalid-designs.md`](../decisions/T-004-store-rejects-invalid-designs.md): Store actions drop any update that would make the design fail the schema
 - [`T-016-photo-upload-split-from-adjustments.md`](../decisions/T-016-photo-upload-split-from-adjustments.md): Photo upload is P0 in the Background panel; fit, zoom, focus and darken are a separate P1 ticket
 - [`general-stretch-tickets-scheduled.md`](../decisions/general-stretch-tickets-scheduled.md): Stretch tickets are scheduled, not held until the build is ahead
 - [`general-url-allowlist.md`](../decisions/general-url-allowlist.md): Image and credit URLs are allowlisted by scheme and host
+- [`T-016-with-photo-helper.md`](../decisions/T-016-with-photo-helper.md): new photos go through `withPhoto`
