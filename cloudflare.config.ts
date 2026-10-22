@@ -2,7 +2,7 @@ import { bindings, defineConfig, defineWorker } from "cf/config";
 
 export default defineConfig({
   worker: defineWorker({
-    name: "captivator",
+    name: "app",
     entrypoint: "vinext/server/fetch-handler",
     compatibilityDate: "2026-10-22",
     compatibilityFlags: ["nodejs_compat"],
