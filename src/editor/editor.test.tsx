@@ -37,7 +37,7 @@ describe("EditorPage", () => {
     const errors = vi.spyOn(console, "error");
     const container = document.createElement("div");
     container.innerHTML = html;
-    document.body.append(container);
+    document.body.appendChild(container); // append() is retyped by the Workers globals
     act(() => {
       hydrateRoot(container, <EditorPage />, { onRecoverableError: mismatch });
     });
