@@ -11,13 +11,14 @@ tags: [project, captivator, status]
 
 ## Summary
 
-Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is planned and ready to build. The PRD, tech spec and editor canvas are done. The build is split into 35 tickets in 11 parallel-safe waves (`tickets/INDEX.md`), with nothing cut and the stretch work scheduled. The only code so far is the design-phase schema, and nothing is committed yet. The next step is wave 1: `T-001`, the scaffold.
+Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is planned and ready to build. The PRD, tech spec and editor canvas are done. The build is split into 35 tickets in 11 parallel-safe waves (`tickets/INDEX.md`), with nothing cut and the stretch work scheduled. The app deploys to Cloudflare Workers with vinext, because Vercel couldn't be used, and each ticket is pushed and deployed as it lands. The only code so far is the design-phase schema. The next step is the user's Cloudflare setup, then wave 1: `T-001`, the scaffold.
 
 ## In progress
 
 ## Outstanding
 
-- [ ] T-001: Scaffold the Next.js app, dependencies, Vitest and schema tests
+- [ ] Cloudflare setup (user, before T-001 is pushed): an API token from the "Edit Cloudflare Workers" template, plus `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as GitHub Actions secrets
+- [ ] T-001: Scaffold the Next.js app on vinext, with dependencies, Vitest, the deploy workflow and schema tests
 
 ## Planned
 

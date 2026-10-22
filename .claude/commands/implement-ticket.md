@@ -1,5 +1,5 @@
 ---
-description: Implement one ticket on the current branch, with tests, checks and a commit, then record it as done
+description: Implement one ticket on the current branch, with tests, checks and a commit, then record it as done and push it
 argument-hint: "T-NNN"
 ---
 
@@ -12,6 +12,7 @@ Implement `$ARGUMENTS` (one ticket ID) in the main working tree. For several ind
 - Read `.project/tickets/$ARGUMENTS-*.md` and the spec sections it links to. For UI tickets, also read the editor canvas artboard it names, read with the Artifact tool following CLAUDE.md's **Reading the canvas** (list its files, then read the artboard by path).
 - Find the relevant decisions in `.project/decisions/`, following CLAUDE.md's **Decision log → Reading the log**. They apply whether you build the ticket yourself or delegate it.
 - Stop and report if any `depends_on` ticket isn't `done`, or if the working tree has uncommitted changes to files the ticket `touches`.
+- The current branch has an upstream and matches it: run `git fetch`, then `git rev-list --left-right --count @{u}...HEAD` must print `0	0`. Step 4 pushes, so if the branch is behind, is ahead, or has no upstream, stop and ask the user.
 - Set the ticket's `status: doing` and bump `updated:`. Move its STATUS.md line to `## In progress`.
 
 ## 2. Build it
@@ -21,7 +22,7 @@ Build it yourself in this session, or, to keep the build's output out of the mai
 - Use the **`nextjs-specialist`** agent if the ticket touches Next.js itself:
   - the scaffold
   - `src/app/` (pages, layouts, the route handler)
-  - `next.config.*`
+  - `next.config.*`, `vite.config.ts` and `cloudflare.config.ts`
   - the persisted store's hydration
   - the tag `infra`
 - Use the **`ticket-implementer`** agent for everything else.
@@ -49,7 +50,8 @@ A delegated agent commits its code and its own decision files, but nothing else 
   - `src/lib/export.ts`, `images.ts` and `design-schema.ts`
   - the store's persistence
   - `src/app/api/`
-  - `next.config.*`, `package.json` and `.gitignore`
+  - `next.config.*`, `vite.config.ts`, `cloudflare.config.ts`, `package.json` and `.gitignore`
+  - `.github/workflows/`
 
   Then act on its findings:
   - **critical and high:** run the `security-fixer` agent with those findings, uncommitted, so the fixes land in this ticket's commit. The ticket isn't done until they're fixed and the full suite passes again.
@@ -73,6 +75,7 @@ A delegated agent commits its code and its own decision files, but nothing else 
 - Commit this ticket's files **together with those `.project/` changes, including its decision files**, so the record moves with the code. Describe the change and end the subject with the ticket ID, e.g. `Text panel with size presets (T-012)`. End the message with the attribution trailer Claude Code currently specifies.
 - If this ticket closes the final milestone (the README and deploy step), first run `security-auditor` with scope `full`, and handle its findings as in step 3.
 - If this ticket finishes a build-plan milestone (no other `todo` tickets share its `milestone:`), first run the `milestone-reviewer` agent. Its suggested commit message wins for the commit that closes the milestone.
-- Report what was built, the test results and the next ready ticket.
+- **Push.** Once the ticket's code and records are committed, run `git push`, so each finished ticket reaches GitHub and the deploy workflow (`general-push-after-each-ticket.md`). If the push is rejected, stop and report. Never force-push, and don't pull or rebase over the rejection.
+- Report what was built, the test results, the pushed commits and the next ready ticket.
 
-Don't push unless asked.
+Only the current branch is pushed, and only after this step's commits.

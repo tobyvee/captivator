@@ -18,12 +18,13 @@ next-env.d.ts
 # Tests
 coverage/
 
-# Env files: the Unsplash access key lives here. Commit .env.example only.
+# Env files (vinext loads them in dev and build). Secrets go in .dev.vars instead.
 .env*
-!.env.example
 
-# Vercel
-.vercel/
+# Cloudflare: Wrangler state and local Worker secrets (the Unsplash access key). Commit .dev.vars.example only.
+.wrangler/
+.dev.vars*
+!.dev.vars.example
 
 # Claude Code: per-user settings and agent worktrees
 .claude/settings.local.json

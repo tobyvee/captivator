@@ -1,22 +1,26 @@
 ---
-title: "T-001: Scaffold the Next.js app, dependencies, Vitest and schema tests"
+title: "T-001: Scaffold the Next.js app on vinext, with dependencies, Vitest, the deploy workflow and schema tests"
 type: ticket
 project: captivator
 status: todo
 priority: P0
 milestone: 1
-estimate: 20
+estimate: 30
 depends_on: []
 touches:
   - package.json
   - package-lock.json
   - tsconfig.json
   - next.config.ts
+  - vite.config.ts
+  - cloudflare.config.ts
   - eslint.config.mjs
   - postcss.config.mjs
   - vitest.config.ts
   - vitest.setup.ts
-  - .env.example
+  - .dev.vars.example
+  - .gitignore
+  - .github/workflows/deploy.yml
   - src/app/layout.tsx
   - src/app/page.tsx
   - src/app/globals.css
@@ -27,36 +31,54 @@ cut_rank:
 updated: 2026-10-22
 tags: [project, captivator, ticket, infra, schema, security]
 ---
-# T-001: Scaffold the Next.js app, dependencies, Vitest and schema tests
+# T-001: Scaffold the Next.js app on vinext, with dependencies, Vitest, the deploy workflow and schema tests
 
 ## Context
-Build step 1 ([spec → Build plan](../spec/Captivator%20MVP%20%E2%80%94%20Tech%20Spec.md), *Stack and dependencies*, *Unit tests*). Every other ticket depends on this one, so it installs **every** package the MVP needs (including stretch-only ones) and creates the shared type file, so no later ticket touches `package.json`. The committed `src/lib/design-schema.ts` is used as-is and is not edited by any ticket. Decisions: [`T-001-scaffold-owns-dependencies-and-shared-types.md`](../decisions/T-001-scaffold-owns-dependencies-and-shared-types.md), [`general-design-schema-committed.md`](../decisions/general-design-schema-committed.md), [`general-url-allowlist.md`](../decisions/general-url-allowlist.md), [`general-new-modules-beyond-project-structure.md`](../decisions/general-new-modules-beyond-project-structure.md).
+Build step 1 ([spec → Build plan](../spec/Captivator%20MVP%20%E2%80%94%20Tech%20Spec.md), *Stack and dependencies*, *Unit tests*). Every other ticket depends on this one, so it installs **every** package the MVP needs (including stretch-only ones) and creates the shared type file, so no later ticket touches `package.json`. The committed `src/lib/design-schema.ts` is used as-is and is not edited by any ticket. Decisions: [`T-001-scaffold-owns-dependencies-and-shared-types.md`](../decisions/T-001-scaffold-owns-dependencies-and-shared-types.md), [`general-design-schema-committed.md`](../decisions/general-design-schema-committed.md), [`general-url-allowlist.md`](../decisions/general-url-allowlist.md), [`general-new-modules-beyond-project-structure.md`](../decisions/general-new-modules-beyond-project-structure.md), [`general-deploy-cloudflare-vinext.md`](../decisions/general-deploy-cloudflare-vinext.md), [`general-deploy-via-github-actions.md`](../decisions/general-deploy-via-github-actions.md).
+
+The app deploys to Cloudflare Workers with [vinext](https://vinext.dev/), not Vercel. Before writing any config, read vinext's [Cloudflare Workers](https://vinext.dev/docs/deploying/cloudflare), [migration](https://vinext.dev/docs/getting-started/migrating) and [differences](https://vinext.dev/docs/reference/differences) pages for the version you install. vinext is under active development, so follow its docs where they differ from this ticket, and log the difference.
 
 ## Scope
-- Run `create-next-app` (latest stable; TypeScript, App Router, Tailwind, ESLint, `src/` dir, `@/*` alias, npm) **in a temporary directory**, then copy the result into the repo root. `create-next-app` refuses a non-empty directory, and the repo already holds `CLAUDE.md`, `.claude/`, `.project/`, `.gitignore` and `src/lib/design-schema.ts`. When copying:
-  - **Never overwrite** `src/lib/design-schema.ts`, `.gitignore` (the existing one is more complete) or `CLAUDE.md`.
+- Use Node 22 or newer (vinext's minimum).
+- Run `create-next-app@16` (Next.js 16, the major vinext targets; TypeScript, App Router, Tailwind, ESLint, `src/` dir, `@/*` alias, npm) **in a temporary directory**, then copy the result into the repo root. `create-next-app` refuses a non-empty directory, and the repo already holds `CLAUDE.md`, `.claude/`, `.project/`, `.gitignore` and `src/lib/design-schema.ts`. When copying:
+  - **Never overwrite** `src/lib/design-schema.ts` or `CLAUDE.md`.
+  - **Merge, don't overwrite, `.gitignore`.** The existing one is more complete, so keep every line and add only what's missing (e.g. vinext's build output).
   - Don't copy the generated `README.md` (T-030 owns it), `.git/`, or the sample SVGs in `public/`.
+- In the repo root, run `npx vinext init --platform=cloudflare`. It adds `vite.config.ts`, `cloudflare.config.ts`, `"type": "module"` and `*:vinext` scripts, and leaves `next` installed. Keep what it generates, then:
+  - **Scripts:** make `dev`, `build` and `start` the vinext ones and drop the duplicate `*:vinext` scripts. `build` is `vitest run && vite build`.
+  - **Deploy script:** add `"deploy"`, which runs the vinext Cloudflare deploy. Install `@vinext/cloudflare` as a dev dependency so CI uses a pinned version.
+  - **Worker config (`cloudflare.config.ts`):** name the Worker `captivator`. Enable Node.js compatibility with a compatibility date of 2025-04-01 or later, so Worker secrets reach `process.env` (T-031 reads `UNSPLASH_ACCESS_KEY` there). Keep the generated asset-routing block, and add no bindings: T-031 adds the KV cache.
+  - **`src/` layout:** confirm that vinext serves `src/app/`. If it only finds a root `app/`, stop and report: moving it would change every ticket's `touches`.
+  - **Compatibility:** run `npx vinext check`, and fix or report anything it flags.
 - Install runtime deps: `zod`, `zustand`, `zundo`, `react-colorful`, `fast-average-color`, `lucide-react`, `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities` (stretch, installed now so T-034 needn't touch `package.json`).
 - Install dev deps: `vitest`, `@vitejs/plugin-react`, `jsdom`, `@testing-library/react`, `@testing-library/dom`, `@testing-library/jest-dom`, `@testing-library/user-event`.
-- `package.json` scripts: `"test": "vitest run"`, `"build": "vitest run && next build"`; keep `dev`, `start`, `lint`.
-- `vitest.config.ts`: `environment: 'node'` by default, the `@/` alias, the React plugin, `setupFiles: ['vitest.setup.ts']` (imports `@testing-library/jest-dom/vitest`), `include: ['src/**/*.test.{ts,tsx}']`. Component tests opt into jsdom per file with `// @vitest-environment jsdom`.
+- `package.json` scripts: `"test": "vitest run"`, `"build": "vitest run && vite build"`, `"deploy"` as above; keep `dev`, `start`, `lint`.
+- `vitest.config.ts`: `environment: 'node'` by default, the `@/` alias, the React plugin, `setupFiles: ['vitest.setup.ts']` (imports `@testing-library/jest-dom/vitest`), `include: ['src/**/*.test.{ts,tsx}']`. Component tests opt into jsdom per file with `// @vitest-environment jsdom`. Keep it separate from `vite.config.ts`, and don't load the vinext or Cloudflare plugins in it, so tests run in plain Node or jsdom.
+- `.github/workflows/deploy.yml`:
+  - **Triggers:** `push` to `main` and `workflow_dispatch` only, never `pull_request` or `pull_request_target`.
+  - **Safety:** `permissions: contents: read`, and a `concurrency` group so deploys run in push order without cancelling one another.
+  - **Steps:** Node 22, `npm ci`, `npm run build` (the tests run first, so a failing test stops the deploy), then `npm run deploy`. Skip the deploy's own build if the installed version can reuse the output.
+  - **Secrets:** pass `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` from repository secrets, and never echo them.
+  - **Actions:** pin each third-party action to a version.
 - `eslint.config.mjs`: turn off `@next/next/no-img-element` (the splash renderer must use plain `<img>`, never `next/image`).
-- `next.config.ts`: no `images.remotePatterns`, no custom headers.
-- `src/app/layout.tsx`: `lang="en"`, metadata title "Captivator", `globals.css`; editor chrome font Inter via `next/font/google` with a `system-ui` fallback (matches the canvas). `globals.css` keeps the Tailwind import and a neutral body (`#F4F4F5` background, `#18181B` text).
+- `next.config.ts`: no `images.remotePatterns`, no custom headers. vinext reads it.
+- `src/app/layout.tsx`: `lang="en"`, metadata title "Captivator", `globals.css`; editor chrome font Inter via `next/font/google` with a `system-ui` fallback (matches the canvas). Under vinext, this loads from Google's CDN at runtime; that's fine for the editor, but never use it in `src/splash/`. `globals.css` keeps the Tailwind import and a neutral body (`#F4F4F5` background, `#18181B` text).
 - `src/app/page.tsx`: placeholder ("Captivator" and a link to `/editor`). T-019 replaces it with the template picker.
-- `.env.example`: `UNSPLASH_ACCESS_KEY=` with a comment that it's server-only and optional.
+- `.dev.vars.example`: `UNSPLASH_ACCESS_KEY=` with a comment that it's server-only and optional, that local dev reads it from a copy named `.dev.vars` (gitignored), and that production uses a Worker secret.
 - `src/lib/types.ts`: the shared types below.
 - `src/lib/design-schema.test.ts`: the schema cases below.
-- **Out of scope:** editing `design-schema.ts`; templates (T-002); "All four templates parse" (T-002/T-018 in `templates.test.ts`); the README (T-030); pushing to GitHub and linking Vercel (the main session does that after merge; implementers don't push).
+- **Out of scope:** editing `design-schema.ts`; templates (T-002); "All four templates parse" (T-002/T-018 in `templates.test.ts`); the README (T-030); the KV data cache (T-031); pushing (the main session pushes once the ticket is recorded; implementers don't push); the Cloudflare account, API token and GitHub secrets (the user sets those up).
 
 ## Acceptance criteria
-- [ ] `npm run dev` serves `/` with a link to `/editor`.
-- [ ] `git diff` shows no change to `src/lib/design-schema.ts`, `.gitignore` or `CLAUDE.md`.
+- [ ] `npm run dev` (vinext) serves `/` with a link to `/editor`.
+- [ ] `git diff` shows no change to `src/lib/design-schema.ts` or `CLAUDE.md`, and `.gitignore` only gains lines.
 - [ ] Schema tests pass: rejects a third image, a third field, a duplicate field, a bad hex (`#FFF`, `red`), text over 120 characters; accepts a `data:image/png;base64,…` src, a `/templates/sponsor.jpg` src and an `https:` src.
 - [ ] **Security (schema is the trust boundary):** tests show a `javascript:alert(1)` src, a `data:text/html;base64,…` src, a `data:image/svg+xml;base64,…` src, an `http:` src and `/templates/../evil.jpg` are rejected; a credit `profileUrl` not on `https://unsplash.com/` and a `downloadLocation` not on `https://api.unsplash.com/` are rejected.
 - [ ] A throwaway `// @vitest-environment jsdom` test rendering a component with Testing Library passes locally (proves the setup); don't commit it, because jsdom files are limited to two (`.claude/agents/test-writer.md`).
-- [ ] `npm run build` runs Vitest before `next build`.
-- [ ] No `NEXT_PUBLIC_` variables; `.env.example` lists only `UNSPLASH_ACCESS_KEY`.
+- [ ] `npm run build` runs Vitest before `vite build`, and a deliberately failing test stops it. Check this locally, and don't commit the failing test.
+- [ ] `npx vinext check` flags nothing the MVP uses, or the report lists what it flags.
+- [ ] **Security (deploy workflow):** `deploy.yml` runs only on push to `main` and manual dispatch, has read-only `contents` permission, takes the Cloudflare token and account ID only from secrets, and runs the tests before deploying.
+- [ ] No `NEXT_PUBLIC_` variables; `.dev.vars.example` lists only `UNSPLASH_ACCESS_KEY`, and `.dev.vars` is gitignored.
 - [ ] `npm test`, `npx tsc --noEmit` and `npm run lint` pass.
 
 ## Dependencies
@@ -85,10 +107,16 @@ export type Selection = { kind: SelectionKind; id?: string };
 
 - Use the installed Zod major's API. The schema uses `z.string().regex`, `z.discriminatedUnion` and `.refine`, which work in Zod 3 and 4. If `tsc` reports a problem inside `design-schema.ts`, report it rather than editing the file.
 - Build schema test fixtures from `BLANK.design` (exported by the schema) with `structuredClone`, then mutate one thing per case.
-- Manual follow-up for the main session (not this agent): push to GitHub and link the Vercel project (spec *Deploy*: "connected to the public GitHub repo at minute 5").
+- **The user sets this up before the ticket is pushed** (spec *Deploy*). Neither this agent nor the main session does it:
+  1. Create a Cloudflare API token from the "Edit Cloudflare Workers" template.
+  2. Add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as GitHub Actions repository secrets.
+
+  Without them, the first deploy run fails; re-run it once they're added.
 
 ## Decisions
 - [`T-001-scaffold-owns-dependencies-and-shared-types.md`](../decisions/T-001-scaffold-owns-dependencies-and-shared-types.md): The scaffold ticket installs every dependency and creates the shared type file
+- [`general-deploy-cloudflare-vinext.md`](../decisions/general-deploy-cloudflare-vinext.md): The MVP deploys to Cloudflare Workers with vinext, not Vercel
+- [`general-deploy-via-github-actions.md`](../decisions/general-deploy-via-github-actions.md): A GitHub Actions workflow tests and deploys every push to main
 - [`general-design-schema-committed.md`](../decisions/general-design-schema-committed.md): design-schema.ts from the design phase is committed at src/lib
 - [`general-new-modules-beyond-project-structure.md`](../decisions/general-new-modules-beyond-project-structure.md): Planning adds small modules to the spec's project structure so each ticket owns its own files
 - [`general-url-allowlist.md`](../decisions/general-url-allowlist.md): Image and credit URLs are allowlisted by scheme and host

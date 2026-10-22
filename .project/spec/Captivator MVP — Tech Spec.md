@@ -4,7 +4,7 @@ Oct 21, 2026 · @Toby
 
 ## Overview
 
-Build a Next.js editor where a non-technical customer styles a WiFi splash page and sees it live on mobile and desktop, in 3 hours of coding, deployed on Vercel from a public GitHub repo with steady commits. Design is done: the [editor canvas](https://claude.ai/artifact/AWrSjgB8dZV2KWn8kkDeYj) and the Phase 0 section of the [PRD](https://claude.ai/artifact/NBfeatpDNRTjMtHhJbFUNS) are the source of truth for what it looks like.
+Build a Next.js editor where a non-technical customer styles a WiFi splash page and sees it live on mobile and desktop, in 3 hours of coding, deployed to Cloudflare Workers with [vinext](https://vinext.dev/) from a public GitHub repo with steady commits. Design is done: the [editor canvas](https://claude.ai/artifact/AWrSjgB8dZV2KWn8kkDeYj) and the Phase 0 section of the [PRD](https://claude.ai/artifact/NBfeatpDNRTjMtHhJbFUNS) are the source of truth for what it looks like.
 
 **Must ship (the brief):**
 
@@ -29,11 +29,12 @@ Build a Next.js editor where a non-technical customer styles a WiFi splash page 
 
 ## Stack and dependencies
 
-Use the latest stable Next.js with the App Router and TypeScript, scaffolded with `create-next-app` (Tailwind, ESLint, `src/` dir). Add only what saves time over writing it.
+Use Next.js 16 with the App Router and TypeScript, scaffolded with `create-next-app` (Tailwind, ESLint, `src/` dir). Then run `vinext init --platform=cloudflare`, so [vinext](https://vinext.dev/) builds the app with Vite and deploys it to Cloudflare Workers. vinext targets Next.js 16 and needs Node 22 or newer. The code stays standard Next.js; only the build and the host change. Add only what saves time over writing it.
 
 | Package | Used for | Why not hand-roll |
 | --- | --- | --- |
 | [Next.js](https://nextjs.org) + React | App shell, one API route | Brief requirement |
+| [vinext](https://vinext.dev/) | Vite build, Cloudflare Workers deploy | Runs the Next.js API on Workers; Vercel isn't available |
 | [Tailwind CSS](https://tailwindcss.com) | Editor chrome only | Fast neutral UI |
 | [Zod](https://zod.dev) | `Design` schema, validation on load | Types and runtime checks from one definition |
 | [Zustand](https://zustand.docs.pmnd.rs) + `persist` | Store, localStorage | Persistence, versioning and migration built in |
@@ -263,10 +264,10 @@ This is a pure loop over an injected `encode(size, quality)` function, so the st
 
 **Unsplash (stretch, `app/api/unsplash/route.ts`):**
 
-- **`GET ?q=`:** calls `https://api.unsplash.com/search/photos?query=…&orientation=portrait&per_page=12` with `Authorization: Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`. Returns only `id`, `urls.small`, `urls.regular`, `user.name`, `user.links.html` and `links.download_location`, with `Cache-Control: s-maxage=3600`.
+- **`GET ?q=`:** calls `https://api.unsplash.com/search/photos?query=…&orientation=portrait&per_page=12` with `Authorization: Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`. Returns only `id`, `urls.small`, `urls.regular`, `user.name`, `user.links.html` and `links.download_location`, with `Cache-Control: public, max-age=3600`.
 - **`POST {downloadLocation}`:** pings the download endpoint server-side when a photo is chosen, as the API guidelines require. Only accept `api.unsplash.com` URLs, so the route can't be used as an open proxy.
 - **Client:** the search input is debounced 400ms; results show as a 2-column grid. Picking one sets `background.src` to `urls.regular` + `&w=1600&q=70`, hotlinked, and stores the credit with the `?utm_source=captivator&utm_medium=referral` links.
-- **Demo-mode limit is 50 requests an hour,** so cache repeat queries in memory too.
+- **Demo-mode limit is 50 requests an hour.** On Workers, an `s-maxage` header isn't cached at the edge and memory is per isolate. So cache the upstream search for an hour in vinext's KV-backed data cache (`T-031-unsplash-cache-in-data-cache.md`).
 
 **Template photos:** the four templates use Unsplash photos downloaded into `public/templates/` under the Unsplash License, with credits in the template data. They don't depend on the API key.
 
@@ -302,9 +303,9 @@ Three checks run on every change and surface under the preview. They warn; they 
 
 ## Build plan
 
-The step times below are the original targets for the user's own time; they stay as written so the commit history can be compared against them. They don't limit agent work, so nothing is cut or shrunk to fit them. The brief's minimum is covered by 1:30. Everything after it is ordered so that stopping at any milestone still leaves a working, deployed app. Each step ends with its unit tests passing, a commit and a Vercel preview.
+The step times below are the original targets for the user's own time; they stay as written so the commit history can be compared against them. They don't limit agent work, so nothing is cut or shrunk to fit them. The brief's minimum is covered by 1:30. Everything after it is ordered so that stopping at any milestone still leaves a working, deployed app. Each step ends with its unit tests passing, a commit and a deploy.
 
-1. **0:00–0:15: Scaffold.** `create-next-app`, deps, repo pushed, Vercel project linked, `design-schema.ts`, `templates.ts` (Blank and Sponsor), store with persist, Vitest configured with the schema and contrast tests. *Commit: "Scaffold, schema and store".*
+1. **0:00–0:15: Scaffold.** `create-next-app` then `vinext init`, deps, the deploy workflow, `design-schema.ts`, `templates.ts` (Blank and Sponsor), store with persist, Vitest configured with the schema and contrast tests. *Commit: "Scaffold, schema and store".*
 2. **0:15–0:45: Renderer and preview.** `SplashPage` with colour and gradient backgrounds, text, image, fields and Connect; `PhoneFrame`, `BrowserFrame`, Mobile/Desktop toggle. *Commit: "Splash renderer with mobile and desktop preview".*
 3. **0:45–1:30: Editor core, which meets the brief.** Block list with the three zones, add/remove/up-down; Text, Image (upload pipeline), Fields and Connect panels; `ColourField`; click-to-select in the preview. *Commit: "Editor: blocks, fields, button, uploads".*
 4. **1:30–1:55: Background panel.** Colour, Gradient, Photo upload, Fill/Fit, Zoom, 3×3 focus, darken overlay. *Commit: "Background options".*
@@ -324,7 +325,7 @@ Every pure module gets Vitest unit tests, written by Claude Code in the same ste
 
 ### Unit tests
 
-**Setup:** [Vitest](https://vitest.dev) with `environment: 'node'` by default and `jsdom` per file for the two component tests, plus [Testing Library](https://testing-library.com/docs/react-testing-library/intro/) for those. `npm test` runs `vitest run`. The build script is `vitest run && next build`, so a failing test blocks the Vercel deploy without needing CI.
+**Setup:** [Vitest](https://vitest.dev) with `environment: 'node'` by default and `jsdom` per file for the two component tests, plus [Testing Library](https://testing-library.com/docs/react-testing-library/intro/) for those. `npm test` runs `vitest run`. The build script is `vitest run && vite build`, and the deploy workflow runs it before deploying, so a failing test blocks the deploy. Vitest keeps its own `vitest.config.ts`, without the vinext or Cloudflare plugins.
 
 **What to test, by module:**
 
@@ -354,7 +355,7 @@ Every pure module gets Vitest unit tests, written by Claude Code in the same ste
 - [ ] White text on a white background shows the contrast warning; adding five text blocks shows the fit warning.
 - [ ] Keyboard only: Tab reaches every control; switches and segmented controls announce their state.
 
-**Deploy:** Vercel, connected to the public GitHub repo at minute 5, so every push gets a preview URL. Set `UNSPLASH_ACCESS_KEY` in project env vars only if Unsplash ships. Before sending, confirm the production URL loads on mobile data, not just home WiFi.
+**Deploy:** Cloudflare Workers via vinext. A GitHub Actions workflow runs `npm run build` (tests first) and deploys on every push to `main`. It uses the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets, so add those before the scaffold is pushed. The live URL is the Worker's `workers.dev` address. Set `UNSPLASH_ACCESS_KEY` as a Worker secret only if Unsplash ships. Before sending, confirm the production URL loads on mobile data, not just home WiFi.
 
 **README contents:**
 

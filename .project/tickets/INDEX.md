@@ -7,19 +7,19 @@ tags: [project, captivator, reference, tickets]
 ---
 # captivator — Ticket index
 
-The run order for `/implement-parallel`: 35 tickets in 11 waves. Estimates add up to 535 minutes of agent work. The critical path, the sum of each wave's longest ticket, is 210 minutes before merging and review. Estimates size the work; they aren't a budget ([`general-time-budget-is-user-time.md`](../decisions/general-time-budget-is-user-time.md)).
+The run order for `/implement-parallel`: 35 tickets in 11 waves. Estimates add up to 550 minutes of agent work. The critical path, the sum of each wave's longest ticket, is 225 minutes before merging and review. Estimates size the work; they aren't a budget ([`general-time-budget-is-user-time.md`](../decisions/general-time-budget-is-user-time.md)).
 
 Waves follow the greedy rules in `/prioritise-tickets`, with one override: `T-029` and `T-030` run last ([`T-029-checklist-and-readme-run-last.md`](../decisions/T-029-checklist-and-readme-run-last.md)).
 
 ## Waves
 
-### Wave 1 (20 min)
+### Wave 1 (30 min)
 
-After `T-001` merges, the user pushes the repo to GitHub and links the Vercel project (build step 1). No agent does this.
+**Before `T-001` is pushed,** the user creates a Cloudflare API token ("Edit Cloudflare Workers" template) and adds `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as GitHub Actions secrets, so the push deploys ([`general-deploy-via-github-actions.md`](../decisions/general-deploy-via-github-actions.md)). No agent does this. Each ticket is pushed as it lands ([`general-push-after-each-ticket.md`](../decisions/general-push-after-each-ticket.md)).
 
 | ID | Title | Priority | Estimate | Touches |
 |---|---|---|---|---|
-| [T-001](T-001-scaffold.md) | Scaffold the Next.js app, dependencies, Vitest and schema tests | P0 | 20 | `package.json`, `package-lock.json`, `tsconfig.json`, `next.config.ts`, `eslint.config.mjs`, `postcss.config.mjs`, `vitest.config.ts`, `vitest.setup.ts`, `.env.example`, `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/globals.css`, `src/app/favicon.ico`, `src/lib/types.ts`, `src/lib/design-schema.test.ts` |
+| [T-001](T-001-scaffold.md) | Scaffold the Next.js app on vinext, with dependencies, Vitest, the deploy workflow and schema tests | P0 | 30 | `package.json`, `package-lock.json`, `tsconfig.json`, `next.config.ts`, `vite.config.ts`, `cloudflare.config.ts`, `eslint.config.mjs`, `postcss.config.mjs`, `vitest.config.ts`, `vitest.setup.ts`, `.dev.vars.example`, `.gitignore`, `.github/workflows/deploy.yml`, `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/globals.css`, `src/app/favicon.ico`, `src/lib/types.ts`, `src/lib/design-schema.test.ts` |
 
 ### Wave 2 (20 min)
 
@@ -75,14 +75,14 @@ After `T-001` merges, the user pushes the repo to GitHub and links the Vercel pr
 | [T-020](T-020-terms-panel.md) | Terms panel | P1 | 15 | `src/editor/panels/TermsPanel.tsx` |
 | [T-025](T-025-undo-redo.md) | Undo and redo with shortcuts | P1 | 20 | `src/lib/store.ts`, `src/lib/store.undo.test.ts`, `src/editor/UndoRedo.tsx` |
 
-### Wave 8 (20 min)
+### Wave 8 (25 min)
 
 | ID | Title | Priority | Estimate | Touches |
 |---|---|---|---|---|
 | [T-022](T-022-error-and-connected-screens.md) | Error and Connected guest screens | P1 | 20 | `src/splash/Form.tsx`, `src/splash/validate.ts`, `src/splash/validate.test.ts`, `src/splash/Connected.tsx`, `src/editor/ScreenSwitcher.tsx` |
 | [T-026](T-026-logo-palette.md) | Logo palette extraction | P1 | 10 | `src/lib/palette.ts`, `src/lib/palette.test.ts` |
 | [T-028](T-028-fit-check.md) | Small-phone fit check | P1 | 10 | `src/lib/fit.ts`, `src/lib/fit.test.ts`, `src/editor/checks/useFitCheck.tsx` |
-| [T-031](T-031-unsplash-api-route.md) | Unsplash search and download-ping API route | P2 | 20 | `src/app/api/unsplash/route.ts`, `src/app/api/unsplash/route.test.ts` |
+| [T-031](T-031-unsplash-api-route.md) | Unsplash search and download-ping API route | P2 | 25 | `src/app/api/unsplash/route.ts`, `src/app/api/unsplash/route.test.ts`, `vite.config.ts`, `cloudflare.config.ts` |
 
 ### Wave 9 (15 min)
 
@@ -121,7 +121,7 @@ None. Every dependency exists, there are no cycles, every `todo` ticket has `tou
 
 | Wave | ID | Title | Priority | Milestone | Estimate | depends_on | Status |
 |---|---|---|---|---|---|---|---|
-| 1 | [T-001](T-001-scaffold.md) | Scaffold the Next.js app, dependencies, Vitest and schema tests | P0 | 1 | 20 | — | todo |
+| 1 | [T-001](T-001-scaffold.md) | Scaffold the Next.js app on vinext, with dependencies, Vitest, the deploy workflow and schema tests | P0 | 1 | 30 | — | todo |
 | 2 | [T-002](T-002-blank-and-sponsor-templates.md) | Blank and Sponsor templates | P0 | 1 | 10 | T-001 | todo |
 | 2 | [T-005](T-005-splashpage-skeleton.md) | SplashPage skeleton with text and image blocks | P0 | 2 | 15 | T-001 | todo |
 | 2 | [T-011](T-011-image-upload-pipeline.md) | Image upload pipeline and ImageUpload control | P0 | 3 | 20 | T-001 | todo |
@@ -149,7 +149,7 @@ None. Every dependency exists, there are no cycles, every `todo` ticket has `tou
 | 8 | [T-022](T-022-error-and-connected-screens.md) | Error and Connected guest screens | P1 | 6 | 20 | T-003, T-007, T-009 | todo |
 | 8 | [T-026](T-026-logo-palette.md) | Logo palette extraction | P1 | 8 | 10 | T-011 | todo |
 | 8 | [T-028](T-028-fit-check.md) | Small-phone fit check | P1 | 8 | 10 | T-005, T-009 | todo |
-| 8 | [T-031](T-031-unsplash-api-route.md) | Unsplash search and download-ping API route | P2 | 8 | 20 | T-001 | todo |
+| 8 | [T-031](T-031-unsplash-api-route.md) | Unsplash search and download-ping API route | P2 | 8 | 25 | T-001 | todo |
 | 9 | [T-033](T-033-focus-point-drag.md) | Focus-point drag dot | P2 | 4 | 10 | T-017 | todo |
 | 9 | [T-035](T-035-one-tap-contrast-fix.md) | One-tap contrast Fix | P2 | 8 | 10 | T-027 | todo |
 | 9 | [T-032](T-032-unsplash-search-ui.md) | Unsplash search in the Photo tab | P2 | 8 | 15 | T-016, T-031 | todo |

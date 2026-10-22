@@ -172,12 +172,12 @@ The timed build plan, with one commit per milestone, is in the spec's **Build pl
 
 ### Deployment
 
-The MVP ships on [Vercel](https://vercel.com/docs/frameworks/nextjs): zero-config for Next.js, a live URL on every push, and no adapter to debug inside a 4-hour budget.
+The MVP ships on Cloudflare Workers with [vinext](https://vinext.dev/), Cloudflare's Vite plugin that runs the Next.js API on Workers. The code stays standard Next.js. Vercel was the first choice, but an account couldn't be opened.
 
-- **Connect the public GitHub repo** to a Vercel project at the start, so every commit gets a preview URL and reviewers can follow progress alongside the commit history.
-- **Unsplash proxy.** A route handler, with the access key in Vercel environment variables, never in client code.
+- **Deploy every push.** A GitHub Actions workflow tests, builds and deploys each push to `main` from the public GitHub repo, so reviewers can follow progress on the live URL alongside the commit history.
+- **Unsplash proxy.** A route handler, with the access key stored as a Worker secret, never in client code.
 - **Images.** Use plain `<img>` or `next/image` with `unoptimized`, since uploads are downscaled in the browser and Unsplash URLs carry their own resize parameters.
-- **Production is a separate concern.** The README notes that the guest-facing portal service targets Cloudflare Workers + Hono (see System context). The editor's host doesn't constrain that.
+- **Production is a separate concern.** The README notes that the guest-facing portal service targets Cloudflare Workers + Hono (see System context). The editor now runs on the same platform, but its host doesn't constrain the portal service.
 
 ## Goals and non-goals
 

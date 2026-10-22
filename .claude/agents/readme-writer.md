@@ -18,8 +18,8 @@ Follow CLAUDE.md's **Decision log → Reading the log** to find the decisions re
 
 ## Structure (from the spec)
 
-1. One line on what it is, the live Vercel URL (ask if you don't know it) and a screenshot or GIF placeholder.
-2. **Run locally:** `npm i && npm run dev`, `npm test`, and the optional `UNSPLASH_ACCESS_KEY`.
+1. One line on what it is, the live URL (the Cloudflare Worker's address; ask if you don't know it) and a screenshot or GIF placeholder.
+2. **Run locally:** `npm i && npm run dev` (Node 22 or newer), `npm test`, and the optional `UNSPLASH_ACCESS_KEY` in `.dev.vars`. Mention that every push to `main` deploys through the GitHub Actions workflow.
 3. **What's in it:** each item from the brief first (logo upload, background image or colour, text with colour and size, up to two of Name/Email/Phone, Connect button colours, live mobile and desktop preview), then the extras that actually shipped.
 4. **Key decisions,** one line each:
    - The schema-first `Design` with three zones.
@@ -27,6 +27,7 @@ Follow CLAUDE.md's **Decision log → Reading the log** to find the decisions re
    - Flexbox within the viewport.
    - Client-side downscaling.
    - The small-phone fit check.
+   - vinext on Cloudflare Workers instead of Vercel (`general-deploy-cloudflare-vinext.md`).
 5. **Path to production:**
    - Peplink external splash with routing on `sn`.
    - Capture takes two hops. The guest posts to the portal service, which records consent, then posts `command=login` with no personal data to the router's allowlisted `form_action`. That's why an export with fields uses `[PORTAL_SUBMIT_URL]` (`general-export-form-action.md`).

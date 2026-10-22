@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Captivator is a Next.js editor where a non-technical customer designs a branded guest Wi-Fi splash (captive portal) page for PopUp WiFi units. It has a live mobile and desktop preview and exports the page as standalone HTML. This repo is the **Phase 0 MVP**, a time-boxed build. The spec is the source of truth for scope and build order:
+Captivator is a Next.js editor where a non-technical customer designs a branded guest Wi-Fi splash (captive portal) page for PopUp WiFi units. It has a live mobile and desktop preview and exports the page as standalone HTML. The code is a standard Next.js 16 App Router app, built by [vinext](https://vinext.dev/) (Vite) and deployed to Cloudflare Workers (`general-deploy-cloudflare-vinext.md`). This repo is the **Phase 0 MVP**, a time-boxed build. The spec is the source of truth for scope and build order:
 
 - `.project/spec/Captivator MVP — Tech Spec.md`: stack, structure, store, renderer, export, tests, build plan and cut order.
 - [Captivator editor canvas](https://claude.ai/artifact/AWrSjgB8dZV2KWn8kkDeYj#page-dcb81aee8d83): the design artifact for this project and the source of truth for how the editor looks. Read it with the Artifact tool, never WebFetch; see **Reading the canvas** below.
@@ -33,11 +33,12 @@ Tickets name their artboard. If the Artifact tool isn't available, or a read fai
 
 ## Commands (planned)
 
-- `npm run dev`: local dev server.
+- `npm run dev`: local dev server (vinext on Vite).
 - `npm test`: runs `vitest run`.
 - `npx vitest run src/lib/contrast.test.ts`: run one test file; add `-t "<name>"` to run a single case.
-- `npm run build`: runs `vitest run && next build`, so a failing test blocks the Vercel deploy. There is no separate CI.
-- `UNSPLASH_ACCESS_KEY`: optional, server-side only. It's needed only if Unsplash search ships.
+- `npm run build`: runs `vitest run && vite build`, so a failing test fails the build.
+- `npm run deploy`: deploys to Cloudflare Workers with vinext. The GitHub Actions workflow (`.github/workflows/deploy.yml`) runs `npm run build` and then the deploy on every push to `main`, so a failing test blocks the deploy. It needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets.
+- `UNSPLASH_ACCESS_KEY`: optional and server-side only, needed only if Unsplash search ships. It's a Worker secret in production and goes in `.dev.vars` locally (gitignored; copy `.dev.vars.example`).
 
 ## Architecture
 
@@ -71,6 +72,10 @@ Tickets name their artboard. If the Artifact tool isn't available, or a read fai
 
 ## Constraints that shape the code
 
+- **vinext builds and serves the app, not `next build`.** Use Next.js 16 App Router APIs, but check vinext's [compatibility](https://vinext.dev/compatibility) and [differences](https://vinext.dev/docs/reference/differences) pages before relying on a `next/*` feature or config option. Server code runs on Cloudflare Workers:
+  - Module memory is per isolate, so it isn't a cache.
+  - A route handler's `s-maxage` isn't cached at the edge.
+  - Secrets reach `process.env` through the Worker's Node.js compatibility setting.
 - **Splash output must run inside the iOS Captive Network Assistant.** The minimum target is iOS 15.4 (flexbox `gap`, `dvh`, `accent-color`). Use plain HTML and CSS: no `:has()`, no container queries, inputs at least 16px, tap targets at least 44px, and no external requests in exported pages.
 - **Uploads are downscaled in the browser before they reach the store** (`lib/images.ts`):
   - Reject files over 10 MB.
@@ -99,9 +104,9 @@ Run these in order. Use them instead of `/project-doc ticket` for build work.
 
 1. `/plan-tickets [all | build step N | description]`: splits the spec into 10–40 minute tickets with `priority`, `milestone`, `estimate`, `depends_on` and `touches` in their frontmatter.
 2. `/prioritise-tickets [work to cut]`: orders the tickets into waves of up to 4 where no two tickets in a wave touch the same files. It cuts only the work the user names, and never cuts P0.
-3. `/implement-parallel wave N` runs one worktree agent per ticket, then rebases each onto the current branch with tests after every merge. `/implement-ticket T-NNN` implements a single ticket in place.
+3. `/implement-parallel wave N` runs one worktree agent per ticket, then lands the tickets one at a time. Each ticket is rebased with tests, reviewed and audited, then recorded, committed and pushed before the next. `/implement-ticket T-NNN` implements a single ticket in place and pushes it.
 
-Parallel agents read their ticket and the spec from `.project/` in their worktree. The only thing they write there is **new** files in `.project/decisions/` (see below). Only the main session updates ticket status, `INDEX.md` and `STATUS.md`, so parallel branches can't conflict on them. Commit messages describe the change and end with the ticket ID, e.g. `Text panel with size presets (T-012)`.
+Parallel agents read their ticket and the spec from `.project/` in their worktree. The only thing they write there is **new** files in `.project/decisions/` (see below). Only the main session updates ticket status, `INDEX.md` and `STATUS.md`, so parallel branches can't conflict on them. Only the main session pushes, and only once a ticket is reviewed and recorded. Nothing is force-pushed. Commit messages describe the change and end with the ticket ID, e.g. `Text panel with size presets (T-012)`.
 
 ## Agents (`.claude/agents/`)
 
@@ -112,7 +117,7 @@ Parallel agents read their ticket and the spec from `.project/` in their worktre
 - `ticket-planner`: used by `/plan-tickets`. It holds the split rules and ticket format, and writes ticket files only.
 - `ticket-implementer`: used by `/implement-parallel` (one per worktree) and optionally `/implement-ticket`. It builds one ticket within its `touches`. Under `.project/`, it only adds decision files.
 - `code-reviewer`: used by `/implement-ticket` and `/implement-parallel` before work is marked done. Read-only. It reviews correctness, completeness, concision, readability and Next.js/React/TypeScript practice for the installed versions, and returns must-fix / should-fix / nit findings with a verdict.
-- `nextjs-specialist`: a Next.js App Router, React and TypeScript expert. It implements tickets that touch Next.js itself (scaffold, `src/app/`, `next.config`, store hydration), fixes `code-reviewer` findings, and answers "the right way in Next.js" questions against the installed version's docs.
+- `nextjs-specialist`: a Next.js App Router, React and TypeScript expert. It implements tickets that touch Next.js or its build itself (scaffold, `src/app/`, `next.config`, the vinext and Cloudflare config, store hydration), fixes `code-reviewer` findings, and answers "the right way in Next.js" questions against the installed version's docs.
 - `security-auditor`: used by `/implement-ticket` (for tickets that touch a trust boundary), by `/implement-parallel` (after each wave's merges) and as a full-repo audit before the final deploy. Read-only. It reports findings by severity, each with an exploit, a fix and a regression test.
 - `security-fixer`: fixes the audit findings it's given. Each fix comes with a regression test that fails first and is committed separately. Changes that would remove a customer-facing capability come back as `needs decision`. Under `.project/`, it only adds decision files.
 - `branch-integrator`: used by `/implement-parallel`. It rebases a wave's branches onto the current branch one at a time, runs tests after each, fixes only mechanical conflicts, and reports what it merged and what it blocked.

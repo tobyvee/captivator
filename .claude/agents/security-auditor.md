@@ -22,7 +22,7 @@ Follow CLAUDE.md's **Decision log → Reading the log** to find the decisions re
 
 ## Threat model
 
-This repo is public and deploys to Vercel. The editor runs in the customer's browser. Its output, the splash page and Export HTML, is meant to become a page guests load on open Wi-Fi. The PRD calls a brandable login page "structurally an evil-twin phishing kit", so the output must stay inert and honest. Untrusted inputs:
+This repo is public and deploys to Cloudflare Workers (built by vinext) through a GitHub Actions workflow on every push to `main`. The editor runs in the customer's browser. Its output, the splash page and Export HTML, is meant to become a page guests load on open Wi-Fi. The PRD calls a brandable login page "structurally an evil-twin phishing kit", so the output must stay inert and honest. Untrusted inputs:
 
 - Everything in a `Design`: text, colours, names, URLs and image data. Treat it as attacker-controlled, because localStorage can be edited by hand and a design file could be shared.
 - Uploaded files, including SVG.
@@ -51,7 +51,7 @@ This repo is public and deploys to Vercel. The editor runs in the customer's bro
 - `UNSPLASH_ACCESS_KEY` is read only on the server, never with a `NEXT_PUBLIC_` prefix, and never appears in a response, error message or log.
 - The download ping accepts only `https://api.unsplash.com/` URLs, parsed with `new URL()`, not checked with a prefix match like `startsWith`. Check this specifically for `@`-tricks, userinfo and redirects (`fetch` with `redirect: 'manual'` or a host check after the redirect).
 - `q` is length-capped and encoded. Responses are trimmed to the allowed fields, and errors from upstream don't leak details.
-- There's some protection against using the route to burn the 50 requests/hour quota: the in-memory cache, and ideally a simple rate limit.
+- There's some protection against using the route to burn the 50 requests/hour quota: the KV-backed data cache (`T-031-unsplash-cache-in-data-cache.md`), and ideally a simple rate limit. An in-memory cache or an `s-maxage` header alone doesn't count on Workers. The cache entries vinext writes to KV don't contain the raw access key.
 
 **Exported HTML**
 - No external requests, `<script>` or inline event handlers.
@@ -59,7 +59,13 @@ This repo is public and deploys to Vercel. The editor runs in the customer's bro
 - Nothing in it lets a customer point the form at an arbitrary host.
 
 **Repo and deploy**
-- `.gitignore` covers `.env*`, `node_modules/`, `.next/` and `.vercel/`. No secrets in tracked files or history: check with `git log -p` and `git grep` for key-like strings, and run `gitleaks detect` if it's installed.
+- `.gitignore` covers `.env*`, `.dev.vars*` (except `.dev.vars.example`), `node_modules/`, `.next/`, `.wrangler/` and vinext's build output. No secrets in tracked files or history: check with `git log -p` and `git grep` for key-like strings, and run `gitleaks detect` if it's installed.
+- `.github/workflows/deploy.yml`:
+  - It runs only on `push` to `main` and `workflow_dispatch`, never on `pull_request` or `pull_request_target`.
+  - It has `permissions: contents: read`.
+  - It reads the Cloudflare token and account ID only from repository secrets, and never echoes them.
+  - It runs `npm ci` and the tests before deploying. Third-party actions are pinned to a version.
+- `cloudflare.config.ts` declares no bindings beyond the data-cache KV namespace, and the Unsplash key exists only as a Worker secret, never as a plain variable in config.
 - `next.config` sets no unsafe headers and no wildcard `images.remotePatterns`. Note whether security headers (CSP, `X-Content-Type-Options`, `Referrer-Policy`) are set. A missing CSP is low severity for an MVP, not high.
 - `npm audit --omit=dev`: report high and critical advisories that are reachable.
 

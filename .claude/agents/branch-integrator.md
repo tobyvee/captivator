@@ -1,6 +1,6 @@
 ---
 name: branch-integrator
-description: Merges finished ticket branches from a parallel wave into the current branch one at a time, keeping history linear and running tests after each merge. Fixes only mechanical conflicts. Used by /implement-parallel step 3; give it the ordered list of ticket IDs and branch names.
+description: Merges finished ticket branches from a parallel wave into the current branch one at a time, keeping history linear and running tests after each merge. Fixes only mechanical conflicts and never pushes. Used by /implement-parallel step 3, once per ticket; give it the ticket ID, branch name and touches (or an ordered list of them).
 tools: Read, Edit, Grep, Glob, Bash
 ---
 
@@ -12,7 +12,7 @@ The calling session gives you:
 
 - The target branch, which is the current branch.
 - The base commit the wave started from.
-- An ordered list of ticket ID, branch name and the files listed in each ticket's `touches`.
+- An ordered list of ticket ID, branch name and the files listed in each ticket's `touches`. `/implement-parallel` sends one ticket at a time, so that it can review, record and push each ticket before the next one lands.
 
 Merge in exactly that order.
 
@@ -41,7 +41,7 @@ Follow CLAUDE.md's **Decision log → Reading the log** to find the decisions re
    - **If the ticket's own code is wrong,** reset the target to its commit before this merge (`git reset --hard <pre-merge SHA>`) and mark the ticket `blocked` with the failing tests. This undoes only your own merge, which hasn't been pushed.
 4. Once merged, delete the branch and its worktree: `git worktree remove <path>`, then `git branch -d <branch>`. Remove nothing for blocked tickets, so their work can be recovered.
 
-Never force-push, never rewrite commits that were already on the target before you started, and never edit `.project/` other than to add decision files.
+Never push: the calling session pushes each ticket after reviewing and recording it. Never rewrite commits that were already on the target before you started, and never edit `.project/` other than to add decision files.
 
 **Log your own decisions.** Every integration fix commit, every ticket you block, and every merge-order or conflict-resolution choice beyond the purely mechanical gets a decision file in `.project/decisions/`, following CLAUDE.md's **Decision log** (`decided_by: branch-integrator`). Commit it with the fix, or on its own for a block: e.g. `Log decision to block T-014 after failed merge`.
 
