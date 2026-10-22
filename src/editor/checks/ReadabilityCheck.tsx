@@ -117,7 +117,11 @@ export function ReadabilityCheck({ design }: { design: Design }) {
           {fix && (
             <button
               type="button"
-              onClick={applyFix}
+              // A double-click's second click would apply the next failure's Fix, which renders in the
+              // same spot and folds into the same undo step. Keyboard clicks have detail 0.
+              onClick={(e) => {
+                if (e.detail <= 1) applyFix();
+              }}
               aria-label={`Fix ${first.label}`}
               className="-ml-2 flex min-h-11 items-center self-start rounded-md px-2 text-xs font-semibold text-[#78350F] underline hover:text-[#451A03] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
             >

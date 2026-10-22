@@ -161,7 +161,7 @@ describe("ReadabilityCheck Fix", () => {
     expect(anyFix()).not.toBeInTheDocument();
   });
 
-  it("makes each Fix one undo step", async () => {
+  it("makes each Fix one undo step when Fixes are at least 400ms apart", async () => {
     const user = userEvent.setup();
     const d = design(WHITE, [heading("#FFFFFF")]);
     start({ ...d, form: { ...d.form, terms: { ...d.form.terms, mode: "checkbox", textColour: "#FFFFFF" } } });
@@ -177,6 +177,27 @@ describe("ReadabilityCheck Fix", () => {
     expect(state().design.blocks[0]).toMatchObject({ colour: "#111111" });
     act(() => history().undo());
     expect(state().design.blocks[0]).toMatchObject({ colour: "#FFFFFF" });
+  });
+
+  it("applies one Fix for a double-click, though the next failure's Fix takes its place", async () => {
+    const user = userEvent.setup();
+    const d = design(WHITE, [heading("#FFFFFF")]);
+    start({ ...d, form: { ...d.form, terms: { ...d.form.terms, mode: "checkbox", textColour: "#FFFFFF" } } });
+
+    await user.dblClick(screen.getByRole("button", { name: "Fix Heading" }));
+    expect(state().design.blocks[0]).toMatchObject({ colour: "#111111" });
+    expect(state().design.form.terms.textColour).toBe("#FFFFFF");
+    expect(screen.getByRole("button", { name: "Fix Terms checkbox" })).toBeInTheDocument();
+  });
+
+  it("applies the Fix from the keyboard", async () => {
+    const user = userEvent.setup();
+    start(design(WHITE, [heading("#FFFFFF")]));
+
+    await user.tab();
+    expect(screen.getByRole("button", { name: "Fix Heading" })).toHaveFocus();
+    await user.keyboard("{Enter}");
+    expect(state().design.blocks[0]).toMatchObject({ colour: "#111111" });
   });
 
   it("fixes a solid button's label against the button's own fill", async () => {
