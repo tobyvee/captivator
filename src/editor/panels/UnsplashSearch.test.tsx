@@ -122,17 +122,17 @@ describe("UnsplashSearch", () => {
     expect(status()).toBeEmptyDOMElement();
   });
 
-  it("drops a slow reply for a query that has since changed", async () => {
+  it("drops a slow reply for a query that has since changed, even when the newer search failed", async () => {
     let answerFirst: (res: Response) => void = () => {};
     fetchMock.mockImplementationOnce(() => new Promise((resolve) => (answerFirst = resolve)));
     render(<UnsplashSearch />);
     type("snow");
     await settle();
 
-    await searchFor("snowy peaks", found([photo("s2", { name: "Second" })]));
+    await searchFor("snowy peaks", Response.json({ error: "Photo search is not set up" }, { status: 503 }));
     await act(async () => answerFirst(found([photo("s1", { name: "First" })])));
 
-    expect(screen.getByRole("img", { name: "Photo by Second" })).toBeInTheDocument();
+    expect(status()).toHaveTextContent("Photo search isn't available right now. Upload your own instead.");
     expect(screen.queryByRole("img", { name: "Photo by First" })).not.toBeInTheDocument();
   });
 
