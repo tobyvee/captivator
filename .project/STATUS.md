@@ -11,12 +11,11 @@ tags: [project, captivator, status]
 
 ## Summary
 
-Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is built and deployed to Cloudflare Workers with vinext at https://app.captivator.workers.dev. All 36 tickets in 11 waves are done, all nine milestones are closed, and nothing was cut, stretch work included (`tickets/INDEX.md`). The editor has a live phone and browser preview, the block list with drag to reorder, undo and redo, readability and small-phone fit checks with a one-tap contrast Fix, the logo palette, Unsplash search, and the Background, Text, Image, Fields, Connect button and Terms panels. It renders four guest screens from one `SplashPage` and exports a standalone HTML file under the 100 KB budget. Every ticket was reviewed and security-audited, and the guest page was splash-audited. The final full audit found one low, missing security headers, now fixed (`review/2026-10-23-security-full-review.md`). 880 tests pass, and the README describes what shipped, the key decisions and the path to production. You ran the real-phone checklist (`review/phone-checklist.md`): 14 checks passed and 8 were skipped, which are recorded as unverified. Its one failure, the preview sliding down when Unsplash results load, is fixed by `T-036`. Still to do after the final deploy: confirm the run is green and the headers are live, re-check the T-036 fix in the deployed editor, and load the live URL on a phone's mobile data.
+Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is built and deployed to Cloudflare Workers with vinext at https://app.captivator.workers.dev. All 36 tickets in 11 waves are done, all nine milestones are closed, and nothing was cut, stretch work included (`tickets/INDEX.md`). The editor has a live phone and browser preview, the block list with drag to reorder, undo and redo, readability and small-phone fit checks with a one-tap contrast Fix, the logo palette, Unsplash search, and the Background, Text, Image, Fields, Connect button and Terms panels. It renders four guest screens from one `SplashPage` and exports a standalone HTML file under the 100 KB budget. Every ticket was reviewed and security-audited, and the guest page was splash-audited. The final full audit found one low, missing security headers, now fixed (`review/2026-10-23-security-full-review.md`). 880 tests pass, and the README describes what shipped, the key decisions and the path to production. You ran the real-phone checklist (`review/phone-checklist.md`): 14 checks passed and 8 were skipped, which are recorded as unverified. Its one failure, the preview sliding down when Unsplash results load, is fixed by `T-036`. The final deploy is green and the security headers are live. Still to do: re-check the T-036 fix in the deployed editor, and load the live URL on a phone's mobile data.
 
 ## In progress
 
 ## Outstanding
-- [ ] Confirm the final deploy run is green and the security headers are live
 - [ ] Re-check the T-036 fix (Unsplash results in the deployed editor) and record it in `review/phone-checklist.md`
 - [ ] Load the live URL on a phone's mobile data (skipped in T-029)
 
@@ -81,3 +80,4 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is buil
 - [x] T-030: README and final deploy (2026-10-23)
 - [x] Milestone 9 closed: real-phone checklist, README and final deploy, with security headers (2026-10-23)
 - [x] Wave 11 closed; the final full audit's one low (security headers) is fixed (2026-10-23)
+- [x] Final deploy green (run 39856955907); `/`, `/editor` and `/api/unsplash` send the three security headers (2026-10-23)
