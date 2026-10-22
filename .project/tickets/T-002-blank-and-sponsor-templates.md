@@ -2,7 +2,7 @@
 title: "T-002: Blank and Sponsor templates"
 type: ticket
 project: captivator
-status: todo
+status: done
 priority: P0
 milestone: 1
 estimate: 10
@@ -33,12 +33,12 @@ Build step 1 lists `templates.ts` with Blank and Sponsor ([spec → Data model a
 - **Out of scope:** Photo hero and Minimal (T-018); the picker (T-019); any credit on the guest page for template photos (see decision).
 
 ## Acceptance criteria
-- [ ] Importing `templates.ts` runs `Template.parse` on each template (a broken template fails the test run).
-- [ ] Sponsor matches the values in Notes and uses `/templates/sponsor.jpg`.
-- [ ] Image `src`s are either `/templates/<name>.jpg|jpeg|webp` or raster data URLs. PNG files under `/templates/` aren't allowed by the schema.
-- [ ] Terms body is bracketed prompts only, never invented legal wording.
-- [ ] Sponsor's content height in the compact layout is at most 600px by the arithmetic in Notes (review finding 17).
-- [ ] `npm test` and `npx tsc --noEmit` pass.
+- [x] Importing `templates.ts` runs `Template.parse` on each template (a broken template fails the test run).
+- [x] Sponsor matches the values in Notes and uses `/templates/sponsor.jpg`.
+- [x] Image `src`s are either `/templates/<name>.jpg|jpeg|webp` or raster data URLs. PNG files under `/templates/` aren't allowed by the schema.
+- [x] Terms body is bracketed prompts only, never invented legal wording.
+- [x] Sponsor's content height in the compact layout is at most 600px by the arithmetic in Notes (review finding 17).
+- [x] `npm test` and `npx tsc --noEmit` pass.
 
 ## Dependencies
 - T-001: Vitest, `tsconfig` and the `@/` alias.
@@ -56,8 +56,25 @@ Build step 1 lists `templates.ts` with Blank and Sponsor ([spec → Data model a
 
 **Fit arithmetic** (column padding 56 + 40, column gap 18, Form is one column child with internal gap 12 and fields gap 10, per T-005/T-007): logo `sm` 72 + heading 36px at ~1.15 line height ≈ 41 + subheading ≈ 21 + sponsor `sm` 72 + form (48 + 10 + 48 + 12 + 44 terms row + 12 + 50 button = 224) + 4 gaps × 18 = 72 + padding 96 ≈ 598px. If you change sizes, keep the total at or under 600px.
 
+**Outcome (2026-10-22):**
+- `sponsor.jpg` is the real canvas asset (540×960, 40 KB), so the gradient fallback wasn't needed.
+- The code review approved it with four should-fixes, all fixed in `2c67b79`:
+  - `BLANK` is now re-exported unchanged rather than as a parsed copy.
+  - `TEMPLATE_CREDITS` is typed `Partial`.
+  - New tests check that block ids are unique and that every `/templates/` src exists in `public/`.
+- The sponsor tile's block id is `sponsor-partner-logo`.
+- The arithmetic gives a fit of about 598px. The real check arrives with T-028.
+- Differences from the canvas:
+  - The heading is 36px where the canvas has 44px, to keep the fit budget.
+  - The placeholders carry no "[EVENT LOGO]" text.
+  - Blank's description is the schema's wording, not the canvas card's.
+- **For T-018:** `PLACEHOLDER_LOGO` is a white ring, nearly invisible on light backgrounds, so Minimal may need a dark variant (`T-002-placeholder-logo-is-white-on-transparent.md`).
+
 The schema's `ImageSrc` regex is `^(data:image\/(png|jpeg|webp);base64,|\/templates\/[\w-]+\.(jpg|jpeg|webp)$|https:\/\/)`.
 
 ## Decisions
+- [`T-002-blank-is-parsed-copy.md`](../decisions/T-002-blank-is-parsed-copy.md): templates.ts exports BLANK as the Template.parse output of the schema's BLANK (superseded)
+- [`T-002-blank-re-exported-unchanged.md`](../decisions/T-002-blank-re-exported-unchanged.md): templates.ts parses the schema's BLANK and re-exports the same object
+- [`T-002-placeholder-logo-is-white-on-transparent.md`](../decisions/T-002-placeholder-logo-is-white-on-transparent.md): PLACEHOLDER_LOGO is a white dashed ring on a transparent PNG
 - [`T-002-template-photos-and-credits.md`](../decisions/T-002-template-photos-and-credits.md): Template photos come from the canvas assets, and their credits live beside the templates, not in background.credit
 - [`T-004-default-design-is-sponsor.md`](../decisions/T-004-default-design-is-sponsor.md): The store starts from the Sponsor template
