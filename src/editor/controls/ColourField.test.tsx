@@ -241,7 +241,7 @@ describe("ColourField picker", () => {
 
   it("stays open on a press on a scroller's scrollbar, and closes on a press in its content", () => {
     render(
-      <div data-testid="scroller">
+      <div data-testid="scroller" style={{ overflowY: "auto" }}>
         <ColourField label="Text colour" value="#112233" onChange={vi.fn()} />
       </div>,
     );
@@ -259,6 +259,35 @@ describe("ColourField picker", () => {
 
     // x = 200 is in the scroller's content, outside the field.
     fireEvent.pointerDown(scroller, { clientX: 200, clientY: 200 });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  // Firefox reports an inline element's client size as 0 but its scroll size as its box's, so
+  // only scroll containers may count a press outside the client area as a scrollbar press.
+  it.each([
+    ["an inline element", "", { clientWidth: 0, clientHeight: 0, scrollWidth: 142, scrollHeight: 21 }, [81, 30]],
+    [
+      "an overflowing element that doesn't scroll, on its border",
+      "visible",
+      { clientLeft: 1, clientTop: 1, clientWidth: 140, clientHeight: 19, scrollWidth: 300, scrollHeight: 19 },
+      [151, 30], // the right border
+    ],
+  ])("closes on a press on %s", (_, overflow, box, [clientX, clientY]) => {
+    render(
+      <>
+        <ColourField label="Text colour" value="#112233" onChange={vi.fn()} />
+        <span data-testid="other" style={{ overflow }}>
+          Other text
+        </span>
+      </>,
+    );
+    // A 142 × 21 box at (10, 20).
+    const other = screen.getByTestId("other");
+    for (const [key, value] of Object.entries(box)) Object.defineProperty(other, key, { value });
+    vi.spyOn(other, "getBoundingClientRect").mockReturnValue(new DOMRect(10, 20, 142, 21));
+    fireEvent.click(swatch());
+
+    fireEvent.pointerDown(other, { clientX, clientY });
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
