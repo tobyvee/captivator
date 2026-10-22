@@ -55,10 +55,7 @@ describe("BlockList", () => {
     const list = screen.getByRole("complementary", { name: "Blocks" });
     expect(within(list).getByRole("heading", { name: "Blocks" })).toBeInTheDocument();
 
-    const rows = within(list)
-      .getAllByRole("button")
-      .filter((b) => !b.getAttribute("aria-label") && b.textContent !== "+ Text")
-      .map((b) => b.querySelector(".font-semibold")?.textContent);
+    const rows = Array.from(list.querySelectorAll("[data-row-name]"), (el) => el.textContent);
     expect(rows).toEqual(["Background", "Image", "Heading", "Subheading", "Image", "Fields", "Terms", "Connect button"]);
     expect(screen.getByText("Tip: tap anything in the preview to edit it.")).toBeInTheDocument();
   });
@@ -77,6 +74,13 @@ describe("BlockList", () => {
     expect(useStore.getState().selection).toEqual({ kind: "fields" });
     await userEvent.click(row(/^Connect button/));
     expect(useStore.getState().selection).toEqual({ kind: "button" });
+  });
+
+  it("highlights the background when the selected block no longer exists", () => {
+    render(<BlockList />);
+    act(() => useStore.setState({ selection: { kind: "block", id: "gone" } }));
+    expect(row(/^Background/)).toHaveAttribute("aria-current", "true");
+    expect(screen.getAllByRole("button").filter((b) => b.hasAttribute("aria-current"))).toHaveLength(1);
   });
 
   describe("summaries", () => {
@@ -124,6 +128,19 @@ describe("BlockList", () => {
       expect(row(/^Fields/)).toHaveTextContent("None, guests just tap Connect");
       expect(row(/^Terms/)).toHaveTextContent("Off");
     });
+
+    it("cuts text by characters, not UTF-16 units, and shows Empty for blank text", () => {
+      render(<BlockList />);
+      act(() => {
+        useStore.getState().updateBlock("sponsor-heading", { text: "A".repeat(29) + "😀😀" });
+      });
+      expect(row(/^Heading/).textContent).toBe("Heading" + "A".repeat(29) + "😀");
+
+      act(() => {
+        useStore.getState().updateBlock("sponsor-heading", { text: "   " });
+      });
+      expect(row(/^Heading/).textContent).toBe("HeadingEmpty");
+    });
   });
 
   describe("+ Text", () => {
@@ -169,6 +186,22 @@ describe("BlockList", () => {
       expect(imageInput().getAttribute("aria-describedby")).toContain("image-limit");
     });
 
+    it("moves focus to the new row when the second image disables the upload", async () => {
+      load(structuredClone(BLANK.design));
+      render(<BlockList />);
+
+      imageInput().focus();
+      await upload();
+      // Below the limit the upload stays enabled and keeps focus.
+      expect(imageInput()).toHaveFocus();
+
+      await upload();
+      expect(imageInput()).toBeDisabled();
+      const added = row(/^Image\s*Sponsor logo/);
+      expect(added).toHaveAttribute("aria-current", "true");
+      expect(added).toHaveFocus();
+    });
+
     it("is disabled from the start when the design already has two images", () => {
       render(<BlockList />);
       expect(imageInput()).toBeDisabled();
@@ -204,6 +237,31 @@ describe("BlockList", () => {
       expect(order()[0]).toBe("sponsor-subheading");
       expect(screen.getByRole("button", { name: "Move Subheading up" })).toBeDisabled();
       expect(screen.getByRole("button", { name: "Move Subheading down" })).toHaveFocus();
+    });
+
+    it("keeps focus on a button whose own row moves in the DOM", async () => {
+      render(<BlockList />);
+      // React moves Heading's row (not Subheading's) past Subheading. jsdom then drops focus, and
+      // React's commit refocuses the button, so this guards against the row remounting instead.
+      const down = screen.getByRole("button", { name: "Move Heading down" });
+      await userEvent.click(down);
+      expect(blocks().map((b) => b.id)).toEqual([
+        "sponsor-logo",
+        "sponsor-subheading",
+        "sponsor-heading",
+        "sponsor-partner-logo",
+      ]);
+      expect(screen.getByRole("button", { name: "Move Heading down" })).toBe(down);
+      expect(down).toHaveFocus();
+    });
+
+    it("describes each move button by its row's summary, so same-named blocks differ", () => {
+      render(<BlockList />);
+      const ups = screen.getAllByRole("button", { name: "Move Image up" });
+      expect(ups).toHaveLength(2);
+      expect(ups[0]).toHaveAccessibleDescription("Your logo");
+      expect(ups[1]).toHaveAccessibleDescription("Sponsor logo");
+      expect(screen.getByRole("button", { name: "Move Heading down" })).toHaveAccessibleDescription("FREE WIFI");
     });
   });
 

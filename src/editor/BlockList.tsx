@@ -11,25 +11,20 @@ import {
   TextCursorInput,
   Type,
 } from "lucide-react";
-import { type ReactNode, useRef } from "react";
+import { type JSX, type ReactNode, useId, useRef } from "react";
 import { flushSync } from "react-dom";
 import { backgroundColours, bestTextColour } from "@/lib/contrast";
 import { type Block, type Design, FIELD_SPEC, MAX_IMAGES } from "@/lib/design-schema";
 import { useStore } from "@/lib/store";
 import type { BackgroundSpec, Selection, TextBlockSpec } from "@/lib/types";
+import { ANGLE } from "@/splash/Background";
 import { ImageUpload } from "./controls/ImageUpload";
-import { Switch } from "./controls/Switch";
+import { TermsSwitch } from "./controls/TermsSwitch";
 
 const TEXT_NAMES: Record<TextBlockSpec["role"], string> = {
   heading: "Heading",
   subheading: "Subheading",
   body: "Text",
-};
-
-const ANGLE: Record<Extract<BackgroundSpec, { type: "gradient" }>["direction"], string> = {
-  down: "180deg",
-  diagonal: "135deg",
-  right: "90deg",
 };
 
 const FOCUS_RING = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600";
@@ -39,7 +34,9 @@ function blockName(block: Block): string {
 }
 
 function blockSummary(block: Block): string {
-  return block.kind === "text" ? block.text.slice(0, 30) || "Empty" : block.alt;
+  if (block.kind === "image") return block.alt;
+  // Cut by code points so an emoji or other astral character is never split in half.
+  return block.text.trim() ? Array.from(block.text).slice(0, 30).join("") : "Empty";
 }
 
 function backgroundSummary(bg: BackgroundSpec): string {
@@ -67,7 +64,7 @@ function Swatch({ background }: { background: string }) {
   );
 }
 
-function BackgroundSwatch({ bg }: { bg: BackgroundSpec }) {
+function BackgroundSwatch({ bg }: { bg: BackgroundSpec }): JSX.Element {
   switch (bg.type) {
     case "colour":
       return <Swatch background={bg.colour} />;
@@ -77,6 +74,10 @@ function BackgroundSwatch({ bg }: { bg: BackgroundSpec }) {
       return (
         <img src={bg.src} alt="" className="size-[22px] shrink-0 rounded-md border border-zinc-300 object-cover" />
       );
+    default: {
+      const unreachable: never = bg;
+      return unreachable;
+    }
   }
 }
 
@@ -92,10 +93,14 @@ type RowProps = {
   swatch?: ReactNode;
   /** Sibling controls beside the row button (move buttons, the Terms switch), never nested in it. */
   controls?: ReactNode;
+  /** Set on the summary so sibling controls can point `aria-describedby` at it. */
+  summaryId?: string;
+  /** The block's id on its select button, so focus can be moved to the row. */
+  blockId?: string;
 };
 
 /** One row: a select button filling the row, with any controls as its siblings. */
-function Row({ icon: Icon, name, summary, selected, onSelect, pinned, swatch, controls }: RowProps) {
+function Row({ icon: Icon, name, summary, selected, onSelect, pinned, swatch, controls, summaryId, blockId }: RowProps) {
   return (
     <div
       className={[
@@ -107,13 +112,16 @@ function Row({ icon: Icon, name, summary, selected, onSelect, pinned, swatch, co
       <button
         type="button"
         aria-current={selected ? "true" : undefined}
+        data-block-id={blockId}
         onClick={onSelect}
         className={`flex min-h-11 min-w-0 flex-1 items-center gap-2.5 self-stretch rounded-[7px] px-2.5 py-1.5 text-left text-zinc-900 ${FOCUS_RING}`}
       >
         <Icon size={18} aria-hidden="true" className={selected ? "shrink-0 text-blue-600" : "shrink-0 text-zinc-600"} />
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="text-[13px] font-semibold">{name}</span>
-          <span className={["truncate text-xs", selected ? "text-blue-800" : "text-zinc-600"].join(" ")}>
+          <span data-row-name className="text-[13px] font-semibold">
+            {name}
+          </span>
+          <span id={summaryId} className={["truncate text-xs", selected ? "text-blue-800" : "text-zinc-600"].join(" ")}>
             {summary}
           </span>
         </span>
@@ -130,18 +138,69 @@ const MOVE_BUTTON = [
   FOCUS_RING,
 ].join(" ");
 
-function BlockRows({ blocks, selection }: { blocks: Design["blocks"]; selection: Selection }) {
+type BlockRowProps = {
+  block: Block;
+  selected: boolean;
+  first: boolean;
+  last: boolean;
+  move: (id: string, dir: -1 | 1) => void;
+  register: (key: string) => (el: HTMLButtonElement | null) => void;
+};
+
+function BlockRow({ block, selected, first, last, move, register }: BlockRowProps) {
   const setSelection = useStore((s) => s.setSelection);
+  // Two blocks can share a name (Sponsor's two images), so the move buttons are described by the
+  // row's summary to tell them apart.
+  const summaryId = useId();
+  const name = blockName(block);
+  return (
+    <Row
+      icon={block.kind === "text" ? Type : ImageIcon}
+      name={name}
+      summary={blockSummary(block)}
+      summaryId={summaryId}
+      blockId={block.id}
+      selected={selected}
+      onSelect={() => setSelection({ kind: "block", id: block.id })}
+      controls={
+        <>
+          <button
+            ref={register(`${block.id}:-1`)}
+            type="button"
+            aria-label={`Move ${name} up`}
+            aria-describedby={summaryId}
+            disabled={first}
+            onClick={() => move(block.id, -1)}
+            className={MOVE_BUTTON}
+          >
+            <ChevronUp size={16} aria-hidden="true" />
+          </button>
+          <button
+            ref={register(`${block.id}:1`)}
+            type="button"
+            aria-label={`Move ${name} down`}
+            aria-describedby={summaryId}
+            disabled={last}
+            onClick={() => move(block.id, 1)}
+            className={MOVE_BUTTON}
+          >
+            <ChevronDown size={16} aria-hidden="true" />
+          </button>
+        </>
+      }
+    />
+  );
+}
+
+function BlockRows({ blocks, selection }: { blocks: Design["blocks"]; selection: Selection }) {
   const moveBlock = useStore((s) => s.moveBlock);
   const moveButtons = useRef(new Map<string, HTMLButtonElement>());
 
   function move(id: string, dir: -1 | 1) {
-    // Reordering can move the focused button in the DOM, or disable it at the new end, which
-    // drops focus to <body>. Render the move first, then put focus back on the same block.
+    // React refocuses the clicked button after its row moves in the DOM, but not once the move
+    // disables it at the new end. Render the move first, then hand focus to the other button.
     flushSync(() => moveBlock(id, dir));
-    const same = moveButtons.current.get(`${id}:${dir}`);
-    const other = moveButtons.current.get(`${id}:${-dir}`);
-    (same && !same.disabled ? same : other)?.focus();
+    if (moveButtons.current.get(`${id}:${dir}`)?.disabled) moveButtons.current.get(`${id}:${-dir}`)?.focus();
   }
 
   const register = (key: string) => (el: HTMLButtonElement | null) => {
@@ -149,49 +208,24 @@ function BlockRows({ blocks, selection }: { blocks: Design["blocks"]; selection:
     else moveButtons.current.delete(key);
   };
 
-  return blocks.map((block, i) => {
-    const name = blockName(block);
-    return (
-      <Row
-        key={block.id}
-        icon={block.kind === "text" ? Type : ImageIcon}
-        name={name}
-        summary={blockSummary(block)}
-        selected={isSelected(selection, "block", block.id)}
-        onSelect={() => setSelection({ kind: "block", id: block.id })}
-        controls={
-          <>
-            <button
-              ref={register(`${block.id}:-1`)}
-              type="button"
-              aria-label={`Move ${name} up`}
-              disabled={i === 0}
-              onClick={() => move(block.id, -1)}
-              className={MOVE_BUTTON}
-            >
-              <ChevronUp size={16} aria-hidden="true" />
-            </button>
-            <button
-              ref={register(`${block.id}:1`)}
-              type="button"
-              aria-label={`Move ${name} down`}
-              disabled={i === blocks.length - 1}
-              onClick={() => move(block.id, 1)}
-              className={MOVE_BUTTON}
-            >
-              <ChevronDown size={16} aria-hidden="true" />
-            </button>
-          </>
-        }
-      />
-    );
-  });
+  return blocks.map((block, i) => (
+    <BlockRow
+      key={block.id}
+      block={block}
+      selected={isSelected(selection, "block", block.id)}
+      first={i === 0}
+      last={i === blocks.length - 1}
+      move={move}
+      register={register}
+    />
+  ));
 }
 
 function AddButtons({ imageCount }: { imageCount: number }) {
   const addBlock = useStore((s) => s.addBlock);
   const setLogoPalette = useStore((s) => s.setLogoPalette);
   const atLimit = imageCount >= MAX_IMAGES;
+  const container = useRef<HTMLDivElement>(null);
 
   function addText() {
     const { background } = useStore.getState().design;
@@ -207,11 +241,23 @@ function AddButtons({ imageCount }: { imageCount: number }) {
   function addImage(src: string) {
     // Read the count at upload time: the design may have changed while the image was shrinking.
     const images = useStore.getState().design.blocks.filter((b) => b.kind === "image").length;
-    addBlock({ kind: "image", src, alt: images === 0 ? "Logo" : "Sponsor logo", size: "md" });
+    // Render the add now: reaching the limit disables the file input, which drops its focus.
+    const id = flushSync(() =>
+      addBlock({ kind: "image", src, alt: images === 0 ? "Logo" : "Sponsor logo", size: "md" }),
+    );
+    if (id === null || images + 1 < MAX_IMAGES) return;
+    // Move focus to the new block's row (already selected), unless the customer has put it
+    // somewhere else while the image was shrinking.
+    const here = container.current;
+    const active = document.activeElement;
+    if (!here || (active && active !== document.body && !here.contains(active))) return;
+    Array.from(here.closest("aside")?.querySelectorAll<HTMLButtonElement>("button[data-block-id]") ?? [])
+      .find((b) => b.dataset.blockId === id)
+      ?.focus();
   }
 
   return (
-    <div className="mt-2.5 flex flex-col gap-0.5">
+    <div ref={container} className="mt-2.5 flex flex-col gap-0.5">
       <div className="flex items-start gap-2">
         <button
           type="button"
@@ -249,7 +295,6 @@ export function BlockList() {
   const design = useStore((s) => s.design);
   const selection = useStore((s) => s.selection);
   const setSelection = useStore((s) => s.setSelection);
-  const updateForm = useStore((s) => s.updateForm);
   const { background, blocks, form } = design;
   const termsOn = form.terms.mode === "checkbox";
   const imageCount = blocks.filter((b) => b.kind === "image").length;
@@ -293,13 +338,7 @@ export function BlockList() {
         selected={isSelected(shown, "terms")}
         onSelect={() => setSelection({ kind: "terms" })}
         pinned
-        controls={
-          <Switch
-            label="Show terms checkbox"
-            checked={termsOn}
-            onChange={(checked) => updateForm({ terms: { mode: checked ? "checkbox" : "off" } })}
-          />
-        }
+        controls={<TermsSwitch />}
       />
       <Row
         icon={MousePointerClick}

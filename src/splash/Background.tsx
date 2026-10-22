@@ -3,7 +3,8 @@ import type { BackgroundSpec, ImageBackground, RenderMode } from "../lib/types";
 
 export type BackgroundProps = { background: BackgroundSpec; mode: RenderMode };
 
-const ANGLE: Record<Extract<BackgroundSpec, { type: "gradient" }>["direction"], string> = {
+// CSS angle per gradient direction. The editor's block-list swatch draws gradients with it too.
+export const ANGLE: Record<Extract<BackgroundSpec, { type: "gradient" }>["direction"], string> = {
   down: "180deg",
   diagonal: "135deg",
   right: "90deg",

@@ -7,7 +7,7 @@ import { useShallow } from "zustand/react/shallow";
 import type { Design } from "@/lib/design-schema";
 import { useStore } from "@/lib/store";
 import type { Selection, TextBlockSpec } from "@/lib/types";
-import { Switch } from "./controls/Switch";
+import { TermsSwitch } from "./controls/TermsSwitch";
 import { BackgroundPanel } from "./panels/BackgroundPanel";
 import { ButtonPanel } from "./panels/ButtonPanel";
 import { FieldsPanel } from "./panels/FieldsPanel";
@@ -112,18 +112,6 @@ function DeleteBlock({ id, headingRef }: { id: string; headingRef: RefObject<HTM
     >
       <Trash size={16} aria-hidden="true" />
     </button>
-  );
-}
-
-function TermsSwitch() {
-  const on = useStore((s) => s.design.form.terms.mode === "checkbox");
-  const updateForm = useStore((s) => s.updateForm);
-  return (
-    <Switch
-      label="Show terms checkbox"
-      checked={on}
-      onChange={(checked) => updateForm({ terms: { mode: checked ? "checkbox" : "off" } })}
-    />
   );
 }
 
