@@ -32,7 +32,7 @@ Build step 9, "Run through the testing checklist on a real phone" ([spec → Tes
   - Live preview in Mobile and Desktop.
   - Refresh restores; cleared storage falls back without errors.
   - Undo through a colour drag and a text edit; Cmd+Z in a textarea.
-  - Third image or field blocked; a 4 MB photo lands under 150 KB.
+  - Third image or field blocked; a 4 MB photo lands under 150 KB, measured as the stored data URL's length, the number the upload warning shows ([`T-011-upload-size-measures-data-url.md`](../decisions/T-011-upload-size-measures-data-url.md)).
   - Templates load and switching keeps the logo.
   - Contrast and fit warnings.
   - Keyboard-only use, with announced switch and segmented states.

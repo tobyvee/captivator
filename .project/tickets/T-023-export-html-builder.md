@@ -37,6 +37,7 @@ Also `downloadHtml(html, name)`: a `Blob` (`text/html`), `URL.createObjectURL`, 
 ## Acceptance criteria
 - [ ] Output starts with `<!doctype html>` and has the viewport meta (test).
 - [ ] **Security:** output contains no `http://` or `https://` URLs except Unsplash credit links (every match starts with `https://unsplash.com/`), and every `<img src` is a `data:image/` URL (test).
+- [ ] **Security:** when `inline` rejects (CORS refused, not an image, over 10 MB), the export never falls back to the original `src`. It drops that image or fails with a clear message, and the output still has no `http(s)://` image URL (test with a rejecting `inline` dep; T-011 security audit). Consider bounding each fetch with `AbortSignal.timeout`, so one slow host can't hang the export (`.project/review/2026-10-22-security-T-011-review.md`).
 - [ ] Required fields and the terms checkbox carry `required` (test).
 - [ ] The terms sheet has `id="terms"`, and the style block has a `:target` rule (test).
 - [ ] **Security:** with fields, the form posts to `[PORTAL_SUBMIT_URL]` with no `command` input; with no fields, it posts to `[ROUTER_FORM_ACTION]` with `command=login` (tests).
