@@ -50,6 +50,7 @@ Build step 8, "Undo/redo with shortcuts" ([spec → Data model and store → Und
 - T-008: the `UndoRedo` stub in the top bar.
 
 ## Notes
+- **Added scope from T-019 and the milestone 5 review:** treat a design edited in this session as saved, so the picker shows "Continue your design" and asks before switching without a reload. The main session adds it when landing T-025 ([`T-025-store-marks-in-session-saves.md`](../decisions/T-025-store-marks-in-session-saves.md)).
 Pick the middleware order (`temporal(persist(…))` or `persist(temporal(…))`) so that `useStore.persist` and `useStore.temporal` both exist and persist's `partialize`/`merge` are unchanged. Say which you chose in your report.
 
 The store only writes to storage when `design` or `name` changes by reference ([`T-004-write-only-on-design-change.md`](../decisions/T-004-write-only-on-design-change.md)). Undo and redo must set `design` to the stored history object, as zundo does, never mutate it in place, or the undone state won't be saved. Add a test that undo followed by a 300ms wait writes the earlier design.
