@@ -203,6 +203,23 @@ describe("ColourField picker", () => {
     expect(swatch()).toHaveFocus();
   });
 
+  it("cancels a draft typed in the hex input when Escape closes the popover", () => {
+    const onChange = renderField("#112233");
+    fireEvent.click(swatch());
+    const input = typeHex("abc123");
+    fireEvent.keyDown(input, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(swatch()).toHaveFocus();
+    expect(onChange).not.toHaveBeenCalled();
+    expect(input).toHaveValue("#112233");
+  });
+
+  it("describes the swatch by the field's label", () => {
+    renderField();
+    expect(swatch()).toHaveAccessibleName("Open colour picker");
+    expect(swatch()).toHaveAccessibleDescription("Text colour");
+  });
+
   it("closes on a press outside without moving focus to the swatch", () => {
     render(
       <>
@@ -256,10 +273,23 @@ describe("ColourField picker", () => {
 });
 
 describe("ColourField hex input", () => {
-  it("is labelled by the field label, shows the value uppercased and takes at most 7 characters", () => {
+  it("is labelled by the field label, shows the value uppercased and takes at most 9 characters", () => {
     renderField("#a1b2c3");
     expect(hexInput()).toHaveValue("#A1B2C3");
-    expect(hexInput()).toHaveAttribute("maxLength", "7");
+    // #RRGGBB plus room for a space either side of a pasted colour.
+    expect(hexInput()).toHaveAttribute("maxLength", "9");
+  });
+
+  it("commits a pasted colour with surrounding spaces, trimmed", async () => {
+    const user = userEvent.setup();
+    const onChange = renderField();
+    const input = hexInput();
+    await user.click(input);
+    await user.clear(input);
+    await user.paste(" #abc123 ");
+    expect(input).toHaveValue(" #abc123 ");
+    await user.keyboard("{Enter}");
+    expect(onChange).toHaveBeenCalledExactlyOnceWith("#ABC123");
   });
 
   it("commits abc123 on Enter as #ABC123", () => {
@@ -332,6 +362,14 @@ describe("ColourField suggestions", () => {
     const onChange = renderField();
     fireEvent.click(within(designRow()).getByRole("button", { name: "#111111" }));
     expect(onChange).toHaveBeenCalledExactlyOnceWith("#111111");
+  });
+
+  it("doesn't call onChange when the selected suggestion is pressed again", () => {
+    const onChange = renderField("#111111");
+    const selected = within(designRow()).getByRole("button", { name: "#111111" });
+    expect(selected).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(selected);
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it("marks the suggestion matching the value as pressed, whatever its case", () => {

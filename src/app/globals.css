@@ -8,3 +8,17 @@ body {
   background: #f4f4f5;
   color: #18181b;
 }
+
+/*
+ * ColourField's react-colorful popover. Unlayered on purpose: react-colorful injects its own
+ * unlayered stylesheet at runtime, which beats anything in Tailwind's `@layer utilities`, so
+ * utility classes can't restyle its parts. A 44px hue strip for touch, and the editor's focus ring.
+ */
+.cv-colour-picker .react-colorful__hue {
+  height: 44px;
+}
+
+.cv-colour-picker .react-colorful__interactive:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}

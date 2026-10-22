@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
+import { flushSync } from "react-dom";
 import { HexColorPicker } from "react-colorful";
 import { useShallow } from "zustand/react/shallow";
 import type { Design } from "@/lib/design-schema";
 import { useStore } from "@/lib/store";
 
 const HEX_INPUT = /^#?[0-9a-fA-F]{6}$/;
+// Room for a pasted colour with a space either side; the text is trimmed before it is checked.
+const HEX_MAX_LENGTH = 9;
 const MAX_DESIGN_COLOURS = 8;
 
 const BLUE = "#2563EB";
@@ -44,12 +47,13 @@ type Props = {
 export function ColourField({ label, value, onChange, id }: Props) {
   const autoId = useId();
   const inputId = id ?? `${autoId}-hex`;
+  const labelId = `${autoId}-label`;
   const popoverId = `${autoId}-picker`;
   const rowId = `${autoId}-design`;
   const logoRowId = `${autoId}-logo`;
 
   const inDesign = useStore(useShallow((s) => designColours(s.design)));
-  const fromLogo = useStore(useShallow((s) => dedupe(s.logoPalette)));
+  const fromLogo = useStore(useShallow((s) => cleanPalette(s.logoPalette)));
 
   const [open, setOpen] = useState(false);
   // The hex input's text while it has focus; null shows `value`.
@@ -57,6 +61,7 @@ export function ColourField({ label, value, onChange, id }: Props) {
   const anchorRef = useRef<HTMLDivElement>(null);
   const swatchRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const current = value.toUpperCase();
 
   // Close on a press outside the swatch and popover. Focus is left where that press puts it.
   useEffect(() => {
@@ -97,16 +102,20 @@ export function ColourField({ label, value, onChange, id }: Props) {
     const text = draft.trim();
     if (HEX_INPUT.test(text)) {
       const next = normalise(text);
-      if (next !== value.toUpperCase()) onChange(next);
+      if (next !== current) onChange(next);
       setDraft(next);
     } else {
-      setDraft(value.toUpperCase());
+      setDraft(current);
     }
+  }
+
+  function pick(colour: string) {
+    if (colour !== current) onChange(colour);
   }
 
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={inputId} className="text-[13px] font-semibold text-zinc-900">
+      <label id={labelId} htmlFor={inputId} className="text-[13px] font-semibold text-zinc-900">
         {label}
       </label>
 
@@ -115,6 +124,7 @@ export function ColourField({ label, value, onChange, id }: Props) {
           ref={swatchRef}
           type="button"
           aria-label="Open colour picker"
+          aria-describedby={labelId}
           aria-haspopup="dialog"
           aria-expanded={open}
           aria-controls={open ? popoverId : undefined}
@@ -129,12 +139,8 @@ export function ColourField({ label, value, onChange, id }: Props) {
             id={popoverId}
             role="dialog"
             aria-label={`${label} picker`}
-            className={[
-              "absolute top-full left-0 z-30 mt-2 rounded-xl border border-zinc-200 bg-white p-3 shadow-lg",
-              // Taller hue strip and focus rings on the picker's two sliders.
-              "[&_.react-colorful__hue]:h-11",
-              "[&_.react-colorful__interactive:focus-visible]:outline-2 [&_.react-colorful__interactive:focus-visible]:outline-offset-2 [&_.react-colorful__interactive:focus-visible]:outline-[#2563EB]",
-            ].join(" ")}
+            // cv-colour-picker: the taller hue strip and slider focus rings, in globals.css.
+            className="cv-colour-picker absolute top-full left-0 z-30 mt-2 rounded-xl border border-zinc-200 bg-white p-3 shadow-lg"
           >
             <HexColorPicker color={value} onChange={(c) => onChange(c.toUpperCase())} />
           </div>
@@ -142,12 +148,12 @@ export function ColourField({ label, value, onChange, id }: Props) {
         <input
           id={inputId}
           type="text"
-          value={draft ?? value.toUpperCase()}
-          maxLength={7}
+          value={draft ?? current}
+          maxLength={HEX_MAX_LENGTH}
           spellCheck={false}
           autoComplete="off"
           autoCapitalize="characters"
-          onFocus={() => setDraft(value.toUpperCase())}
+          onFocus={() => setDraft(current)}
           onChange={(e) => setDraft(e.currentTarget.value)}
           onBlur={() => {
             commitDraft();
@@ -157,15 +163,20 @@ export function ColourField({ label, value, onChange, id }: Props) {
             if (e.key === "Enter") {
               e.preventDefault();
               commitDraft();
+            } else if (e.key === "Escape" && open) {
+              // Cancel the draft before the anchor's handler moves focus to the swatch, so the
+              // blur that follows has nothing to commit. flushSync because that blur runs the
+              // handler from the last commit, which still holds the draft.
+              flushSync(() => setDraft(null));
             }
           }}
           className={`h-11 min-w-0 grow rounded-lg border border-zinc-300 bg-white px-2.5 font-mono text-sm text-zinc-900 ${FOCUS_RING}`}
         />
       </div>
 
-      <SwatchRow id={rowId} title="In this design" colours={inDesign} value={value} onPick={onChange} />
+      <SwatchRow id={rowId} title="In this design" colours={inDesign} current={current} onPick={pick} />
       {fromLogo.length > 0 && (
-        <SwatchRow id={logoRowId} title="From your logo" colours={fromLogo} value={value} onPick={onChange} />
+        <SwatchRow id={logoRowId} title="From your logo" colours={fromLogo} current={current} onPick={pick} />
       )}
     </div>
   );
@@ -175,16 +186,16 @@ function SwatchRow({
   id,
   title,
   colours,
-  value,
+  current,
   onPick,
 }: {
   id: string;
   title: string;
   colours: string[];
-  value: string;
+  /** The field's value, uppercased. */
+  current: string;
   onPick: (colour: string) => void;
 }) {
-  const current = value.toUpperCase();
   return (
     <div role="group" aria-labelledby={id} className="flex flex-wrap items-center">
       <span id={id} className="mr-1 text-xs text-zinc-600">
@@ -219,6 +230,6 @@ function normalise(hex: string): string {
 }
 
 /** Uppercase, valid `#RRGGBB` only, first occurrence kept. */
-function dedupe(colours: string[]): string[] {
+function cleanPalette(colours: string[]): string[] {
   return [...new Set(colours.filter((c) => HEX_INPUT.test(c)).map(normalise))];
 }
