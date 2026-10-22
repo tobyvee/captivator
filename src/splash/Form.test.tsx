@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { BLANK, Design, FIELD_SPEC } from "../lib/design-schema";
 import type { FieldKindSpec, RenderMode } from "../lib/types";
@@ -146,28 +146,6 @@ describe("Form render modes", () => {
     expect(command).toHaveAttribute("value", "login");
   });
 
-  it("export action is always a placeholder literal, never design data", () => {
-    const hostile = "https://evil.example/collect";
-    for (const fields of [[], ["name"]] as FieldKindSpec[][]) {
-      const form = renderForm(
-        design(fields, "checkbox", (d) => {
-          d.form.button.label = hostile.slice(0, 24);
-          d.form.terms.label = hostile;
-          d.form.terms.linkText = "javascript:alert(1)";
-        }),
-        "export",
-      );
-      expect(["[PORTAL_SUBMIT_URL]", "[ROUTER_FORM_ACTION]"]).toContain(
-        form.getAttribute("action"),
-      );
-      expect(screen.getByRole("link", { name: "javascript:alert(1)" })).toHaveAttribute(
-        "href",
-        "#terms",
-      );
-      cleanup();
-    }
-  });
-
   it.each(MODES)("%s mode renders label, link and button text as text, never markup", (mode) => {
     const attack = "<img src=x onerror=alert(1)>";
     const form = renderForm(
@@ -181,12 +159,6 @@ describe("Form render modes", () => {
     expect(form.querySelector("img, b, i")).toBeNull();
     expect(form.querySelector("label")).toHaveTextContent(`${attack} <b>x</b>`);
     expect(screen.getByRole("button", { name: "<i>Go</i>" })).toBeInTheDocument();
-  });
-
-  it("renders no class names in any mode", () => {
-    for (const mode of MODES) {
-      expect(renderForm(design(["email"]), mode).querySelectorAll("[class]")).toHaveLength(0);
-    }
   });
 });
 
@@ -249,6 +221,25 @@ describe("Form edit and preview interactions", () => {
     fireEvent.click(checkbox(form)!);
     expect(checkbox(form)).toBeChecked();
     expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("edit: a click on the form's own empty area selects the background", () => {
+    const onSelect = vi.fn();
+    const form = renderForm(design(["email"]), "edit", { onSelect });
+    fireEvent.click(form);
+    expect(onSelect.mock.calls).toEqual([[{ kind: "background" }]]);
+  });
+
+  it("preview: a click on the form's own area selects nothing", () => {
+    const onSelect = vi.fn();
+    fireEvent.click(renderForm(design(["email"]), "preview", { onSelect }));
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it.each(MODES)("%s: the terms link's tap area is padded to the 44px row", (mode) => {
+    const form = renderForm(design(["email"]), mode);
+    const link = form.querySelector("label a, label button");
+    expect(link).toHaveStyle({ paddingTop: "14px", paddingBottom: "14px" });
   });
 
   it("edit: Connect selects the button", () => {

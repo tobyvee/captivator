@@ -38,6 +38,8 @@ const TERMS_ROW: CSSProperties = {
   cursor: "pointer",
 };
 
+// Vertical padding grows the inline link's tap area to the 44px row without changing the layout
+// (T-007-terms-link-tap-padding).
 const TERMS_LINK: CSSProperties = {
   color: "inherit",
   font: "inherit",
@@ -45,9 +47,29 @@ const TERMS_LINK: CSSProperties = {
   textDecoration: "underline",
   background: "none",
   border: 0,
-  padding: 0,
+  padding: "14px 0",
   cursor: "pointer",
 };
+
+const BUTTON_BASE: CSSProperties = {
+  width: "66%",
+  minHeight: 50,
+  borderRadius: 10,
+  font: "inherit",
+  fontSize: 16,
+  fontWeight: 700,
+  letterSpacing: "0.06em",
+  cursor: "pointer",
+};
+
+/** Connect's look, shared with the Terms sheet's CLOSE and the Connected screen's CONTINUE. */
+export const connectButtonStyle = (button: Design["form"]["button"]): CSSProperties => ({
+  ...BUTTON_BASE,
+  color: button.fg,
+  ...(button.variant === "outline"
+    ? { background: "transparent", border: `2px solid ${button.bg}` }
+    : { background: button.bg, border: 0 }),
+});
 
 const preventSubmit = (e: FormEvent) => e.preventDefault();
 
@@ -69,21 +91,6 @@ export function Form({ design, mode, onSelect, onScreenChange }: FormProps): JSX
     fontSize: 16,
   };
 
-  const buttonStyle: CSSProperties = {
-    width: "66%",
-    minHeight: 50,
-    borderRadius: 10,
-    font: "inherit",
-    fontSize: 16,
-    fontWeight: 700,
-    letterSpacing: "0.06em",
-    cursor: "pointer",
-    color: button.fg,
-    ...(button.variant === "outline"
-      ? { background: "transparent", border: `2px solid ${button.bg}` }
-      : { background: button.bg, border: 0 }),
-  };
-
   // Edit mode: a click anywhere in the terms row, the link included, selects Terms once. The
   // default is cancelled so the label doesn't also toggle the box (and re-dispatch a click). A
   // click on the checkbox itself only toggles it, so a test value can be ticked.
@@ -93,30 +100,31 @@ export function Form({ design, mode, onSelect, onScreenChange }: FormProps): JSX
     onSelect?.({ kind: "terms" });
   };
 
-  let termsLink: JSX.Element;
-  if (exporting) {
-    termsLink = (
-      <a href="#terms" style={TERMS_LINK}>
-        {terms.linkText}
-      </a>
-    );
-  } else {
-    termsLink = (
-      <button
-        type="button"
-        onClick={edit ? undefined : () => onScreenChange?.("terms")}
-        style={TERMS_LINK}
-      >
-        {terms.linkText}
-      </button>
-    );
-  }
+  // The form's own empty area (beside Connect, between rows) is page background
+  // (T-005-background-select-on-own-target).
+  const selectBackground = (e: MouseEvent<HTMLFormElement>) => {
+    if (e.target === e.currentTarget) onSelect?.({ kind: "background" });
+  };
+
+  const termsLink = exporting ? (
+    <a href="#terms" style={TERMS_LINK}>
+      {terms.linkText}
+    </a>
+  ) : (
+    <button
+      type="button"
+      onClick={edit ? undefined : () => onScreenChange?.("terms")}
+      style={TERMS_LINK}
+    >
+      {terms.linkText}
+    </button>
+  );
 
   return (
     <form
       {...(exporting
         ? { method: "post", action: fields.length > 0 ? PORTAL_SUBMIT_URL : ROUTER_FORM_ACTION }
-        : { onSubmit: preventSubmit })}
+        : { onSubmit: preventSubmit, onClick: edit ? selectBackground : undefined })}
       style={FORM}
     >
       {exporting && fields.length === 0 && <input type="hidden" name="command" value="login" />}
@@ -163,7 +171,7 @@ export function Form({ design, mode, onSelect, onScreenChange }: FormProps): JSX
       <button
         type={exporting ? "submit" : "button"}
         onClick={edit ? () => onSelect?.({ kind: "button" }) : undefined}
-        style={buttonStyle}
+        style={connectButtonStyle(button)}
       >
         {button.label}
       </button>
