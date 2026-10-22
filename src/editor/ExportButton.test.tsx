@@ -47,6 +47,12 @@ const MARGIN_MS = 2000;
 
 const button = () => screen.getByRole("button", { name: /Export HTML|Exporting…/ });
 const status = () => screen.getByRole("status");
+// The toast is set after the build's await, outside the click's act, so flush React before asserting;
+// without this the assertion can race the render (it failed that way on CI).
+const exportNow = async (user: ReturnType<typeof userEvent.setup>) => {
+  await user.click(button());
+  await act(async () => {});
+};
 
 describe("ExportButton", () => {
   it("is a real primary button, enabled, with a 44px tap target", () => {
@@ -126,7 +132,7 @@ describe("ExportButton", () => {
     const user = userEvent.setup();
     render(<ExportButton />);
 
-    await user.click(button());
+    await exportNow(user);
     expect(status()).toHaveTextContent("Downloaded harbourside-summit.html: 98 KB of 100 KB. Photo shrunk to fit.");
   });
 
@@ -153,7 +159,7 @@ describe("ExportButton", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<ExportButton />);
 
-    await user.click(button());
+    await exportNow(user);
     expect(download).toHaveBeenCalledTimes(1);
     const warning =
       "Downloaded harbourside-summit.html: 131 KB, over the 100 KB budget. Guests on slow WiFi may wait; try a simpler photo.";
@@ -172,7 +178,7 @@ describe("ExportButton", () => {
     const user = userEvent.setup();
     render(<ExportButton />);
 
-    await user.click(button());
+    await exportNow(user);
     expect(download).not.toHaveBeenCalled();
     expect(status()).toHaveTextContent(
       "Export failed: we couldn't load one of the images. Try again, or replace it.",
@@ -183,7 +189,7 @@ describe("ExportButton", () => {
 
     // A retry clears the failure and can succeed.
     build.mockResolvedValue(result());
-    await user.click(button());
+    await exportNow(user);
     expect(status()).not.toHaveTextContent("Export failed");
     expect(status()).toHaveTextContent("Downloaded harbourside-summit.html");
   });
@@ -193,7 +199,7 @@ describe("ExportButton", () => {
     const user = userEvent.setup();
     render(<ExportButton />);
 
-    await user.click(button());
+    await exportNow(user);
     expect(status()).toHaveTextContent('Export failed: <img src="x" onerror="alert(1)">');
     expect(status().querySelector("img")).toBeNull();
   });
@@ -208,7 +214,7 @@ describe("ExportButton", () => {
     const user = userEvent.setup();
     render(<ExportButton />);
 
-    await user.click(button());
+    await exportNow(user);
     expect(status()).toHaveTextContent("Export failed: something went wrong. Try again.");
     expect(status()).not.toHaveTextContent("createObjectURL");
     expect(button()).toHaveAttribute("aria-disabled", "false");
