@@ -62,7 +62,7 @@ export function ImagePanel({ id }: { id: string }) {
           value={draft}
           required
           aria-invalid={altMissing || undefined}
-          aria-describedby={`${altId}-hint`}
+          aria-describedby={altMissing ? `${altId}-hint ${altId}-error` : `${altId}-hint`}
           onChange={(e) => {
             const alt = e.currentTarget.value;
             setDraft(alt);
@@ -74,8 +74,12 @@ export function ImagePanel({ id }: { id: string }) {
             altMissing ? "border-red-600" : "border-zinc-300",
           ].join(" ")}
         />
-        <p id={`${altId}-hint`} className={["text-xs", altMissing ? "text-red-700" : "text-zinc-600"].join(" ")}>
-          {altMissing ? "Describe the image" : "Read aloud to guests who use a screen reader."}
+        <p id={`${altId}-hint`} className="text-xs text-zinc-600">
+          Read aloud to guests who use a screen reader.
+        </p>
+        {/* Always mounted, so the error is announced as the field empties, not only on focus. */}
+        <p id={`${altId}-error`} role="alert" className="text-xs text-red-700 empty:-mt-1.5">
+          {altMissing ? "Describe the image" : null}
         </p>
       </div>
 
