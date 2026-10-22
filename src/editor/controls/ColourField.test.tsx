@@ -239,6 +239,29 @@ describe("ColourField picker", () => {
     expect(elsewhere).toHaveFocus();
   });
 
+  it("stays open on a press on a scroller's scrollbar, and closes on a press in its content", () => {
+    render(
+      <div data-testid="scroller">
+        <ColourField label="Text colour" value="#112233" onChange={vi.fn()} />
+      </div>,
+    );
+    // jsdom has no layout: give the scroller a 300 × 400 box at (10, 20) with a 1px border,
+    // 1000px of content and a 15px vertical scrollbar, so its client area is 283 × 398.
+    const scroller = screen.getByTestId("scroller");
+    const box = { clientLeft: 1, clientTop: 1, clientWidth: 283, clientHeight: 398, scrollWidth: 283, scrollHeight: 1000 };
+    for (const [key, value] of Object.entries(box)) Object.defineProperty(scroller, key, { value });
+    vi.spyOn(scroller, "getBoundingClientRect").mockReturnValue(new DOMRect(10, 20, 300, 400));
+    fireEvent.click(swatch());
+
+    // x = 300 is 289px into the client area, past its 283px width: the scrollbar.
+    fireEvent.pointerDown(scroller, { clientX: 300, clientY: 200 });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    // x = 200 is in the scroller's content, outside the field.
+    fireEvent.pointerDown(scroller, { clientX: 200, clientY: 200 });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("tabs swatch, picker, hex input, then every suggestion, closing the popover on the way out", async () => {
     const user = userEvent.setup();
     seed(

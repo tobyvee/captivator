@@ -64,10 +64,12 @@ export function ColourField({ label, value, onChange, id }: Props) {
   const current = value.toUpperCase();
 
   // Close on a press outside the swatch and popover. Focus is left where that press puts it.
+  // A press on a scrollbar isn't one: Chrome sends it to the scroller, and the customer may be
+  // dragging the inspector's scrollbar to bring the open popover into view.
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (e: PointerEvent) => {
-      if (!anchorRef.current?.contains(e.target as Node)) setOpen(false);
+      if (!anchorRef.current?.contains(e.target as Node) && !onScrollbar(e)) setOpen(false);
     };
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
@@ -223,6 +225,25 @@ function SwatchRow({
       })}
     </div>
   );
+}
+
+/**
+ * Whether a press landed on the target's own scrollbar. A scrollbar sits between an element's
+ * client area (`clientLeft`/`clientTop` in from its border box, `clientWidth` × `clientHeight`)
+ * and its border edge, so a press on a scrolling element outside its client area is on a
+ * scrollbar (or its border). This holds for a scrollbar on either side (RTL puts it on the left)
+ * and for overflow on either axis. Only elements that overflow count, because an inline element
+ * reports a zero client area. The root's box moves with the page's scroll, but its scrollbars
+ * sit at the viewport's edge, so it's measured from the viewport.
+ */
+function onScrollbar(e: PointerEvent): boolean {
+  const el = e.target;
+  if (!(el instanceof Element)) return false;
+  if (el.scrollHeight <= el.clientHeight && el.scrollWidth <= el.clientWidth) return false;
+  const box = el === el.ownerDocument.documentElement ? { left: 0, top: 0 } : el.getBoundingClientRect();
+  const x = e.clientX - box.left - el.clientLeft;
+  const y = e.clientY - box.top - el.clientTop;
+  return x < 0 || y < 0 || x >= el.clientWidth || y >= el.clientHeight;
 }
 
 function normalise(hex: string): string {
