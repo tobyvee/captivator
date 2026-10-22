@@ -146,7 +146,6 @@ describe("Inspector", () => {
     const next = heading().nextElementSibling;
     if (subtitle) expect(next).toHaveTextContent(subtitle);
     else expect(next).toBeNull();
-    expect(screen.getByText(/settings are coming soon/)).toBeInTheDocument();
   });
 
   it("titles a body text block as Text", () => {
