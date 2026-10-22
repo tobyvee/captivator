@@ -52,7 +52,7 @@ Build step 5 ([spec → Editor UI → Template picker](../spec/Captivator%20MVP%
 - **Built:** the picker at `/`: header, h1 and intro on the server, then a grid of `TemplateCard`s once the store has hydrated (a neutral placeholder before, with no mismatch). Each card shows the real `SplashPage` scaled into a 170×320 mini-frame (`aria-hidden`, `inert`), the name, description, the Unsplash credit through `profileHref`, and a 44px Use button. A restored design comes first as "Continue your design", and Use asks before switching. Blank gets the canvas's dashed card and outline "Start blank" button. 594 tests pass; `tsc` and lint are clean.
 - **Review:** approved with two should-fixes. The local `use` handler is now `switchTo`, so it no longer reads as React's `use`. Blank's styling matches the `Templates` artboard, and the page now chooses it through a `variant` prop rather than the card checking the id ([`T-019-card-variant-set-by-page.md`](../decisions/T-019-card-variant-set-by-page.md)). The thumbnail's unneeded flex wrapper is gone (`59803c8`).
 - **Milestone 5:** closed by the milestone review, with the in-session Continue gap moved to T-025 ([`T-025-store-marks-in-session-saves.md`](../decisions/T-025-store-marks-in-session-saves.md)).
-- **Security:** not a trust-boundary ticket; the wave audit covers it.
+- **Security:** not a trust-boundary ticket. The wave 7 audit found nothing, and noted that a failed restore could be replaced from the picker unseen; the picker now shows the notice (`16dfb3d`, [`T-019-picker-warns-of-failed-restore.md`](../decisions/T-019-picker-warns-of-failed-restore.md)).
 
 ## Notes
 - **Review nit left as it is:** `TemplateCard`'s `credit` type repeats the inline type on `TEMPLATE_CREDITS` in `src/lib/templates.ts`; export a `TemplateCredit` type when that file is next touched.
@@ -71,3 +71,4 @@ Build step 5 ([spec → Editor UI → Template picker](../spec/Captivator%20MVP%
 - [`T-019-saved-design-means-restored.md`](../decisions/T-019-saved-design-means-restored.md): a saved design means `restored`
 - [`T-025-store-marks-in-session-saves.md`](../decisions/T-025-store-marks-in-session-saves.md): the in-session saved case moves to T-025
 - [`T-025-saved-means-written-this-session.md`](../decisions/T-025-saved-means-written-this-session.md): `hasSaved` replaces `restored`; the picker reads it
+- [`T-019-picker-warns-of-failed-restore.md`](../decisions/T-019-picker-warns-of-failed-restore.md): the picker shows the restore-failed notice
