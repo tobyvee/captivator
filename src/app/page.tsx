@@ -36,7 +36,7 @@ function Picker() {
 
   // Switching keeps the customer's text and uploaded images but changes the rest, so a saved
   // design asks first (T-019-confirm-on-use-not-templates, T-004-template-switch-carry-rule).
-  function use(template: Template) {
+  function switchTo(template: Template) {
     const message = `Switch to ${template.name}? Your text and uploaded images are kept; colours and layout change.`;
     if (restored && !window.confirm(message)) return;
     loadTemplate(template);
@@ -58,7 +58,8 @@ function Picker() {
           template={template}
           credit={TEMPLATE_CREDITS[template.id]}
           primaryLabel={template.id === BLANK.id ? "Start blank" : `Use ${template.name}`}
-          onUse={() => use(template)}
+          variant={template.id === BLANK.id ? "outline" : "solid"}
+          onUse={() => switchTo(template)}
         />
       ))}
     </div>

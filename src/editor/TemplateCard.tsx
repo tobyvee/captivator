@@ -1,4 +1,4 @@
-import { BLANK, type Template } from "@/lib/design-schema";
+import type { Template } from "@/lib/design-schema";
 import { profileHref, UNSPLASH_HOME } from "@/splash/Background";
 import { SplashPage } from "@/splash/SplashPage";
 
@@ -9,6 +9,8 @@ type Props = {
   template: Template;
   credit?: { name: string; profileUrl: string };
   primaryLabel: string;
+  /** Blank's dashed card, grey frame and outline button, as on the canvas. */
+  variant?: "solid" | "outline";
   onUse: () => void;
 };
 
@@ -22,8 +24,8 @@ const LINK =
   "text-blue-700 underline hover:text-blue-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600";
 
 /** A picker card: a live thumbnail of the template's guest page, its details and a Use button. */
-export function TemplateCard({ template, credit, primaryLabel, onUse }: Props) {
-  const blank = template.id === BLANK.id;
+export function TemplateCard({ template, credit, primaryLabel, variant = "solid", onUse }: Props) {
+  const blank = variant === "outline";
   // The renderer's own credit rule: Unsplash profiles only, with the referral parameters
   // (T-016-credit-href-shared-with-splash).
   const profile = credit && profileHref(credit.profileUrl);
@@ -50,8 +52,6 @@ export function TemplateCard({ template, credit, primaryLabel, onUse }: Props) {
             height: PAGE_HEIGHT,
             transform: `scale(${SCALE})`,
             transformOrigin: "top left",
-            display: "flex",
-            flexDirection: "column",
           }}
         >
           <SplashPage design={template.design} screen="landing" mode="preview" inFrame />

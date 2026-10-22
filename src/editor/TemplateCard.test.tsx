@@ -97,11 +97,11 @@ describe("TemplateCard", () => {
     expect(screen.queryByText(/Photo:/)).not.toBeInTheDocument();
   });
 
-  it("gives every button a 44px tap target and Blank an outline button", () => {
+  it("gives every button a 44px tap target and the outline variant an outline button", () => {
     render(
       <>
         <TemplateCard template={SPONSOR} primaryLabel="Use Sponsor" onUse={() => {}} />
-        <TemplateCard template={BLANK} primaryLabel="Start blank" onUse={() => {}} />
+        <TemplateCard template={BLANK} primaryLabel="Start blank" variant="outline" onUse={() => {}} />
       </>,
     );
     const use = screen.getByRole("button", { name: "Use Sponsor" });
@@ -155,6 +155,9 @@ describe("TemplatePickerPage", () => {
     ]);
     expect(within(cardNamed("Minimal")).getByRole("link", { name: "Woliul Hasan" })).toBeInTheDocument();
     expect(within(cardNamed("Blank")).queryByRole("link")).not.toBeInTheDocument();
+    // Only Blank gets the canvas's outline button.
+    expect(within(cardNamed("Blank")).getByRole("button")).toHaveClass("bg-white");
+    expect(within(cardNamed("Minimal")).getByRole("button")).toHaveClass("bg-zinc-900");
   });
 
   it.each(TEMPLATES.map((t) => [t.name, t] as const))(
