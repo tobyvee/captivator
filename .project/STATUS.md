@@ -17,6 +17,7 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is bein
 
 ## Outstanding
 - [ ] T-029: Real-phone testing checklist
+- [ ] T-036: Editor columns scroll independently, so the preview stays put (a checklist failure)
 
 ## Planned
 

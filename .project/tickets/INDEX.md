@@ -93,13 +93,14 @@ Waves follow the greedy rules in `/prioritise-tickets`, with one override: `T-02
 | [T-032](T-032-unsplash-search-ui.md) | Unsplash search in the Photo tab | P2 | 15 | `src/editor/panels/UnsplashSearch.tsx`, `src/app/api/unsplash/route.ts`, `src/app/api/unsplash/route.test.ts` |
 | [T-034](T-034-dnd-kit-reorder.md) | Drag to reorder blocks with dnd-kit | P2 | 15 | `src/editor/BlockList.tsx` |
 
-### Wave 10 (10 min)
+### Wave 10 (15 min)
 
-`T-029` needs a real phone, so the user and the main session run it, not a worktree agent. It writes `.project/review/phone-checklist.md`.
+`T-029` needs a real phone, so the user and the main session run it, not a worktree agent. It writes `.project/review/phone-checklist.md`. `T-036` fixes a failure found during the checklist and lands in this wave ([`T-036-checklist-fix-at-milestone-9.md`](../decisions/T-036-checklist-fix-at-milestone-9.md)).
 
 | ID | Title | Priority | Estimate | Touches |
 |---|---|---|---|---|
 | [T-029](T-029-real-phone-checklist.md) | Real-phone testing checklist | P1 | 10 | `.project/review/phone-checklist.md` |
+| [T-036](T-036-editor-columns-scroll-independently.md) | Editor columns scroll independently, so the preview stays put | P1 | 15 | `src/app/editor/page.tsx`, `src/editor/editor.test.tsx`, `src/editor/PreviewStage.tsx` |
 
 ### Wave 11 (10 min)
 
@@ -155,4 +156,5 @@ None. Every dependency exists, there are no cycles, every `todo` ticket has `tou
 | 9 | [T-032](T-032-unsplash-search-ui.md) | Unsplash search in the Photo tab | P2 | 8 | 15 | T-016, T-031 | done |
 | 9 | [T-034](T-034-dnd-kit-reorder.md) | Drag to reorder blocks with dnd-kit | P2 | 8 | 15 | T-012 | done |
 | 10 | [T-029](T-029-real-phone-checklist.md) | Real-phone testing checklist | P1 | 9 | 10 | T-012, T-013, T-014, T-015, T-017, T-019, T-020, T-024, T-025, T-027 | todo |
+| 10 | [T-036](T-036-editor-columns-scroll-independently.md) | Editor columns scroll independently, so the preview stays put | P1 | 9 | 15 | — | todo |
 | 11 | [T-030](T-030-readme-and-final-deploy.md) | README and final deploy | P1 | 9 | 10 | T-029 | todo |

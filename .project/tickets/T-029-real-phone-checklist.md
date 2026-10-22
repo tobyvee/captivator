@@ -67,7 +67,11 @@ Cuttable tickets (T-022, T-026, T-028 and the stretch tickets) are deliberately 
 - **From T-025:** in Safari and Chrome, type in the design-name input and a panel textarea, press Cmd+Z (Ctrl+Z where available): the text undoes and the design doesn't ([`T-025-native-text-undo-check-in-t029.md`](../decisions/T-025-native-text-undo-check-in-t029.md)).
 - **From T-024 and the milestone 7 review:** download the export in Safari, Chrome and on iOS and check the file name; open the file and confirm DevTools' Network panel is empty; check `:target` opens and closes the terms sheet, native `required` messages show, and the `:focus-visible` ring appears; check `100dvh` in the iOS Captive Network Assistant and Android's login WebView; and note the real export size for Sponsor with two uploads on Safari's JPEG path (T-023's audit measured 98.1 KB) ([`T-024-browser-download-check-in-t029.md`](../decisions/T-024-browser-download-check-in-t029.md)).
 
+## Checklist failures
+- **Unsplash search pushes the preview down the page** (desktop, Photo tab): when the results grid loads, the inspector grows past the window and the centred phone slides out of view. Follow-up: [T-036](T-036-editor-columns-scroll-independently.md) (columns scroll independently when side by side). Re-check this item once T-036 is deployed.
+
 ## Decisions
+- [`T-036-checklist-fix-at-milestone-9.md`](../decisions/T-036-checklist-fix-at-milestone-9.md): Fixes found by this checklist are milestone 9 tickets
 - [`T-029-checklist-and-readme-run-last.md`](../decisions/T-029-checklist-and-readme-run-last.md): The phone checklist and README run after every other ticket
 - [`T-029-phone-checklist-at-step-9.md`](../decisions/T-029-phone-checklist-at-step-9.md): The real-phone checklist is its own ticket at build step 9, run by the main session
 - [`general-deploy-cloudflare-vinext.md`](../decisions/general-deploy-cloudflare-vinext.md): The MVP deploys to Cloudflare Workers with vinext, not Vercel
