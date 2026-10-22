@@ -54,6 +54,9 @@ Credit the template photographers (Marcel Strauß, Miguel Dominguez, Woliul Hasa
 ## Dependencies
 - T-029: the checklist results and any cuts are known before the README describes them.
 
+## Notes
+- **From the wave 4 audit, if headers are added:** react-colorful injects a `<style>` into the editor's head at runtime, and the editor uses React inline styles. A CSP for the editor needs `style-src 'unsafe-inline'`, or a nonce through react-colorful's `setNonce`.
+
 ## Decisions
 - [`T-006-export-credit-plain-text.md`](../decisions/T-006-export-credit-plain-text.md): The exported guest page shows the photo credit as plain text, without links
 - [`T-002-template-photos-and-credits.md`](../decisions/T-002-template-photos-and-credits.md): Template photos come from the canvas assets, and their credits live beside the templates, not in background.credit
