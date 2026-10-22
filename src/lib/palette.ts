@@ -128,7 +128,7 @@ function distSq(a: Triple, b: Triple): number {
 }
 
 function parseHex(colour: string): Rgb | null {
-  const six = HEX6.exec(colour.trim())?.[1];
+  const six = HEX6.exec(colour)?.[1];
   if (!six) return null;
   return [0, 2, 4].map((i) => parseInt(six.slice(i, i + 2), 16)) as Rgb;
 }

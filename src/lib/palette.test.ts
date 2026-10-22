@@ -23,7 +23,7 @@ describe("dedupePalette", () => {
     expect(dedupePalette(colours, 2)).toEqual(["#000000", "#FFFFFF"]);
   });
 
-  it.each(["not-a-colour", "#abc", "#12345", "#1234567", "aabbcc", "#ggggggg"])("drops %j, which isn't 6-digit hex", (colour) => {
+  it.each(["not-a-colour", "#abc", "#12345", "#1234567", "aabbcc", "#gggggg"])("drops %j, which isn't 6-digit hex", (colour) => {
     expect(dedupePalette([colour])).toEqual([]);
   });
 
