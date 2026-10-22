@@ -24,10 +24,15 @@ async function searchPhotos(q: string): Promise<Outcome> {
   try {
     const res = await fetch(`/api/unsplash?q=${encodeURIComponent(q)}`);
     if (res.ok) {
-      // Safe: the route builds its 200 body as { results: UnsplashPhoto[] } through its own Zod schema.
-      const { results } = (await res.json()) as { results: UnsplashPhoto[] };
-      cache.set(q, results);
-      return { status: "done", photos: results };
+      const body: unknown = await res.json();
+      const results = typeof body === "object" && body !== null && "results" in body ? body.results : null;
+      // Anything but a list is a broken reply: fall back, and cache nothing.
+      if (Array.isArray(results)) {
+        // Safe: the route builds each result through its own Zod schema before sending it.
+        const photos = results as UnsplashPhoto[];
+        cache.set(q, photos);
+        return { status: "done", photos };
+      }
     }
     // A 429 says to wait, in the route's words. Every other failure (503 not set up, 502 Unsplash
     // failed) reads the same to the customer.

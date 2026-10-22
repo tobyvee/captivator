@@ -149,6 +149,7 @@ describe("UnsplashSearch", () => {
     ["502 (Unsplash failed)", () => fetchMock.mockResolvedValueOnce(Response.json({ error: "Photo search failed" }, { status: 502 }))],
     ["a network error", () => fetchMock.mockRejectedValueOnce(new TypeError("offline"))],
     ["an unreadable reply", () => fetchMock.mockResolvedValueOnce(new Response("<html>", { status: 200 }))],
+    ["a 200 without a results list", () => fetchMock.mockResolvedValueOnce(Response.json({ results: { id: "x" } }))],
   ])("falls back to upload on %s", async (label, arrange) => {
     arrange();
     render(<UnsplashSearch />);
