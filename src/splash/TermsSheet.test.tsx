@@ -178,10 +178,11 @@ describe("TermsSheet colours", () => {
 
 describe("TermsSheet render modes", () => {
   it.each<RenderMode>(["edit", "preview"])(
-    "%s mode renders a modal dialog with × and CLOSE buttons, not links",
+    "%s mode renders a non-modal dialog with × and CLOSE buttons, not links",
     (mode) => {
       const markup = html(design(), mode);
-      expect(markup).toMatch(/role="dialog" aria-modal="true" aria-labelledby="cv-terms-title"/);
+      expect(markup).toMatch(/role="dialog" aria-labelledby="cv-terms-title"/);
+      expect(markup).not.toContain("aria-modal");
       expect(markup.match(/<button type="button"/g)).toHaveLength(2);
       expect(markup).toContain('aria-label="Close terms"');
       expect(markup).toMatch(/>CLOSE<\/button>/);
@@ -205,7 +206,7 @@ describe("TermsSheet render modes", () => {
     "%s mode: the scrolling body is a labelled, keyboard-focusable region",
     (mode) => {
       expect(html(design(), mode)).toMatch(
-        /<div role="region" aria-labelledby="cv-terms-title" tabindex="0" style="[^"]*overflow-y:auto[^"]*"><p/,
+        /<div role="region" aria-label="Terms text" tabindex="0" style="[^"]*overflow-y:auto[^"]*"><p/,
       );
     },
   );

@@ -32,7 +32,7 @@ Build step 6, "Error and Connected" plus the rest of the screen switcher ([spec 
     - Email: `^[^\s@]+@[^\s@]+\.[^\s@]+$`.
     - Phone: at least 6 digits; `+`, spaces, `-` and `()` are allowed.
     - Terms: must be ticked when on.
-- **`Form.tsx`** (extend T-007; keep its export markup unchanged):
+- **`Form.tsx`** (extend T-007; keep its export markup unchanged, except for one attribute: give the export terms link `id={TERMS_LINK_ID}` from `TermsSheet.tsx`, so closing the sheet returns the guest and focus to the link. See [`T-021-close-to-terms-link.md`](../decisions/T-021-close-to-terms-link.md), and add a test that the export link has `id="cv-terms-link"`):
   - **`screen === "error"`:** the first field gets `defaultValue={EXAMPLE_INVALID[kind]}`, `aria-invalid="true"`, `aria-describedby` to its message, and a 2px border in the error colour. Its message (icon + `ERROR_COPY`, 14px/500) sits below it. With terms on, the checkbox gets an outline in the error colour, plus "Please accept the terms" (`role="alert"`). The error colour is `bestErrorColour(backgroundColours(design.background))`.
   - **Edit-mode Connect:** still calls `onSelect({ kind: "button" })`, then reads the preview form's values (`FormData` from `event.currentTarget.form`), runs `validateGuest`, and calls `onScreenChange(ok ? "connected" : "error")`.
 - **`Connected.tsx`** (replace the T-005 stub):

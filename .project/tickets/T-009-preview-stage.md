@@ -15,7 +15,7 @@ touches:
   - src/editor/checks/ReadabilityCheck.tsx
   - src/editor/checks/useFitCheck.tsx
 cut_rank:
-updated: 2026-10-22
+updated: 2026-10-23
 tags: [project, captivator, ticket, editor]
 ---
 # T-009: Preview stage with phone and browser frames
@@ -50,6 +50,7 @@ Build step 2 (PhoneFrame, BrowserFrame, live preview) and step 3's click-to-sele
 - [ ] The switcher shows Landing and Terms (Terms hidden when terms are off) and changes `screen`.
 - [ ] The save-failure and restore-failure notices appear when their flags are set (check by setting the flags in the store).
 - [ ] Captions: "375 × 740, iPhone login sheet" (mobile) and "1280 × 800 laptop browser. The content column stays 420 px wide; the photo fills the window." (desktop).
+- [ ] With terms on and a design taller than the frame, the Terms screen shows the sheet at 82% of the frame's visible height with CLOSE in view, in both Mobile and Desktop. The sheet is `position: fixed`, so each frame's non-scrolling shell must be its containing block ([`T-021-fixed-sheet-in-every-mode.md`](../decisions/T-021-fixed-sheet-in-every-mode.md)).
 - [ ] `npm test`, `npx tsc --noEmit` and `npm run lint` pass.
 
 ## Dependencies
@@ -60,6 +61,8 @@ Build step 2 (PhoneFrame, BrowserFrame, live preview) and step 3's click-to-sele
 - **Fit note** (canvas): title "Too tall for small phones"; body "On a small phone like an iPhone SE, guests have to scroll to reach Connect. Shorten text, remove a block or use smaller images." Amber: `#FFFBEB` background, `#FDE68A` border, `#78350F` text.
 - The canvas caption says 375 × 760, but the guest-state artboards' inner viewport and the spec are 375 × 740; use 740.
 - `useFitCheck` is a `.tsx` file because T-028's probe renders JSX.
+- **Preview fields reset when Terms opens:** `SplashPage` re-mounts the landing inside the inert wrapper on the Terms screen, so test values typed into the preview's fields clear (T-021 splash re-audit). Accept it, or raise a ticket for SplashPage if it bothers the customer.
+- **Containing block for the Terms sheet:** `TermsSheet` uses `position: fixed; inset: 0` in every mode (T-021). Each frame needs a non-scrolling shell around its scroll container that establishes a containing block for fixed descendants: `transform` (BrowserFrame's scale already does, if it sits on the shell rather than the scroller) or `contain: layout` on PhoneFrame's viewport shell. Without one, the sheet covers the whole editor window. If the scroller itself carried the transform, the sheet would scroll away with the content.
 
 ## Decisions
 - [`general-splash-root-grows-in-frame.md`](../decisions/general-splash-root-grows-in-frame.md): In the editor frames the splash root grows with its content, and the frame scrolls

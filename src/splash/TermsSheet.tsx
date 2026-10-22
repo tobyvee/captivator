@@ -135,7 +135,9 @@ export function TermsSheet({ design, mode, onClose }: TermsSheetProps): JSX.Elem
       id={exporting ? "terms" : undefined}
       className={exporting ? "cv-terms" : undefined}
       role="dialog"
-      aria-modal="true"
+      // Only the guest page is modal; in the editor the inspector and block list stay usable
+      // beside the preview, so screen readers mustn't be confined to the sheet.
+      aria-modal={exporting ? "true" : undefined}
       aria-labelledby={TITLE_ID}
       tabIndex={exporting ? -1 : undefined}
       style={OVERLAY}
@@ -184,7 +186,7 @@ export function TermsSheet({ design, mode, onClose }: TermsSheetProps): JSX.Elem
           })}
         </div>
         {/* Focusable, so keyboard users can scroll a long body. */}
-        <div role="region" aria-labelledby={TITLE_ID} tabIndex={0} style={BODY}>
+        <div role="region" aria-label="Terms text" tabIndex={0} style={BODY}>
           {paragraphs(terms.body).map((p, i) => (
             <p key={i} style={{ margin: 0, whiteSpace: "pre-line", overflowWrap: "anywhere" }}>
               {p}

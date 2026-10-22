@@ -44,7 +44,7 @@ const COLUMN: CSSProperties = {
 };
 
 // Wraps the landing page under the open terms sheet. Not positioned, so the background layers
-// and the sheet still anchor to the root. `inert` keeps its content out of focus and clicks.
+// still anchor to the root. `inert` keeps its content out of focus and clicks.
 const UNDER_SHEET: CSSProperties = { flex: "1 0 auto", display: "flex", flexDirection: "column" };
 
 const CHIP: CSSProperties = {
@@ -136,7 +136,7 @@ export function SplashPage({
 
   const background = <Background background={design.background} mode={mode} />;
   // The Unsplash credit comes after the page's content in reading and tab order. It sits at
-  // z-index 2, above the column; the terms sheet comes later in the DOM, so it paints over it.
+  // z-index 2, above the column; the terms sheet's overlay (z-index 10) paints over it.
   const credit =
     design.background.type === "image" && design.background.credit ? (
       <Credit credit={design.background.credit} mode={mode} />
