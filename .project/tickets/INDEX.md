@@ -148,7 +148,7 @@ None. Every dependency exists, there are no cycles, every `todo` ticket has `tou
 | 7 | [T-025](T-025-undo-redo.md) | Undo and redo with shortcuts | P1 | 8 | 20 | T-004, T-008 | done |
 | 8 | [T-022](T-022-error-and-connected-screens.md) | Error and Connected guest screens | P1 | 6 | 20 | T-003, T-007, T-009 | done |
 | 8 | [T-026](T-026-logo-palette.md) | Logo palette extraction | P1 | 8 | 10 | T-011 | done |
-| 8 | [T-028](T-028-fit-check.md) | Small-phone fit check | P1 | 8 | 10 | T-005, T-009 | todo |
+| 8 | [T-028](T-028-fit-check.md) | Small-phone fit check | P1 | 8 | 10 | T-005, T-009 | done |
 | 8 | [T-031](T-031-unsplash-api-route.md) | Unsplash search and download-ping API route | P2 | 8 | 25 | T-001 | todo |
 | 9 | [T-033](T-033-focus-point-drag.md) | Focus-point drag dot | P2 | 4 | 10 | T-017 | todo |
 | 9 | [T-035](T-035-one-tap-contrast-fix.md) | One-tap contrast Fix | P2 | 8 | 10 | T-027 | todo |
