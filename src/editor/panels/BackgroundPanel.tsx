@@ -4,6 +4,7 @@ import { ArrowDown, ArrowDownRight, ArrowRight } from "lucide-react";
 import { useId, useState } from "react";
 import { useStore } from "@/lib/store";
 import type { BackgroundSpec, ImageBackground } from "@/lib/types";
+import { profileHref, UNSPLASH_HOME } from "@/splash/Background";
 import { ColourField } from "../controls/ColourField";
 import { ImageUpload } from "../controls/ImageUpload";
 import { Segmented, type SegmentedOption } from "../controls/Segmented";
@@ -26,12 +27,11 @@ const DIRECTIONS: SegmentedOption<Direction>[] = [
 ];
 
 const GRADIENT_TO = "#0E5E6F";
-const UNSPLASH_HOME = "https://unsplash.com/?utm_source=captivator&utm_medium=referral";
 
 const tabFor = (type: BackgroundSpec["type"]): Tab => (type === "image" ? "photo" : type);
 
 /** The colour a background shows most of: its colour, a gradient's first stop, or a photo's backdrop. */
-function mainColour(bg: BackgroundSpec): string {
+export function mainColour(bg: BackgroundSpec): string {
   switch (bg.type) {
     case "colour":
       return bg.colour;
@@ -40,6 +40,25 @@ function mainColour(bg: BackgroundSpec): string {
     case "image":
       return bg.backdrop;
   }
+}
+
+/**
+ * The background with a new photo. A photo keeps its fit, zoom, focus and overlay; anything else
+ * becomes a fresh photo over its main colour. Unsplash (T-032) uses this too.
+ */
+export function withPhoto(bg: BackgroundSpec, src: string, credit?: ImageBackground["credit"]): ImageBackground {
+  return bg.type === "image"
+    ? { ...bg, src, credit }
+    : {
+        type: "image",
+        src,
+        credit,
+        fit: "fill",
+        zoom: 1,
+        focus: { x: 50, y: 50 },
+        backdrop: mainColour(bg),
+        overlay: { from: "#000000", to: "#000000", opacity: 0.4 },
+      };
 }
 
 /** Colour / Gradient / Photo settings for the pinned background. */
@@ -93,21 +112,9 @@ export function BackgroundPanel() {
       {tab === "photo" && (
         <PhotoTab
           photo={bg.type === "image" ? bg : null}
-          onUploaded={(src) =>
-            updateBackground(
-              bg.type === "image"
-                ? { ...bg, src, credit: undefined }
-                : {
-                    type: "image",
-                    src,
-                    fit: "fill",
-                    zoom: 1,
-                    focus: { x: 50, y: 50 },
-                    backdrop: mainColour(bg),
-                    overlay: { from: "#000000", to: "#000000", opacity: 0.4 },
-                  },
-            )
-          }
+          // Read the background when the shrink finishes, not when the file was picked, so an
+          // undo or template switch in between isn't overwritten.
+          onUploaded={(src) => updateBackground(withPhoto(useStore.getState().design.background, src))}
         />
       )}
     </div>
@@ -157,19 +164,4 @@ function PhotoCredit({ credit }: { credit: NonNullable<ImageBackground["credit"]
       </a>
     </p>
   );
-}
-
-// The schema allowlists the profile URL; this re-checks the origin before linking and adds the
-// referral parameters Unsplash asks for, as the splash credit does.
-function profileHref(profileUrl: string): string | null {
-  let url: URL;
-  try {
-    url = new URL(profileUrl);
-  } catch {
-    return null;
-  }
-  if (url.origin !== "https://unsplash.com") return null;
-  if (!url.searchParams.has("utm_source")) url.searchParams.set("utm_source", "captivator");
-  if (!url.searchParams.has("utm_medium")) url.searchParams.set("utm_medium", "referral");
-  return url.toString();
 }

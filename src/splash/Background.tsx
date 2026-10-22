@@ -56,11 +56,12 @@ const NAME: CSSProperties = {
 };
 
 const UTM = { utm_source: "captivator", utm_medium: "referral" };
-const UNSPLASH_HOME = "https://unsplash.com/?utm_source=captivator&utm_medium=referral";
+export const UNSPLASH_HOME = "https://unsplash.com/?utm_source=captivator&utm_medium=referral";
 
 // The schema already allowlists profileUrl to https://unsplash.com/; this re-checks the origin so
 // the renderer never links anywhere else, then adds the referral parameters Unsplash asks for.
-function profileHref(profileUrl: string): string | null {
+// The editor's Background panel links the same way (T-016-credit-href-shared-with-splash).
+export function profileHref(profileUrl: string): string | null {
   let url: URL;
   try {
     url = new URL(profileUrl);

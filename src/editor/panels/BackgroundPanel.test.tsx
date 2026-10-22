@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useStore } from "@/lib/store";
 import type { BackgroundSpec, ImageBackground } from "@/lib/types";
-import { BackgroundPanel } from "./BackgroundPanel";
+import { BackgroundPanel, withPhoto } from "./BackgroundPanel";
 
 // jsdom has no canvas, so the shrink pipeline is replaced; the rest of ImageUpload runs as is.
 const { UPLOADED, processUpload } = vi.hoisted(() => {
@@ -158,8 +158,39 @@ describe("BackgroundPanel", () => {
     render(<BackgroundPanel />);
     upload();
     await waitFor(() => expect(background()).toMatchObject({ src: UPLOADED }));
-    expect((background() as ImageBackground).credit).toBeUndefined();
     expect(background()).toEqual({ ...PHOTO, src: UPLOADED, credit: undefined });
+  });
+
+  it("converts a photo to a gradient that starts from its backdrop", () => {
+    setBackground(PHOTO);
+    render(<BackgroundPanel />);
+    fireEvent.click(tab("Gradient"));
+    expect(background()).toEqual({ type: "gradient", from: "#223344", to: "#0E5E6F", direction: "down" });
+  });
+
+  it("uploading on a gradient uses its first stop as the backdrop", async () => {
+    setBackground({ type: "gradient", from: "#0F2A44", to: "#0E5E6F", direction: "right" });
+    render(<BackgroundPanel />);
+    fireEvent.click(tab("Photo"));
+    upload();
+    await waitFor(() => expect(background().type).toBe("image"));
+    expect(background()).toMatchObject({ src: UPLOADED, backdrop: "#0F2A44" });
+  });
+
+  it("applies an upload to the background as it is when the upload finishes", async () => {
+    setBackground(PHOTO);
+    render(<BackgroundPanel />);
+    let finish: () => void = () => {};
+    processUpload.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = () => resolve({ dataUrl: UPLOADED, bytes: UPLOADED.length, tooLarge: false });
+        }),
+    );
+    upload();
+    setBackground({ ...PHOTO, zoom: 2 }); // e.g. an undo while the photo shrinks
+    await act(async () => finish());
+    expect(background()).toEqual({ ...PHOTO, zoom: 2, src: UPLOADED, credit: undefined });
   });
 
   it("shows the Unsplash credit with referral links when the photo has one", () => {
@@ -181,6 +212,14 @@ describe("BackgroundPanel", () => {
     expect(screen.queryByText(/Photo by/)).not.toBeInTheDocument();
   });
 
+  it("leaves Photo for the new type when the background changes while Photo has no photo yet", () => {
+    setBackground({ type: "colour", colour: "#123456" });
+    render(<BackgroundPanel />);
+    fireEvent.click(tab("Photo"));
+    setBackground({ type: "gradient", from: "#000000", to: "#FFFFFF", direction: "down" });
+    expect(tab("Gradient")).toHaveAttribute("aria-pressed", "true");
+  });
+
   it("follows the background's type when it changes outside the panel (undo, templates)", () => {
     setBackground({ type: "colour", colour: "#123456" });
     render(<BackgroundPanel />);
@@ -188,5 +227,32 @@ describe("BackgroundPanel", () => {
     expect(tab("Gradient")).toHaveAttribute("aria-pressed", "true");
     setBackground(PHOTO);
     expect(tab("Photo")).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+describe("withPhoto", () => {
+  const CREDIT = PHOTO.credit;
+
+  it.each<[string, BackgroundSpec, string]>([
+    ["a colour", { type: "colour", colour: "#123456" }, "#123456"],
+    ["a gradient", { type: "gradient", from: "#0F2A44", to: "#0E5E6F", direction: "down" }, "#0F2A44"],
+  ])("turns %s into a fresh photo over its main colour", (_, bg, backdrop) => {
+    expect(withPhoto(bg, UPLOADED)).toEqual({
+      type: "image",
+      src: UPLOADED,
+      credit: undefined,
+      fit: "fill",
+      zoom: 1,
+      focus: { x: 50, y: 50 },
+      backdrop,
+      overlay: { from: "#000000", to: "#000000", opacity: 0.4 },
+    });
+    expect(withPhoto(bg, UPLOADED, CREDIT).credit).toEqual(CREDIT);
+  });
+
+  it("keeps a photo's settings and swaps its src and credit", () => {
+    expect(withPhoto(PHOTO, UPLOADED)).toEqual({ ...PHOTO, src: UPLOADED, credit: undefined });
+    const credit = { ...CREDIT!, name: "Sam" };
+    expect(withPhoto(PHOTO, UPLOADED, credit)).toEqual({ ...PHOTO, src: UPLOADED, credit });
   });
 });
