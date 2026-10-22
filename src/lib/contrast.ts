@@ -3,6 +3,7 @@ import type { BackgroundSpec } from "./types";
 
 const DARK_TEXT = "#111111";
 const LIGHT_TEXT = "#FFFFFF";
+type TextColour = typeof DARK_TEXT | typeof LIGHT_TEXT;
 const LIGHT_ERROR = "#FECACA";
 const DARK_ERROR = "#B91C1C";
 
@@ -11,7 +12,7 @@ function channels(hex: string): [number, number, number] {
   return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
 }
 
-function toHex(rgb: [number, number, number]): string {
+function toHex(rgb: number[]): string {
   return "#" + rgb.map((c) => c.toString(16).padStart(2, "0")).join("").toUpperCase();
 }
 
@@ -46,7 +47,7 @@ export function requiredRatio(sizePx: number, weight: number): 3 | 4.5 {
 export function blend(base: string, over: string, alpha: number): string {
   const b = channels(base);
   const o = channels(over);
-  return toHex([0, 1, 2].map((i) => Math.round(o[i] * alpha + b[i] * (1 - alpha))) as [number, number, number]);
+  return toHex(b.map((c, i) => Math.round(o[i] * alpha + c * (1 - alpha))));
 }
 
 /**
@@ -69,7 +70,7 @@ export function backgroundColours(bg: BackgroundSpec, photoAverage?: string): st
   }
 }
 
-/** The lowest ratio of `fg` against any of `bgs`. */
+/** The lowest ratio of `fg` against any of `bgs`, which must be non-empty (`backgroundColours` always is). */
 export function worstRatio(fg: string, bgs: string[]): number {
   return Math.min(...bgs.map((bg) => contrastRatio(fg, bg)));
 }
@@ -80,8 +81,8 @@ function better<T extends string>(a: T, b: T, bg: string | string[]): T {
 }
 
 /** Near-black or white, whichever reads better against every colour in `bg`. */
-export function bestTextColour(bg: string | string[]): "#111111" | "#FFFFFF" {
-  return better<"#111111" | "#FFFFFF">(DARK_TEXT, LIGHT_TEXT, bg);
+export function bestTextColour(bg: string | string[]): TextColour {
+  return better<TextColour>(DARK_TEXT, LIGHT_TEXT, bg);
 }
 
 /** Light red on dark backgrounds, dark red on light ones, by the better worst-case ratio. */

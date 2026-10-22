@@ -98,14 +98,15 @@ describe("backgroundColours", () => {
     ]);
   });
 
+  // Opacity 0.25, not 0.5, so swapping blend's base and overlay arguments would fail.
   it("blends the backdrop with both overlay stops when there is no photo average", () => {
-    const bg = photo({ from: "#FFFFFF", to: "#000000", opacity: 0.5 });
-    expect(backgroundColours(bg)).toEqual([blend("#808080", "#FFFFFF", 0.5), blend("#808080", "#000000", 0.5)]);
+    const bg = photo({ from: "#FFFFFF", to: "#000000", opacity: 0.25 });
+    expect(backgroundColours(bg)).toEqual(["#A0A0A0", "#606060"]);
   });
 
   it("prefers the photo average over the backdrop", () => {
-    const bg = photo({ from: "#000000", to: "#000000", opacity: 0.5 });
-    expect(backgroundColours(bg, "#FFFFFF")).toEqual(["#808080", "#808080"]);
+    const bg = photo({ from: "#000000", to: "#000000", opacity: 0.25 });
+    expect(backgroundColours(bg, "#FFFFFF")).toEqual(["#BFBFBF", "#BFBFBF"]);
   });
 
   it("returns the base alone when there is no overlay", () => {
