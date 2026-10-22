@@ -127,13 +127,17 @@ async function inlineImages(design: Design, inline: ExportDeps["inline"]): Promi
   return { ...design, background, blocks };
 }
 
+/** Where the form must post: guest details go to the portal service, never to the router. */
+const formAction = (design: Design) =>
+  design.form.fields.length > 0 ? "[PORTAL_SUBMIT_URL]" : "[ROUTER_FORM_ACTION]";
+
 // The only URL-bearing attribute values the export may carry; srcset, formaction, poster, ping,
 // background and data none. `[\s:]` also catches namespaced forms such as xlink:href.
-const SAFE_ATTR: Record<string, (value: string) => boolean> = {
+const safeAttr = (action: string): Record<string, (value: string) => boolean> => ({
   src: isRasterDataUrl,
   href: (v) => v.startsWith("#"),
-  action: (v) => v === "[PORTAL_SUBMIT_URL]" || v === "[ROUTER_FORM_ACTION]",
-};
+  action: (v) => v === action,
+});
 const URL_ATTR = /[\s:](src|srcset|href|action|formaction|poster|ping|background|data)="([^"]*)"/gi;
 
 // Elements that load, redirect or carry their own CSS. The wrapper adds the page's only <style>.
@@ -145,13 +149,18 @@ const UNSAFE_CSS = /url\(|image-set\(|@import|\\/i;
 /**
  * The last line of defence, run on the rendered body before it's wrapped: no element that loads
  * or redirects, every src a raster data URL, every href an in-page fragment, every form action
- * one of the two placeholders and no inline style that can fetch. Text content isn't checked, so
+ * `action` (and no command input when that's the portal service) and no inline style that can
+ * fetch. Text content isn't checked, so
  * terms that mention a web address still export as inert text.
  */
-function assertSelfContained(markup: string): void {
+function assertSelfContained(markup: string, action: string): void {
   if (UNSAFE_TAG.test(markup)) throw new ExportError(MSG_UNSAFE_OUTPUT);
+  const safe = safeAttr(action);
   for (const [, attr, value] of markup.matchAll(URL_ATTR)) {
-    if (!SAFE_ATTR[attr.toLowerCase()]?.(value)) throw new ExportError(MSG_UNSAFE_OUTPUT);
+    if (!safe[attr.toLowerCase()]?.(value)) throw new ExportError(MSG_UNSAFE_OUTPUT);
+  }
+  if (action === "[PORTAL_SUBMIT_URL]" && /\sname="command"/i.test(markup)) {
+    throw new ExportError(MSG_UNSAFE_OUTPUT);
   }
   for (const [, css] of markup.matchAll(/\sstyle="([^"]*)"/gi)) {
     if (UNSAFE_CSS.test(css)) throw new ExportError(MSG_UNSAFE_OUTPUT);
@@ -167,7 +176,7 @@ async function renderPage(design: Design, name: string): Promise<string> {
     const comment = design.form.fields.length > 0 ? PORTAL_COMMENT : ROUTER_COMMENT;
     markup = markup.slice(0, formAt) + comment + markup.slice(formAt);
   }
-  assertSelfContained(markup);
+  assertSelfContained(markup, formAction(design));
 
   const html =
     '<!doctype html><html lang="en"><head><meta charset="utf-8">' +

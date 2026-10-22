@@ -168,12 +168,12 @@ describe("buildExportHtml: no network", () => {
 
 describe("buildExportHtml: final check", () => {
   // A renderer regression that let a remote src through must still fail closed.
-  async function buildWith(element: ReturnType<typeof createElement>) {
+  async function buildWith(element: ReturnType<typeof createElement>, design: Design = BLANK.design) {
     vi.resetModules();
     vi.doMock("../splash/SplashPage", () => ({ SplashPage: () => element }));
     try {
       const mod = await import("./export");
-      return await mod.buildExportHtml(BLANK.design, "x", { inline: fakeInline() });
+      return await mod.buildExportHtml(design, "x", { inline: fakeInline() });
     } finally {
       vi.doUnmock("../splash/SplashPage");
       vi.resetModules();
@@ -234,6 +234,23 @@ describe("buildExportHtml: final check", () => {
       expect(html).toMatch(/<svg[\s\S]*<path/);
       expect(html.match(/<style/g)).toHaveLength(1);
     }
+  });
+
+  it("refuses the router placeholder when the design collects guest details", async () => {
+    const form = createElement("form", { action: "[ROUTER_FORM_ACTION]" }, createElement("input", { name: "email" }));
+    await expect(buildWith(form, withForm(["email"]))).rejects.toThrow(MSG_UNSAFE_OUTPUT);
+    const { html } = await build(SPONSOR.design);
+    expect(html).toContain('action="[PORTAL_SUBMIT_URL]"');
+  });
+
+  it("refuses a command input when the design collects guest details", async () => {
+    const form = createElement(
+      "form",
+      { action: "[PORTAL_SUBMIT_URL]" },
+      createElement("input", { name: "email" }),
+      createElement("input", { type: "hidden", name: "command", value: "login" }),
+    );
+    await expect(buildWith(form, withForm(["email"]))).rejects.toThrow(MSG_UNSAFE_OUTPUT);
   });
 
   it("lets web addresses through as plain text, such as in the terms", async () => {
