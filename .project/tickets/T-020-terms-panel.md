@@ -10,7 +10,7 @@ depends_on: [T-003, T-008, T-010]
 touches:
   - src/editor/panels/TermsPanel.tsx
 cut_rank:
-updated: 2026-10-22
+updated: 2026-10-23
 tags: [project, captivator, ticket, editor]
 ---
 # T-020: Terms panel
@@ -45,8 +45,13 @@ Build step 6, "Terms row and panel" ([spec → Editor UI → Inspector panels �
 - T-008: the stub and the Inspector header that holds the switch.
 - T-010: `ColourField`.
 
+## Notes
+- **From T-015:** use `useRequiredDraft(stored, commit)` from `src/editor/controls/useRequiredDraft.ts` for each required wording input and the body textarea, with the same `aria-invalid`, describedby and always-mounted `role="alert"` markup as the Button and Image panels ([`T-015-required-draft-hook.md`](../decisions/T-015-required-draft-hook.md)). Naming each result (`const label = useRequiredDraft(...)`) reads better than destructuring three times.
+- **From T-013:** the contrast line's live verdict and amber style ([`T-013-contrast-verdict-live-region.md`](../decisions/T-013-contrast-verdict-live-region.md)).
+
 ## Decisions
 - [`T-004-store-rejects-invalid-designs.md`](../decisions/T-004-store-rejects-invalid-designs.md): Store actions drop any update that would make the design fail the schema
 - [`T-004-terms-selection-switches-screen.md`](../decisions/T-004-terms-selection-switches-screen.md): Selecting Terms switches the preview to the Terms sheet, in the store
 - [`T-008-editor-shell-creates-slots.md`](../decisions/T-008-editor-shell-creates-slots.md): The editor shell owns Inspector.tsx and TopBar.tsx and creates every later editor component as a stub
 - [`T-013-panels-show-contrast-line.md`](../decisions/T-013-panels-show-contrast-line.md): The Text and Terms panels show a per-item contrast line
+- [`T-015-required-draft-hook.md`](../decisions/T-015-required-draft-hook.md): required wording inputs use `useRequiredDraft`
