@@ -1,4 +1,4 @@
-import { BLANK as BLANK_TEMPLATE, Template } from "./design-schema";
+import { BLANK, Template } from "./design-schema";
 
 // Placeholder images the customer replaces with their own. PNG data URLs, because the
 // schema only allows jpg/jpeg/webp under /templates/.
@@ -10,8 +10,10 @@ export const PLACEHOLDER_LOGO =
 export const PLACEHOLDER_SPONSOR =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAVAAAACACAQAAAD3qPnJAAACIklEQVR42u3bwW2jUBiF0dcFDbgNqqENGqAB10E1NEADNIDuCKGRM4ntySKyfynneOnd1See8JNb2pNPnzFzlmzZAz9pz5Ylc8b0zxp89MUlU1Yr8hJrply+H2iXq814uWu67wQ6ZLMVb7Fl+F+gnp28+zn6JNDZPrzd/ChQeVIuUYc7pQ/626sRVDJ8DLTz5k65N/ruFqjjnaLH/HlrBBVdzkAnS1DSdAbqzp2a1iPQ3g6U1beMVqCs0f0Rlc0tixUoa2l+oqewrfkzB4XtzQZUJlAECgJFoCBQECgCBYEiUBAoCBSBgkARKAgUBIpAQaAIFAQKAkWgIFAEagIECgJFoCBQECgCBYEiUBAoCBSBgkARKAgUBIpAQaAIFAQKAkWgIFAECgIFgSJQECgIFIGCQBEoCBQEikBBoAgUBAoCRaAgUAQKAgWBIlAQKAIFgYJAESgIFASKQEGgCBQECgJFoCBQBAoCBYEiUBAovzLQ3QiUtbdsVqCsrWWxAmUtLbMVKGtuGa1AWWNLbwXK6ltaVjtQ0pp2BDpZgpKmM9CLJSjpcgbacrUF5VyPNs9AOz/XU8yW7hZoy2ARShnOMv8G6pin3PH+b6DulKhivlX5MVCJUizPz4E66ClzuN8P9Hhd8kbPu97ch889fg30+NHJc5R3PDu7rzXeC/S8XZrc0fMia6bj1uje51Gg56fPmDlLNn8M4Yft2bJkzpj+WYN/APU+bTSQeDiXAAAAAElFTkSuQmCC";
 
-// Parsed at module load, so a broken template fails on import (and so the test run).
-export const BLANK: Template = Template.parse(BLANK_TEMPLATE);
+// Parsed at module load, so a broken template fails on import (and so the test run). The schema
+// has no defaults or transforms, so Blank is checked and re-exported as the same object.
+Template.parse(BLANK);
+export { BLANK };
 
 export const SPONSOR: Template = Template.parse({
   id: "sponsor",
@@ -48,7 +50,7 @@ export const SPONSOR: Template = Template.parse({
         size: 15,
       },
       {
-        id: "sponsor-sponsor-logo",
+        id: "sponsor-partner-logo",
         kind: "image",
         src: PLACEHOLDER_SPONSOR,
         alt: "Sponsor logo",
@@ -77,7 +79,7 @@ export const TEMPLATES: Template[] = [SPONSOR, BLANK];
 
 // Photographer credits for bundled template photos, shown on the picker cards and in the
 // README. Template backgrounds carry no `credit` (see T-002-template-photos-and-credits).
-export const TEMPLATE_CREDITS: Record<string, { name: string; profileUrl: string }> = {
+export const TEMPLATE_CREDITS: Partial<Record<string, { name: string; profileUrl: string }>> = {
   sponsor: {
     name: "Marcel Strauß",
     profileUrl: "https://unsplash.com/@martzzl?utm_source=captivator&utm_medium=referral",

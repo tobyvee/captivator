@@ -1,5 +1,7 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { Design } from "./design-schema";
+import { BLANK as SCHEMA_BLANK, Design } from "./design-schema";
 import {
   BLANK,
   PLACEHOLDER_LOGO,
@@ -19,7 +21,6 @@ const pngSize = (dataUrl: string) => {
     signature: bytes.subarray(1, 4).toString("ascii"),
     width: bytes.readUInt32BE(16),
     height: bytes.readUInt32BE(20),
-    bytes: bytes.length,
   };
 };
 
@@ -31,6 +32,17 @@ describe("templates", () => {
   it("has unique ids", () => {
     const ids = TEMPLATES.map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("has unique block ids within each template", () => {
+    for (const t of TEMPLATES) {
+      const ids = t.design.blocks.map((b) => b.id);
+      expect(new Set(ids).size).toBe(ids.length);
+    }
+  });
+
+  it("re-exports the schema's Blank as the same object", () => {
+    expect(BLANK).toBe(SCHEMA_BLANK);
   });
 
   it("lists Sponsor first and Blank last", () => {
@@ -68,12 +80,21 @@ describe("templates", () => {
     }
   });
 
-  it("uses a /templates/ photo or a raster data URL for every image", () => {
-    const allowed = /^(\/templates\/[\w-]+\.(jpg|jpeg|webp)|data:image\/(png|jpeg|webp);base64,)/;
+  // Template.parse has already applied the schema's allowlist; templates also never hotlink.
+  const imageSrcs = (t: (typeof TEMPLATES)[number]) => [
+    ...(t.design.background.type === "image" ? [t.design.background.src] : []),
+    ...t.design.blocks.flatMap((b) => (b.kind === "image" ? [b.src] : [])),
+  ];
+
+  it("never hotlinks an https: image", () => {
+    for (const t of TEMPLATES) for (const src of imageSrcs(t)) expect(src).not.toMatch(/^https:/);
+  });
+
+  it("points every /templates/ src at a file in public/", () => {
     for (const t of TEMPLATES) {
-      const { background, blocks } = t.design;
-      if (background.type === "image") expect(background.src).toMatch(allowed);
-      for (const b of blocks) if (b.kind === "image") expect(b.src).toMatch(allowed);
+      for (const src of imageSrcs(t).filter((s) => s.startsWith("/templates/"))) {
+        expect(existsSync(path.join("public", src)), src).toBe(true);
+      }
     }
   });
 
