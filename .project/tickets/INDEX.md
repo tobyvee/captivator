@@ -7,7 +7,7 @@ tags: [project, captivator, reference, tickets]
 ---
 # captivator — Ticket index
 
-The run order for `/implement-parallel`: 35 tickets in 11 waves. Estimates add up to 550 minutes of agent work. The critical path, the sum of each wave's longest ticket, is 225 minutes before merging and review. Estimates size the work; they aren't a budget ([`general-time-budget-is-user-time.md`](../decisions/general-time-budget-is-user-time.md)).
+The run order for `/implement-parallel`: 36 tickets in 11 waves. Estimates add up to 565 minutes of agent work. The critical path, the sum of each wave's longest ticket, is 230 minutes before merging and review. Estimates size the work; they aren't a budget ([`general-time-budget-is-user-time.md`](../decisions/general-time-budget-is-user-time.md)).
 
 Waves follow the greedy rules in `/prioritise-tickets`, with one override: `T-029` and `T-030` run last ([`T-029-checklist-and-readme-run-last.md`](../decisions/T-029-checklist-and-readme-run-last.md)).
 
@@ -100,7 +100,7 @@ Waves follow the greedy rules in `/prioritise-tickets`, with one override: `T-02
 | ID | Title | Priority | Estimate | Touches |
 |---|---|---|---|---|
 | [T-029](T-029-real-phone-checklist.md) | Real-phone testing checklist | P1 | 10 | `.project/review/phone-checklist.md` |
-| [T-036](T-036-editor-columns-scroll-independently.md) | Editor columns scroll independently, so the preview stays put | P1 | 15 | `src/app/editor/page.tsx`, `src/editor/editor.test.tsx`, `src/editor/PreviewStage.tsx` |
+| [T-036](T-036-editor-columns-scroll-independently.md) | Editor columns scroll independently, so the preview stays put | P1 | 15 | `src/app/editor/page.tsx`, `src/editor/editor.test.tsx`, `src/editor/PreviewStage.tsx`, `src/editor/controls/ColourField.tsx`, `src/editor/controls/ColourField.test.tsx` |
 
 ### Wave 11 (10 min)
 
@@ -108,7 +108,7 @@ Waves follow the greedy rules in `/prioritise-tickets`, with one override: `T-02
 
 | ID | Title | Priority | Estimate | Touches |
 |---|---|---|---|---|
-| [T-030](T-030-readme-and-final-deploy.md) | README and final deploy | P1 | 10 | `README.md` |
+| [T-030](T-030-readme-and-final-deploy.md) | README and final deploy | P1 | 10 | `README.md`, `docs/editor.png`, `next.config.ts`, `src/app/security-headers.test.ts`, `.project/review/phone-checklist.md` |
 
 ## Cut
 
@@ -157,4 +157,4 @@ None. Every dependency exists, there are no cycles, every `todo` ticket has `tou
 | 9 | [T-034](T-034-dnd-kit-reorder.md) | Drag to reorder blocks with dnd-kit | P2 | 8 | 15 | T-012 | done |
 | 10 | [T-029](T-029-real-phone-checklist.md) | Real-phone testing checklist | P1 | 9 | 10 | T-012, T-013, T-014, T-015, T-017, T-019, T-020, T-024, T-025, T-027 | done |
 | 10 | [T-036](T-036-editor-columns-scroll-independently.md) | Editor columns scroll independently, so the preview stays put | P1 | 9 | 15 | — | done |
-| 11 | [T-030](T-030-readme-and-final-deploy.md) | README and final deploy | P1 | 9 | 10 | T-029 | todo |
+| 11 | [T-030](T-030-readme-and-final-deploy.md) | README and final deploy | P1 | 9 | 10 | T-029 | done |

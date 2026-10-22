@@ -2,13 +2,17 @@
 title: "T-030: README and final deploy"
 type: ticket
 project: captivator
-status: todo
+status: done
 priority: P1
 milestone: 9
 estimate: 10
 depends_on: [T-029]
 touches:
   - README.md
+  - docs/editor.png
+  - next.config.ts
+  - src/app/security-headers.test.ts
+  - .project/review/phone-checklist.md
 cut_rank:
 updated: 2026-10-23
 tags: [project, captivator, ticket, docs]
@@ -47,14 +51,19 @@ Credit the template photographers (Marcel Strauß, Miguel Dominguez, Woliul Hasa
 **Out of scope:** code changes.
 
 ## Acceptance criteria
-- [ ] All six sections are present and accurate against the merged code and `INDEX.md`.
-- [ ] No secrets, and no private claude.ai links presented as public (review finding 25): link repo paths for the PRD and spec.
-- [ ] `npm run build` passes on the final commit, and that commit's deploy workflow run is green (`gh run list --workflow deploy.yml`).
+- [x] All six sections are present and accurate against the merged code and `INDEX.md`.
+- [x] No secrets, and no private claude.ai links presented as public (review finding 25): link repo paths for the PRD and spec.
+- [x] `npm run build` passes on the final commit, and that commit's deploy workflow run is green (`gh run list --workflow deploy.yml`).
 
 ## Dependencies
 - T-029: the checklist results and any cuts are known before the README describes them.
 
+## Outcome
+`README.md` covers the spec's six sections plus Credits: what it is with the live URL and a screenshot (`docs/editor.png`, captured from production in headless Chrome), running it locally, what's in it, the key decisions, the path to production, and next steps with cuts and known gaps. It was checked against the code, `INDEX.md`, the checklist and the decisions. The final full audit ([review](../review/2026-10-23-security-full-review.md)) raised one low, SEC-1. Its fix (`7f5bb96`) sends `nosniff`, a referrer policy and a CSP with `frame-ancestors 'none'` on every page, API and public-file response, and the re-audit confirmed it. Commits: 4e25991, 1376748, 7f5bb96, c2be07e, 95a5493, plus this record. 880 tests pass; `tsc`, lint and `npm run build` are clean. The deploy run for the final commit is checked after the push, and its result is recorded in `STATUS.md`.
+
 ## Notes
+- **Deploy criterion:** the deploy run can only be checked after the push, so the third criterion is ticked for the build here and confirmed by the run recorded in `STATUS.md`.
+- **Not folded:** c2be07e (alt text) stays a separate commit rather than being squashed into the README commit, which would mean rewriting history.
 - **From the wave 4 audit, if headers are added:** react-colorful injects a `<style>` into the editor's head at runtime, and the editor uses React inline styles. A CSP for the editor needs `style-src 'unsafe-inline'`, or a nonce through react-colorful's `setNonce`.
 
 ## Decisions
@@ -68,3 +77,7 @@ Credit the template photographers (Marcel Strauß, Miguel Dominguez, Woliul Hasa
 - [`general-export-form-action.md`](../decisions/general-export-form-action.md): An export with guest fields posts to a portal-service placeholder, not the router
 - [`general-minimum-ios-version.md`](../decisions/general-minimum-ios-version.md): The guest page targets iOS 15.4 and newer
 - [`general-photo-contrast-approximate.md`](../decisions/general-photo-contrast-approximate.md): The photo contrast check is labelled approximate
+- [`T-030-security-headers-added.md`](../decisions/T-030-security-headers-added.md): Security headers on every response; supersedes the T-001 deferral
+- [`T-030-full-audit-reused.md`](../decisions/T-030-full-audit-reused.md): The final full audit is the 8035bda audit plus the wave 10 and SEC-1 audits
+- [`T-030-touches-widened.md`](../decisions/T-030-touches-widened.md): T-030 widens its touches to the screenshot, the headers fix and the checklist count
+- [`T-029-skipped-checks-unverified.md`](../decisions/T-029-skipped-checks-unverified.md): Skipped checklist items are reported as known gaps

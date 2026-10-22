@@ -47,7 +47,7 @@ Unsplash photo search is optional locally. To turn it on, copy `.dev.vars.exampl
 - **Unsplash search:** search from the Photo tab, with the photographer credit and Unsplash's required download ping.
 - **Export HTML:** one file with no JavaScript and no network requests. Every image is inlined, and the background is re-encoded to keep the page near 100 KB. A toast shows the file size, and a page over budget gets a warning but still downloads.
 
-Every check warns and never blocks editing. Every response sends `X-Content-Type-Options`, `Referrer-Policy` and a CSP with `frame-ancestors 'none'`.
+Every check warns and never blocks editing. Every page, API and public-file response sends `X-Content-Type-Options`, `Referrer-Policy` and a CSP with `frame-ancestors 'none'`.
 
 ## Key decisions
 
