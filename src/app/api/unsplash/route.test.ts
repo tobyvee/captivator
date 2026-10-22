@@ -127,7 +127,6 @@ describe("GET /api/unsplash", () => {
     expect(headers.get("Accept-Version")).toBe("v1");
     expect(init?.next).toEqual({ revalidate: 3600 });
     expect(res.headers.get("Cache-Control")).toBe("public, max-age=3600");
-    expect(res.headers.get("Cache-Control")).not.toContain("s-maxage");
   });
 
   it("drops results whose URLs are off Unsplash's hosts or missing", async () => {
@@ -185,6 +184,14 @@ describe("GET /api/unsplash", () => {
 
     expect(res.status).toBe(200);
     expect(upstreamCall().url.searchParams.get("query")).toBe("📷".repeat(100));
+  });
+
+  it("drops a space left at the end of the 100-character cut", async () => {
+    fetchMock.mockResolvedValue(searchReply([]));
+
+    await search(`q=${"x".repeat(99)}%20yz`);
+
+    expect(upstreamCall().url.searchParams.get("query")).toBe("x".repeat(99));
   });
 
   it("lower-cases q and collapses its whitespace, so equivalent searches share a cache entry", async () => {

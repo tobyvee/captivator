@@ -11,11 +11,11 @@ const NOT_SET_UP = "Photo search is not set up";
 const FAILED = "Photo search failed";
 
 /**
- * The URL's canonical href when it is plain `https:` on exactly `hostname`, with
+ * The parsed URL when it is plain `https:` on exactly `hostname`, with
  * no userinfo and the default port; otherwise null. Parsed, never prefix-matched,
  * so `api.unsplash.com.evil.example` and `api.unsplash.com@evil.example` fail.
  */
-function httpsHref(value: string, hostname: string): string | null {
+function httpsUrl(value: string, hostname: string): URL | null {
   let url: URL;
   try {
     url = new URL(value);
@@ -28,15 +28,15 @@ function httpsHref(value: string, hostname: string): string | null {
     url.username === "" &&
     url.password === "" &&
     url.port === "";
-  return ok ? url.href : null;
+  return ok ? url : null;
 }
 
 // Unsplash's download endpoint is /photos/:id/download; nothing else on the API is pinged.
 const DOWNLOAD_PATH = /^\/photos\/[\w-]+\/download$/;
 
 function downloadHref(value: string): string | null {
-  const href = httpsHref(value, "api.unsplash.com");
-  return href !== null && DOWNLOAD_PATH.test(new URL(href).pathname) ? href : null;
+  const url = httpsUrl(value, "api.unsplash.com");
+  return url !== null && DOWNLOAD_PATH.test(url.pathname) ? url.href : null;
 }
 
 // Keeps a URL (canonicalised) only when `check` allows it; anything else drops the photo.
@@ -46,7 +46,7 @@ const AllowedUrl = (check: (value: string) => string | null) =>
     if (href === null) ctx.issues.push({ code: "custom", message: "Disallowed URL", input: value });
     return href ?? z.NEVER;
   });
-const ImageUrl = AllowedUrl((value) => httpsHref(value, "images.unsplash.com"));
+const ImageUrl = AllowedUrl((value) => httpsUrl(value, "images.unsplash.com")?.href ?? null);
 
 // z.object strips every upstream field not named here, which is the trimming.
 const Photo = z.object({
@@ -54,7 +54,7 @@ const Photo = z.object({
   urls: z.object({ small: ImageUrl, regular: ImageUrl }),
   user: z.object({
     name: z.string(),
-    links: z.object({ html: AllowedUrl((value) => httpsHref(value, "unsplash.com")) }),
+    links: z.object({ html: AllowedUrl((value) => httpsUrl(value, "unsplash.com")?.href ?? null) }),
   }),
   links: z.object({ download_location: AllowedUrl(downloadHref) }),
 });
@@ -107,7 +107,8 @@ export async function GET(request: Request): Promise<Response> {
   // Lower-cased with whitespace collapsed, so "Cat  Dog" and "cat dog" share one cached upstream call.
   const normalised = raw.trim().replace(/\s+/g, " ").toLowerCase();
   // Cap by code points, so a cut never leaves a lone surrogate for encodeURIComponent to throw on.
-  const q = Array.from(normalised).slice(0, MAX_QUERY_LENGTH).join("");
+  // trimEnd after the cut, so a cut at a space doesn't make a second cache entry for the same search.
+  const q = Array.from(normalised).slice(0, MAX_QUERY_LENGTH).join("").trimEnd();
   if (q === "") return json({ error: "Enter something to search for" }, 400);
 
   const key = accessKey();
