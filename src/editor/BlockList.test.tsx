@@ -388,6 +388,22 @@ describe("BlockList", () => {
       expect(order()).toEqual(before);
       expect(useStore.getState().selection).toEqual({ kind: "background" });
     });
+
+    it("starts a drag only once the pointer has moved 4px", async () => {
+      render(<BlockList />);
+      const grip = handle("Heading");
+      fireEvent.pointerDown(grip, { isPrimary: true, button: 0, clientX: 20, clientY: ROW_HEIGHT + 24 });
+      fireEvent.pointerMove(document, { clientX: 20, clientY: ROW_HEIGHT + 26 }); // 2px: a wobbly tap
+      await act(async () => {});
+      expect(grip).not.toHaveAttribute("aria-pressed");
+      expect(announced() ?? "").not.toMatch(/^Picked up/);
+
+      fireEvent.pointerMove(document, { clientX: 20, clientY: ROW_HEIGHT + 34 }); // 10px: a drag
+      await act(async () => {});
+      expect(grip).toHaveAttribute("aria-pressed", "true");
+      expect(announced()).toMatch(/^Picked up Heading/);
+      fireEvent.pointerUp(document, { clientX: 20, clientY: ROW_HEIGHT + 34 });
+    });
   });
 
   describe("Terms switch", () => {
