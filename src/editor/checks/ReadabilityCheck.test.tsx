@@ -255,6 +255,20 @@ describe("ReadabilityCheck Fix", () => {
     expect(anyFix()).not.toBeInTheDocument();
   });
 
+  it("offers the Fix for a later failure when the first has none, and names what it fixes", async () => {
+    const user = userEvent.setup();
+    // No colour reads better than the heading's on black to white, but the button's label can be fixed.
+    const d = design({ type: "gradient", from: "#000000", to: "#FFFFFF", direction: "down" }, [heading("#111111")]);
+    start({ ...d, form: { ...d.form, button: { ...d.form.button, bg: "#1E3A8A", fg: "#1E40AF" } } });
+    expect(screen.getByText(/^Heading: 1\.1:1 on the background$/)).toBeInTheDocument();
+
+    const fix = screen.getByRole("button", { name: "Fix Connect button" });
+    expect(fix).toHaveTextContent(/^Fix Connect button$/);
+    await user.click(fix);
+    expect(state().design.form.button.fg).toBe("#FFFFFF");
+    expect(state().design.blocks[0]).toMatchObject({ colour: "#111111" });
+  });
+
   it("picks for a fitted photo's backdrop as well as its average", async () => {
     getColorAsync.mockResolvedValue({ hex: "#333333" });
     const user = userEvent.setup();

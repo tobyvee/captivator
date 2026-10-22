@@ -57,7 +57,7 @@ export function usePhotoAverage(src: string | undefined): string | undefined {
   );
 }
 
-type Fix = { kind: "block"; id: string; colour: string } | { kind: "form"; patch: FormPatch };
+type Fix = { label: string } & ({ kind: "block"; id: string; colour: string } | { kind: "form"; patch: FormPatch });
 
 /**
  * The one-tap Fix for a failure: `readableTextColour` (near-black, white or black) picked against
@@ -67,20 +67,20 @@ type Fix = { kind: "block"; id: string; colour: string } | { kind: "form"; patch
  * T-027-input-edge-contrast.md).
  */
 function fixFor(failure: ReadabilityFailure): Fix | null {
-  const { target, against } = failure;
-  if (target.kind === "inputs" && failure.label === "Fields") return null;
+  const { label, target, against } = failure;
+  if (target.kind === "inputs" && label === "Fields") return null;
   const colour = readableTextColour(against);
   if (worstRatio(colour, against) <= failure.ratio) return null;
 
   switch (target.kind) {
     case "block":
-      return { kind: "block", id: target.id, colour };
+      return { label, kind: "block", id: target.id, colour };
     case "terms":
-      return { kind: "form", patch: { terms: { textColour: colour } } };
+      return { label, kind: "form", patch: { terms: { textColour: colour } } };
     case "button":
-      return { kind: "form", patch: { button: { fg: colour } } };
+      return { label, kind: "form", patch: { button: { fg: colour } } };
     case "inputs":
-      return { kind: "form", patch: { inputText: colour } };
+      return { label, kind: "form", patch: { inputText: colour } };
   }
 }
 
@@ -94,7 +94,9 @@ export function ReadabilityCheck({ design }: { design: Design }) {
   const photoAverage = usePhotoAverage(background.type === "image" ? background.src : undefined);
   const result = checkDesign(design, photoAverage);
   const [first, ...rest] = result.failures;
-  const fix = first ? fixFor(first) : null;
+  // The first failure that has a Fix, which may not be the one the Notice's title names
+  // (T-035-fix-first-fixable-failure.md).
+  const fix = result.failures.map((f) => fixFor(f)).find((f) => f !== null);
   const updateBlock = useStore((s) => s.updateBlock);
   const updateForm = useStore((s) => s.updateForm);
 
@@ -122,10 +124,9 @@ export function ReadabilityCheck({ design }: { design: Design }) {
               onClick={(e) => {
                 if (e.detail <= 1) applyFix();
               }}
-              aria-label={`Fix ${first.label}`}
               className="-ml-2 flex min-h-11 items-center self-start rounded-md px-2 text-xs font-semibold text-[#78350F] underline hover:text-[#451A03] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
             >
-              Fix
+              Fix {fix.label}
             </button>
           )}
         </Notice>
