@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { act, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BLANK, type Design } from "@/lib/design-schema";
+import { useStore } from "@/lib/store";
 import type { BackgroundSpec, TextBlockSpec } from "@/lib/types";
 import { ReadabilityCheck } from "./ReadabilityCheck";
 
@@ -27,10 +29,10 @@ const heading = (colour: string): TextBlockSpec => ({
   size: 32,
 });
 
-const photo = (src: string, backdrop = "#1E293B"): BackgroundSpec => ({
+const photo = (src: string, backdrop = "#1E293B", fit: "fill" | "fit" = "fill"): BackgroundSpec => ({
   type: "image",
   src,
-  fit: "fill",
+  fit,
   zoom: 1,
   focus: { x: 50, y: 50 },
   backdrop,
@@ -114,5 +116,122 @@ describe("ReadabilityCheck", () => {
     await act(async () => {});
     expect(getColorAsync).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("status")).toHaveTextContent("Check readability over your photo");
+  });
+});
+
+describe("ReadabilityCheck Fix", () => {
+  const WHITE = { type: "colour", colour: "#FFFFFF" } as const;
+  const NAVY = { type: "colour", colour: "#0F172A" } as const;
+  const state = () => useStore.getState();
+  const history = () => useStore.temporal.getState();
+  const anyFix = () => screen.queryByRole("button", { name: /^Fix / });
+
+  // The editor passes the store's design, so a Fix shows up in the line straight away.
+  function Harness() {
+    return <ReadabilityCheck design={useStore((s) => s.design)} />;
+  }
+
+  // Starts from `d` with empty history, so each Fix is the only change.
+  const start = (d: Design) => {
+    localStorage.clear();
+    useStore.setState({ ...useStore.getInitialState(), design: d }, true);
+    useStore.persist.clearStorage();
+    history().clear();
+    render(<Harness />);
+  };
+
+  // Undo history folds design changes under 400ms apart into one step, so tests move the clock.
+  let now = 0;
+  beforeEach(() => {
+    now = 1_000_000;
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("turns white text on white near-black, and the line then reads all text is readable", async () => {
+    const user = userEvent.setup();
+    start(design(WHITE, [heading("#FFFFFF")]));
+    expect(screen.getByRole("status")).toHaveTextContent("Heading is hard to read");
+
+    await user.click(screen.getByRole("button", { name: "Fix Heading" }));
+    expect(state().design.blocks[0]).toMatchObject({ colour: "#111111" });
+    expect(screen.getByRole("status")).toHaveTextContent("All text is readable");
+    expect(anyFix()).not.toBeInTheDocument();
+  });
+
+  it("makes each Fix one undo step", async () => {
+    const user = userEvent.setup();
+    const d = design(WHITE, [heading("#FFFFFF")]);
+    start({ ...d, form: { ...d.form, terms: { ...d.form.terms, mode: "checkbox", textColour: "#FFFFFF" } } });
+
+    await user.click(screen.getByRole("button", { name: "Fix Heading" }));
+    now += 1000;
+    await user.click(screen.getByRole("button", { name: "Fix Terms checkbox" }));
+    expect(state().design.form.terms.textColour).toBe("#111111");
+    expect(history().pastStates).toHaveLength(2);
+
+    act(() => history().undo());
+    expect(state().design.form.terms.textColour).toBe("#FFFFFF");
+    expect(state().design.blocks[0]).toMatchObject({ colour: "#111111" });
+    act(() => history().undo());
+    expect(state().design.blocks[0]).toMatchObject({ colour: "#FFFFFF" });
+  });
+
+  it("fixes a solid button's label against the button's own fill", async () => {
+    const user = userEvent.setup();
+    const d = design(WHITE);
+    start({ ...d, form: { ...d.form, button: { ...d.form.button, bg: "#1E3A8A", fg: "#1E40AF" } } });
+
+    await user.click(screen.getByRole("button", { name: "Fix Connect button" }));
+    expect(state().design.form.button.fg).toBe("#FFFFFF");
+    expect(history().pastStates).toHaveLength(1);
+  });
+
+  it("fixes an outline button's label against the page", async () => {
+    const user = userEvent.setup();
+    const d = design(NAVY);
+    start({ ...d, form: { ...d.form, button: { ...d.form.button, variant: "outline", bg: "#FFFFFF", fg: "#111111" } } });
+
+    await user.click(screen.getByRole("button", { name: "Fix Connect button" }));
+    expect(state().design.form.button.fg).toBe("#FFFFFF");
+  });
+
+  it("fixes the field text against the field", async () => {
+    const user = userEvent.setup();
+    const d = design(NAVY);
+    start({ ...d, form: { ...d.form, fields: ["email"], inputBg: "#F1F5F9", inputText: "#CBD5E1" } });
+
+    expect(screen.getByText(/^Field text: /)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Fix Field text" }));
+    expect(state().design.form.inputText).toBe("#111111");
+  });
+
+  it("offers no Fix when the fields' edge blends into the page", () => {
+    // Blank with a field: white inputs on a white page, with readable text inside them.
+    start({ ...BLANK.design, form: { ...BLANK.design.form, fields: ["email"] } });
+    expect(screen.getByText(/^Fields: 1\.0:1 on the background$/)).toBeInTheDocument();
+    expect(anyFix()).not.toBeInTheDocument();
+  });
+
+  it("offers no Fix when the text already has the best colour it can get", () => {
+    // Black to white: no colour reads on both stops, and near-black is already the best pick.
+    const d = design({ type: "gradient", from: "#000000", to: "#FFFFFF", direction: "down" });
+    start({ ...d, form: { ...d.form, terms: { ...d.form.terms, mode: "checkbox", textColour: "#111111" } } });
+    expect(screen.getByText(/^Terms checkbox: /)).toBeInTheDocument();
+    expect(anyFix()).not.toBeInTheDocument();
+  });
+
+  it("picks for a fitted photo's backdrop as well as its average", async () => {
+    getColorAsync.mockResolvedValue({ hex: "#333333" });
+    const user = userEvent.setup();
+    // On the dark average alone white reads best (so there'd be no Fix), but white fails on the
+    // white backdrop around it. Neither near-black nor white reaches 4.5:1 on both, so black wins.
+    start(design(photo("/templates/fitted.jpg", "#FFFFFF", "fit"), [heading("#FFFFFF")]));
+    await screen.findByText(/^Heading: 1\.0:1 on the background$/);
+
+    await user.click(screen.getByRole("button", { name: "Fix Heading" }));
+    expect(state().design.blocks[0]).toMatchObject({ colour: "#000000" });
   });
 });
