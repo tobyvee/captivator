@@ -154,7 +154,10 @@ export function UnsplashSearch() {
           maxLength={100}
           value={query}
           onChange={(e) => {
-            setQuery(e.currentTarget.value);
+            const value = e.currentTarget.value;
+            setQuery(value);
+            // Forget an outcome once its query is left, so coming back retries instead of showing it.
+            setSettled((s) => (s !== null && s.q !== normalise(value) ? null : s));
             setPickError(null);
           }}
           className="min-h-11 min-w-0 flex-1 bg-transparent text-[15px] text-zinc-900 outline-none"

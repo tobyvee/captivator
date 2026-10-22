@@ -136,6 +136,19 @@ describe("UnsplashSearch", () => {
     expect(screen.queryByRole("img", { name: "Photo by First" })).not.toBeInTheDocument();
   });
 
+  it("retries a failed query when it is typed again, without showing the old failure", async () => {
+    render(<UnsplashSearch />);
+    await searchFor("river", Response.json({ error: "Photo search failed" }, { status: 502 }));
+    type("rivers");
+    fetchMock.mockResolvedValueOnce(found([photo("r1")]));
+    type("river");
+
+    expect(status()).toHaveTextContent("Searching…");
+    await settle();
+    expect(searches().map(([url]) => url)).toEqual(["/api/unsplash?q=river", "/api/unsplash?q=river"]);
+    expect(screen.getByRole("button", { name: "Photo by Jo Doe" })).toBeInTheDocument();
+  });
+
   it("says when nothing was found", async () => {
     render(<UnsplashSearch />);
     await searchFor("zzqqxx", found([]));
