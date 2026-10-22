@@ -6,15 +6,19 @@ import { SPONSOR } from "@/lib/templates";
 import type { SplashPageProps } from "@/splash/SplashPage";
 import { useFitCheck } from "./useFitCheck";
 
-// jsdom has no layout, so SplashPage is replaced by a bare root whose props the tests read, and
-// ResizeObserver by a stub the tests fire. Real measurement is on the manual checklist (T-029).
+// jsdom has no layout, so SplashPage is wrapped to record its props (it still renders, so the hook
+// observes the real root), and ResizeObserver is a stub the tests fire. Real measurement is on the
+// manual checklist (T-029).
 const rendered = vi.hoisted(() => ({ props: null as SplashPageProps | null }));
-vi.mock("@/splash/SplashPage", () => ({
-  SplashPage: (props: SplashPageProps) => {
-    rendered.props = props;
-    return <div data-testid="splash-root" />;
-  },
-}));
+vi.mock("@/splash/SplashPage", async (importOriginal) => {
+  const { SplashPage } = await importOriginal<typeof import("@/splash/SplashPage")>();
+  return {
+    SplashPage: (props: SplashPageProps) => {
+      rendered.props = props;
+      return <SplashPage {...props} />;
+    },
+  };
+});
 
 let observed: Element[] = [];
 let fire: () => void = () => {};
@@ -53,9 +57,12 @@ function Harness({ design }: { design: Design }) {
 }
 
 const result = () => screen.getByTestId("result").textContent;
+const probe = (container: HTMLElement) => container.querySelector<HTMLElement>("[aria-hidden][inert]")!;
+// SplashPage's own root, the element the hook must observe.
+const splashRoot = (container: HTMLElement) => probe(container).querySelector(":scope > div")!;
 
-function setContentHeight(px: number) {
-  Object.defineProperty(screen.getByTestId("splash-root"), "scrollHeight", {
+function setContentHeight(root: Element, px: number) {
+  Object.defineProperty(root, "scrollHeight", {
     configurable: true,
     value: px,
   });
@@ -70,11 +77,10 @@ describe("useFitCheck", () => {
   });
 
   it("keeps the probe off screen, hidden from screen readers and out of clicks and focus", () => {
-    render(<Harness design={SPONSOR.design} />);
-    const probe = screen.getByTestId("splash-root").parentElement!;
-    expect(probe).toHaveAttribute("aria-hidden", "true");
-    expect(probe).toHaveAttribute("inert");
-    expect(probe).toHaveStyle({
+    const { container } = render(<Harness design={SPONSOR.design} />);
+    expect(probe(container)).toHaveAttribute("aria-hidden", "true");
+    expect(probe(container)).toHaveAttribute("inert");
+    expect(probe(container)).toHaveStyle({
       position: "absolute",
       left: "-10000px",
       top: "0px",
@@ -87,15 +93,18 @@ describe("useFitCheck", () => {
   });
 
   it("observes the splash root and warns only once its content passes 600px", () => {
-    render(<Harness design={SPONSOR.design} />);
-    expect(observed).toEqual([screen.getByTestId("splash-root")]);
+    const { container } = render(<Harness design={SPONSOR.design} />);
+    const root = splashRoot(container);
+    // The real renderer's root: its column holds the design's text.
+    expect(root).toHaveTextContent("FREE WIFI");
+    expect(observed).toEqual([root]);
     expect(result()).toBe("false null");
 
-    setContentHeight(600);
+    setContentHeight(root, 600);
     expect(result()).toBe("false 600");
-    setContentHeight(601);
+    setContentHeight(root, 601);
     expect(result()).toBe("true 601");
-    setContentHeight(420);
+    setContentHeight(root, 420);
     expect(result()).toBe("false 420");
   });
 

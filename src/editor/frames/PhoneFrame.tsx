@@ -1,9 +1,7 @@
 import type { ReactNode } from "react";
+import { FOLD_HEIGHT } from "@/lib/fit";
 
 type Props = { children: ReactNode; showFold?: boolean };
-
-/** Where an iPhone SE's login sheet ends, measured from the top of the page. */
-const FOLD_PX = 600;
 
 /**
  * A 375×740 phone viewport. The shell doesn't scroll and is the containing block for fixed
@@ -24,7 +22,7 @@ export function PhoneFrame({ children, showFold = false }: Props) {
         {showFold && (
           <div
             aria-hidden="true"
-            style={{ top: FOLD_PX }}
+            style={{ top: FOLD_HEIGHT }}
             className="pointer-events-none absolute inset-x-0 z-[2] border-t-2 border-dashed border-[#FBBF24]"
           >
             <span className="absolute -top-[22px] right-2 rounded bg-[#FBBF24] px-1.5 py-0.5 text-[11px] font-semibold text-[#451A03]">
