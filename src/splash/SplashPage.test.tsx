@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { BLANK, Design } from "../lib/design-schema";
-import type { ImageBlockSpec, RenderMode, TextBlockSpec } from "../lib/types";
+import type { ImageBlockSpec, RenderMode, Screen, TextBlockSpec } from "../lib/types";
 import { Form } from "./Form";
 import { SplashPage } from "./SplashPage";
 
@@ -191,6 +191,76 @@ describe("SplashPage screens", () => {
   it("replaces the content column on the connected screen", () => {
     render(<SplashPage design={MIXED} screen="connected" mode="preview" />);
     expect(screen.queryByText("title")).toBeNull();
+  });
+});
+
+describe("SplashPage photo credit", () => {
+  const withCredit = (terms: "off" | "checkbox" = "checkbox"): Design => {
+    const d = design([text("t", "heading", "Welcome")], terms);
+    d.background = {
+      type: "image",
+      src: PNG,
+      credit: {
+        name: "Alex S.",
+        profileUrl: "https://unsplash.com/@santsec24",
+        downloadLocation: "https://api.unsplash.com/photos/abc/download",
+      },
+      fit: "fill",
+      zoom: 1,
+      focus: { x: 50, y: 50 },
+      backdrop: "#000000",
+      overlay: null,
+    };
+    return Design.parse(d);
+  };
+  const creditLine = (container: HTMLElement) => {
+    const line = [...container.querySelectorAll("p")].find((p) => p.textContent?.startsWith("Photo:"));
+    if (!line) throw new Error("credit line not found");
+    return line;
+  };
+  const follows = (later: Node, earlier: Node) =>
+    Boolean(earlier.compareDocumentPosition(later) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  it.each<RenderMode>(["edit", "preview", "export"])(
+    "%s: comes after the heading and the form in document order",
+    (mode) => {
+      const { container } = render(<SplashPage design={withCredit()} screen="landing" mode={mode} />);
+      const line = creditLine(container);
+      const heading = container.querySelector("h1");
+      const form = container.querySelector("form");
+      if (!heading || !form) throw new Error("heading or form not found");
+      expect(follows(line, heading)).toBe(true);
+      expect(follows(line, form)).toBe(true);
+      expect(form.contains(line)).toBe(false);
+    },
+  );
+
+  it.each<Screen>(["landing", "error", "connected"])(
+    "%s: is not inside any click-through (pointer-events: none) element",
+    (s) => {
+      const { container } = render(<SplashPage design={withCredit()} screen={s} mode="edit" />);
+      for (let el: HTMLElement | null = creditLine(container); el; el = el.parentElement) {
+        expect(el.style.pointerEvents).not.toBe("none");
+      }
+    },
+  );
+
+  it("stays in the hidden, inert landing page under the open terms sheet", () => {
+    const { container } = render(<SplashPage design={withCredit()} screen="terms" mode="preview" />);
+    expect(creditLine(container).closest('[aria-hidden="true"]')).toHaveAttribute("inert");
+  });
+
+  it("renders on the connected screen too", () => {
+    const { container } = render(<SplashPage design={withCredit()} screen="connected" mode="export" />);
+    expect(creditLine(container)).toHaveTextContent("Photo: Alex S. / Unsplash");
+  });
+
+  it("is absent for a photo without a credit", () => {
+    const d = withCredit();
+    if (d.background.type !== "image") throw new Error("expected a photo background");
+    d.background.credit = undefined;
+    const { container } = render(<SplashPage design={d} screen="landing" mode="preview" />);
+    expect(container.textContent).not.toContain("Photo:");
   });
 });
 

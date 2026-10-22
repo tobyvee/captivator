@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import type { BackgroundSpec, ImageBackground } from "../lib/types";
-import { Background } from "./Background";
+import type { BackgroundSpec, ImageBackground, RenderMode } from "../lib/types";
+import { Background, Credit } from "./Background";
 
 type El = { tag: string; attrs: Record<string, string>; style: Record<string, string> };
 
@@ -73,8 +73,11 @@ describe("Background layers", () => {
 
   it("photo fill: a covering, zoomed, focus-anchored img over the backdrop colour", () => {
     const [layer, img] = photo({});
-    expect(layer.style.background).toBe("#0B1F2E");
-    expect(layer.style["pointer-events"]).toBe("none");
+    expect(layer.style).toMatchObject({
+      background: "#0B1F2E",
+      overflow: "hidden",
+      "pointer-events": "none",
+    });
     expect(img.tag).toBe("img");
     expect(img.attrs.src).toBe(PHOTO_SRC);
     expect(img.style).toMatchObject({
@@ -117,63 +120,103 @@ describe("Background layers", () => {
   });
 });
 
-describe("Background credit", () => {
-  it("shows no credit line without a credit", () => {
-    const html = render(PHOTO);
+describe("Background without the credit", () => {
+  it("renders no text or links, even when the photo has a credit (SplashPage places the Credit)", () => {
+    const tags = elements(render({ ...PHOTO, credit: CREDIT })).map((e) => e.tag);
+    expect(tags).toEqual(["div", "img", "div"]);
+  });
+});
+
+describe("Credit", () => {
+  const credit = (mode: RenderMode, patch: Partial<typeof CREDIT> = {}) =>
+    renderToStaticMarkup(<Credit credit={{ ...CREDIT, ...patch }} mode={mode} />);
+  const textOf = (html: string) => html.replace(/<[^>]+>/g, "");
+  const links = (html: string) => elements(html).filter((e) => e.tag === "a");
+
+  it.each<RenderMode>(["edit", "preview"])(
+    "%s: Photo: name / Unsplash with referral links that open safely in a new tab",
+    (mode) => {
+      const html = credit(mode);
+      expect(links(html).map((a) => a.attrs.href)).toEqual([
+        "https://unsplash.com/@santsec24?utm_source=captivator&utm_medium=referral",
+        "https://unsplash.com/?utm_source=captivator&utm_medium=referral",
+      ]);
+      for (const a of links(html)) {
+        expect(a.attrs.target).toBe("_blank");
+        expect(a.attrs.rel).toBe("noopener noreferrer");
+      }
+      expect(textOf(html)).toBe("Photo: Alex S. / Unsplash");
+    },
+  );
+
+  it("export: plain text with no links, which the login sheet can't open before sign-in", () => {
+    const html = credit("export");
     expect(html).not.toContain("<a");
-    expect(html).not.toContain("Unsplash");
+    expect(textOf(html)).toBe("Photo: Alex S. / Unsplash");
   });
 
-  it("renders Photo: name / Unsplash with referral links that open safely in a new tab", () => {
-    const html = render({ ...PHOTO, credit: CREDIT });
-    const els = elements(html);
-    const links = els.filter((e) => e.tag === "a");
-    expect(links.map((a) => a.attrs.href)).toEqual([
-      "https://unsplash.com/@santsec24?utm_source=captivator&utm_medium=referral",
-      "https://unsplash.com/?utm_source=captivator&utm_medium=referral",
-    ]);
-    for (const a of links) {
-      expect(a.attrs.target).toBe("_blank");
-      expect(a.attrs.rel).toBe("noopener noreferrer");
-    }
-    expect(html.replace(/<[^>]+>/g, "")).toBe("Photo: Alex S. / Unsplash");
+  it("is one absolute line above the content, clickable, on a dark backing", () => {
+    const [line] = elements(credit("preview"));
+    expect(line.tag).toBe("p");
+    expect(line.style).toMatchObject({
+      position: "absolute",
+      right: "10px",
+      bottom: "8px",
+      "z-index": "2",
+      "pointer-events": "auto",
+      background: "rgba(0, 0, 0, 0.6)",
+      padding: "2px 6px",
+      "border-radius": "4px",
+      color: "#FFFFFF",
+    });
   });
 
-  it("sits above the content and stays clickable, outside the click-through layer", () => {
-    const html = render({ ...PHOTO, credit: CREDIT });
-    const [layer] = elements(html);
-    const line = elements(html).find((e) => e.tag === "p")!;
-    expect(line.style).toMatchObject({ position: "absolute", "z-index": "2", "pointer-events": "auto" });
-    // The layer div closes before the credit line opens.
-    expect(html.indexOf("</div><p")).toBeGreaterThan(0);
-    expect(layer.style["pointer-events"]).toBe("none");
+  it("keeps a 500-character name to one ellipsized line that can't wrap up over Connect", () => {
+    const name = `<b>${"x".repeat(493)}`;
+    const html = credit("edit", { name });
+    const [line] = elements(html);
+    expect(line.style).toMatchObject({
+      "white-space": "nowrap",
+      overflow: "hidden",
+      "text-overflow": "ellipsis",
+      "max-width": "calc(100% - 20px)",
+      "box-sizing": "border-box",
+    });
+    expect(html).toContain(`&lt;b&gt;${"x".repeat(493)}`);
+    expect(elements(html).map((e) => e.tag)).toEqual(["p", "a", "a"]);
   });
+
+  it.each<RenderMode>(["edit", "export"])(
+    "%s: an empty or blank name renders Photo: Unsplash without an empty link",
+    (mode) => {
+      for (const name of ["", "   "]) {
+        const html = credit(mode, { name });
+        expect(textOf(html)).toBe("Photo: Unsplash");
+        expect(links(html).map((a) => a.attrs.href)).toEqual(
+          mode === "export" ? [] : ["https://unsplash.com/?utm_source=captivator&utm_medium=referral"],
+        );
+      }
+    },
+  );
 
   it("keeps referral parameters the profile URL already has, adding only missing ones", () => {
-    const links = elements(
-      render({ ...PHOTO, credit: { ...CREDIT, profileUrl: "https://unsplash.com/@a?utm_source=captivator" } }),
-    ).filter((e) => e.tag === "a");
-    expect(links[0].attrs.href).toBe(
+    const html = credit("preview", { profileUrl: "https://unsplash.com/@a?utm_source=captivator" });
+    expect(links(html)[0].attrs.href).toBe(
       "https://unsplash.com/@a?utm_source=captivator&utm_medium=referral",
     );
   });
 
-  it("renders the photographer name as text, never markup", () => {
-    const name = '<img src=x onerror="alert(1)">';
-    const html = render({ ...PHOTO, credit: { ...CREDIT, name } });
+  it.each<RenderMode>(["edit", "export"])("%s: renders the photographer name as text, never markup", (mode) => {
+    const html = credit(mode, { name: '<img src=x onerror="alert(1)">' });
     expect(html).toContain("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
-    expect(elements(html).filter((e) => e.tag === "img")).toHaveLength(1);
+    expect(elements(html).filter((e) => e.tag === "img")).toHaveLength(0);
   });
 
   it("does not link a profile URL off unsplash.com even if one gets past the schema", () => {
-    const html = render({
-      ...PHOTO,
-      credit: { ...CREDIT, profileUrl: "https://unsplash.com.evil.example/@x" },
-    });
-    const hrefs = elements(html)
-      .filter((e) => e.tag === "a")
-      .map((a) => a.attrs.href);
-    expect(hrefs).toEqual(["https://unsplash.com/?utm_source=captivator&utm_medium=referral"]);
-    expect(html).toContain("Alex S.");
+    const html = credit("preview", { profileUrl: "https://unsplash.com.evil.example/@x" });
+    expect(links(html).map((a) => a.attrs.href)).toEqual([
+      "https://unsplash.com/?utm_source=captivator&utm_medium=referral",
+    ]);
+    expect(textOf(html)).toBe("Photo: Alex S. / Unsplash");
   });
 });

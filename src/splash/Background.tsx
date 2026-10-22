@@ -21,18 +21,27 @@ const LAYERS: CSSProperties = {
 
 const FILL: CSSProperties = { position: "absolute", inset: 0, width: "100%", height: "100%" };
 
-// Above the content column and clickable, so it's a sibling of the layers, not inside them.
+// SplashPage renders the credit after the content (reading order) and above it (z-index 2), so its
+// links stay clickable. One line with a dark backing: white 11px text over rgba(0,0,0,0.6) is at
+// least 5.7:1 over any photo, and a long name ellipsizes instead of wrapping up over Connect.
 const CREDIT: CSSProperties = {
   position: "absolute",
   right: 10,
   bottom: 8,
   zIndex: 2,
   pointerEvents: "auto",
+  boxSizing: "border-box",
+  maxWidth: "calc(100% - 20px)",
   margin: 0,
+  padding: "2px 6px",
+  borderRadius: 4,
+  background: "rgba(0, 0, 0, 0.6)",
   fontSize: 11,
   lineHeight: 1.3,
   color: "#FFFFFF",
-  textShadow: "0 1px 2px rgba(0, 0, 0, 0.6)",
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
 };
 
 const LINK: CSSProperties = { color: "inherit", textDecoration: "underline" };
@@ -56,22 +65,36 @@ function profileHref(profileUrl: string): string | null {
   return url.toString();
 }
 
-function Credit({ credit }: { credit: NonNullable<ImageBackground["credit"]> }): JSX.Element {
-  const href = profileHref(credit.profileUrl);
+export type CreditProps = { credit: NonNullable<ImageBackground["credit"]>; mode: RenderMode };
+
+// "Photo: {name} / Unsplash". The export shows it as plain text, because links can't open from the
+// login sheet before sign-in (T-006-export-credit-plain-text.md); the editor keeps both links.
+export function Credit({ credit, mode }: CreditProps): JSX.Element {
+  const name = credit.name.trim();
+  const linked = mode !== "export";
+  const href = linked && name ? profileHref(credit.profileUrl) : null;
   return (
     <p style={CREDIT}>
       Photo:{" "}
-      {href ? (
-        <a href={href} target="_blank" rel="noopener noreferrer" style={LINK}>
-          {credit.name}
+      {name && (
+        <>
+          {href ? (
+            <a href={href} target="_blank" rel="noopener noreferrer" style={LINK}>
+              {name}
+            </a>
+          ) : (
+            name
+          )}{" "}
+          /{" "}
+        </>
+      )}
+      {linked ? (
+        <a href={UNSPLASH_HOME} target="_blank" rel="noopener noreferrer" style={LINK}>
+          Unsplash
         </a>
       ) : (
-        credit.name
-      )}{" "}
-      /{" "}
-      <a href={UNSPLASH_HOME} target="_blank" rel="noopener noreferrer" style={LINK}>
-        Unsplash
-      </a>
+        "Unsplash"
+      )}
     </p>
   );
 }
@@ -107,8 +130,8 @@ function Photo({ background }: { background: ImageBackground }): JSX.Element {
   );
 }
 
-// The background layers behind the SplashPage content, plus the Unsplash credit line when the
-// photo has one. Renders the same in every mode.
+// The background layers behind the SplashPage content. Renders the same in every mode; the
+// Unsplash credit line is the separate `Credit`, which SplashPage places after the content.
 export function Background({ background }: BackgroundProps): JSX.Element {
   switch (background.type) {
     case "colour":
@@ -125,12 +148,9 @@ export function Background({ background }: BackgroundProps): JSX.Element {
       );
     case "image":
       return (
-        <>
-          <div aria-hidden="true" style={{ ...LAYERS, background: background.backdrop }}>
-            <Photo background={background} />
-          </div>
-          {background.credit && <Credit credit={background.credit} />}
-        </>
+        <div aria-hidden="true" style={{ ...LAYERS, background: background.backdrop }}>
+          <Photo background={background} />
+        </div>
       );
   }
 }

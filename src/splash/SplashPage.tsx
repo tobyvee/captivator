@@ -1,7 +1,7 @@
 import { Fragment, type CSSProperties, type JSX, type MouseEvent } from "react";
 import type { Design } from "../lib/design-schema";
 import type { RenderMode, Screen, Selection, TextBlockSpec } from "../lib/types";
-import { Background } from "./Background";
+import { Background, Credit } from "./Background";
 import { Connected } from "./Connected";
 import { Form } from "./Form";
 import { TermsSheet } from "./TermsSheet";
@@ -135,6 +135,12 @@ export function SplashPage({
   }
 
   const background = <Background background={design.background} mode={mode} />;
+  // The Unsplash credit comes after the page's content in reading and tab order. It sits at
+  // z-index 2, above the column; the terms sheet comes later in the DOM, so it paints over it.
+  const credit =
+    design.background.type === "image" && design.background.credit ? (
+      <Credit credit={design.background.credit} mode={mode} />
+    ) : null;
 
   const landing = (
     <>
@@ -150,6 +156,7 @@ export function SplashPage({
           onScreenChange={onScreenChange}
         />
       </div>
+      {credit}
     </>
   );
 
@@ -159,6 +166,7 @@ export function SplashPage({
       <>
         {background}
         <Connected design={design} mode={mode} onContinue={() => onScreenChange?.("landing")} />
+        {credit}
       </>
     );
   } else if (mode === "export") {
