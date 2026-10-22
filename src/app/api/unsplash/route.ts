@@ -1,3 +1,4 @@
+import { env } from "cloudflare:workers";
 import { z } from "zod";
 
 // The app's only server code. It holds the Unsplash key, so it trims what it
@@ -78,11 +79,35 @@ function authHeaders(key: string): HeadersInit {
   return { Authorization: `Client-ID ${key}`, "Accept-Version": "v1" };
 }
 
+/**
+ * A 429 when this client is over its per-minute limit for `bucket`, a 503 when the
+ * limiter isn't bound (fail closed: an unthrottled route can spend the whole hourly
+ * quota), or null to go ahead. Keyed by Cloudflare's `cf-connecting-ip`, never a
+ * client-set header; requests without it share one bucket.
+ */
+async function throttle(request: Request, bucket: "search" | "ping"): Promise<Response | null> {
+  const limiter: RateLimit | undefined = env.UNSPLASH_RATE_LIMIT;
+  if (!limiter) {
+    console.error("Unsplash rate limiter is not bound");
+    return json({ error: NOT_SET_UP }, 503);
+  }
+  const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
+  const { success } = await limiter.limit({ key: `${bucket}:${ip}` });
+  if (success) return null;
+  const error = bucket === "search" ? "Too many searches, try again shortly" : "Too many requests, try again shortly";
+  return json({ error }, 429);
+}
+
 /** `GET /api/unsplash?q=` → `{ results: UnsplashPhoto[] }`. */
 export async function GET(request: Request): Promise<Response> {
+  const throttled = await throttle(request, "search");
+  if (throttled) return throttled;
+
   const raw = new URL(request.url).searchParams.get("q") ?? "";
+  // Lower-cased with whitespace collapsed, so "Cat  Dog" and "cat dog" share one cached upstream call.
+  const normalised = raw.trim().replace(/\s+/g, " ").toLowerCase();
   // Cap by code points, so a cut never leaves a lone surrogate for encodeURIComponent to throw on.
-  const q = Array.from(raw.trim()).slice(0, MAX_QUERY_LENGTH).join("");
+  const q = Array.from(normalised).slice(0, MAX_QUERY_LENGTH).join("");
   if (q === "") return json({ error: "Enter something to search for" }, 400);
 
   const key = accessKey();
@@ -121,6 +146,9 @@ export async function GET(request: Request): Promise<Response> {
 
 /** `POST /api/unsplash` with `{ downloadLocation }` → 204 once Unsplash has counted the download. */
 export async function POST(request: Request): Promise<Response> {
+  const throttled = await throttle(request, "ping");
+  if (throttled) return throttled;
+
   let body: unknown;
   try {
     body = await request.json();

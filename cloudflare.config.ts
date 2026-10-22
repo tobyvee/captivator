@@ -17,6 +17,9 @@ export default defineConfig({
       VINEXT_KV_CACHE: bindings.kv(),
       // Optional. A Worker secret in production and a .dev.vars entry locally, never a plain variable.
       UNSPLASH_ACCESS_KEY: bindings.secret(),
+      // Per-client throttle on /api/unsplash, so no one caller can spend the hourly Unsplash quota.
+      // The namespace ID is any positive integer unique to the Cloudflare account.
+      UNSPLASH_RATE_LIMIT: bindings.rateLimit({ namespace: "1031", simple: { limit: 10, period: 60 } }),
     },
   }),
 });

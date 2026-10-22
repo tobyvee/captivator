@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET, POST, type UnsplashPhoto } from "./route";
 
+// The Worker env the route reads its rate limiter from. Tests swap the binding per case.
+const worker = vi.hoisted(() => ({
+  env: {} as Record<string, unknown>,
+  limit: vi.fn<(options: { key: string }) => Promise<{ success: boolean }>>(),
+}));
+vi.mock("cloudflare:workers", () => ({ env: worker.env }));
+
 // A stand-in, never a real key: the repo is public.
 const KEY = "test-access-key-not-real";
 const DOWNLOAD = "https://api.unsplash.com/photos/abc123/download?ixid=xyz";
@@ -11,10 +18,13 @@ const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   vi.stubEnv("UNSPLASH_ACCESS_KEY", KEY);
+  worker.limit.mockResolvedValue({ success: true });
+  worker.env.UNSPLASH_RATE_LIMIT = { limit: worker.limit };
 });
 
 afterEach(() => {
   fetchMock.mockReset();
+  worker.limit.mockReset();
   consoleError.mockClear();
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
@@ -50,15 +60,17 @@ function searchReply(results: unknown[]) {
   return Response.json({ total: results.length, total_pages: 1, results });
 }
 
-function search(query: string) {
-  return GET(new Request(`https://app.example/api/unsplash?${query}`));
+const CLIENT_IP = "203.0.113.7";
+
+function search(query: string, headers: HeadersInit = { "cf-connecting-ip": CLIENT_IP }) {
+  return GET(new Request(`https://app.example/api/unsplash?${query}`, { headers }));
 }
 
-function ping(body: unknown) {
+function ping(body: unknown, ip: string | null = CLIENT_IP) {
   return POST(
     new Request("https://app.example/api/unsplash", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(ip === null ? {} : { "cf-connecting-ip": ip }) },
       body: typeof body === "string" ? body : JSON.stringify(body),
     }),
   );
@@ -173,6 +185,14 @@ describe("GET /api/unsplash", () => {
 
     expect(res.status).toBe(200);
     expect(upstreamCall().url.searchParams.get("query")).toBe("📷".repeat(100));
+  });
+
+  it("lower-cases q and collapses its whitespace, so equivalent searches share a cache entry", async () => {
+    fetchMock.mockResolvedValue(searchReply([]));
+
+    await search("q=Cat%20%20Dog");
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain("query=cat%20dog&");
   });
 
   it("ignores caller page and per_page parameters", async () => {
@@ -309,5 +329,64 @@ describe("POST /api/unsplash", () => {
     expect(JSON.parse(text)).toEqual({ error: "Photo search failed" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expectKeyNotLeaked(text);
+  });
+});
+
+describe("rate limiting", () => {
+  it("refuses a search over the client's limit with 429, no-store and no upstream call", async () => {
+    worker.limit.mockResolvedValue({ success: false });
+
+    const res = await search("q=cat");
+
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual({ error: "Too many searches, try again shortly" });
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses a ping over the client's limit with 429, no-store and no outbound fetch", async () => {
+    worker.limit.mockResolvedValue({ success: false });
+
+    const res = await ping({ downloadLocation: DOWNLOAD });
+
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual({ error: "Too many requests, try again shortly" });
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("keys search and ping by the client's Cloudflare IP, in separate buckets", async () => {
+    fetchMock.mockImplementation(async () => searchReply([]));
+
+    await search("q=cat");
+    await ping({ downloadLocation: DOWNLOAD });
+
+    expect(worker.limit.mock.calls).toEqual([
+      [{ key: `search:${CLIENT_IP}` }],
+      [{ key: `ping:${CLIENT_IP}` }],
+    ]);
+  });
+
+  it("ignores a spoofable X-Forwarded-For and puts requests with no client IP in one shared bucket", async () => {
+    fetchMock.mockImplementation(async () => searchReply([]));
+
+    await search("q=cat", { "x-forwarded-for": "198.51.100.1" });
+    await ping({ downloadLocation: DOWNLOAD }, null);
+
+    expect(worker.limit.mock.calls).toEqual([[{ key: "search:unknown" }], [{ key: "ping:unknown" }]]);
+  });
+
+  it("fails closed with 503 and no upstream call when the limiter isn't bound", async () => {
+    delete worker.env.UNSPLASH_RATE_LIMIT;
+
+    const searched = await search("q=cat");
+    const pinged = await ping({ downloadLocation: DOWNLOAD });
+
+    for (const res of [searched, pinged]) {
+      expect(res.status).toBe(503);
+      expect(await res.json()).toEqual({ error: "Photo search is not set up" });
+      expect(res.headers.get("Cache-Control")).toBe("no-store");
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
