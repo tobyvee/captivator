@@ -120,6 +120,14 @@ describe("Connected", () => {
     expect(images.map((i) => i.getAttribute("alt"))).toEqual(["Alt logo", "Alt sponsor"]);
   });
 
+  it("keeps the sponsor line at 4.5:1 on a mid grey, where white falls just short", () => {
+    const d = design([image("logo"), image("sponsor")], (d) => {
+      d.background = { type: "colour", colour: "#777777" };
+    });
+    render(<Connected design={d} mode="preview" />);
+    expect(screen.getByText("Thanks to our sponsor")).toHaveStyle({ color: "#000000" });
+  });
+
   it("styles CONTINUE like Connect and calls onContinue", async () => {
     const user = userEvent.setup();
     const onContinue = vi.fn();

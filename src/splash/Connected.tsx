@@ -3,6 +3,7 @@ import {
   backgroundColours,
   bestTextColour,
   mainBackgroundColour,
+  readableTextColour,
   requiredRatio,
   worstRatio,
 } from "../lib/contrast";
@@ -86,7 +87,7 @@ export function Connected({ design, mode, onContinue }: ConnectedProps): JSX.Ele
       <div aria-hidden="true" style={SPACER} />
       {sponsor && (
         <>
-          <p style={{ margin: 0, fontSize: 15, fontWeight: 500, color: bestTextColour(page) }}>
+          <p style={{ margin: 0, fontSize: 15, fontWeight: 500, color: readableTextColour(page) }}>
             Thanks to our sponsor
           </p>
           <ImageBlock block={sponsor} />

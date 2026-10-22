@@ -2,6 +2,7 @@
 
 import { ArrowDown, ArrowDownRight, ArrowRight } from "lucide-react";
 import { useId, useState } from "react";
+import { mainBackgroundColour } from "@/lib/contrast";
 import { useStore } from "@/lib/store";
 import type { BackgroundSpec, ImageBackground } from "@/lib/types";
 import { profileHref, UNSPLASH_HOME } from "@/splash/Background";
@@ -30,18 +31,6 @@ const GRADIENT_TO = "#0E5E6F";
 
 const tabFor = (type: BackgroundSpec["type"]): Tab => (type === "image" ? "photo" : type);
 
-/** The colour a background shows most of: its colour, a gradient's first stop, or a photo's backdrop. */
-export function mainColour(bg: BackgroundSpec): string {
-  switch (bg.type) {
-    case "colour":
-      return bg.colour;
-    case "gradient":
-      return bg.from;
-    case "image":
-      return bg.backdrop;
-  }
-}
-
 /**
  * The background with a new photo. A photo keeps its fit, zoom, focus and overlay; anything else
  * becomes a fresh photo over its main colour. Unsplash (T-032) uses this too.
@@ -56,7 +45,7 @@ export function withPhoto(bg: BackgroundSpec, src: string, credit?: ImageBackgro
         fit: "fill",
         zoom: 1,
         focus: { x: 50, y: 50 },
-        backdrop: mainColour(bg),
+        backdrop: mainBackgroundColour(bg),
         overlay: { from: "#000000", to: "#000000", opacity: 0.4 },
       };
 }
@@ -78,9 +67,9 @@ export function BackgroundPanel() {
   function chooseTab(next: Tab) {
     setTab(next);
     if (next === "colour" && bg.type !== "colour") {
-      updateBackground({ type: "colour", colour: mainColour(bg) });
+      updateBackground({ type: "colour", colour: mainBackgroundColour(bg) });
     } else if (next === "gradient" && bg.type !== "gradient") {
-      updateBackground({ type: "gradient", from: mainColour(bg), to: GRADIENT_TO, direction: "down" });
+      updateBackground({ type: "gradient", from: mainBackgroundColour(bg), to: GRADIENT_TO, direction: "down" });
     }
     // Photo changes nothing until a photo is chosen: the schema has no photo without a `src`.
   }
