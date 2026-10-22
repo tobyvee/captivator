@@ -64,6 +64,15 @@ describe("checkDesign", () => {
     expect(checkDesign(d, "#F5F5F5").message).toMatch(/^Heading: 1\.\d:1 on the background$/);
   });
 
+  it("checks a fitted photo against its backdrop as well as its average", () => {
+    // Dark text reads on the light photo but not on the dark backdrop around it.
+    const blocks = [text({ colour: "#111111" })];
+    expect(checkDesign(design({ background: PHOTO, blocks }), "#F5F5F5").status).toBe("approximate");
+    const result = checkDesign(design({ background: { ...PHOTO, fit: "fit" }, blocks }), "#F5F5F5");
+    expect(result.status).toBe("fail");
+    expect(result.message).toMatch(/^Heading: 1\.\d:1 on the background$/);
+  });
+
   it("blends a photo's average with its overlay", () => {
     const background: BackgroundSpec = { ...PHOTO, overlay: { from: "#000000", to: "#000000", opacity: 0.85 } };
     expect(checkDesign(design({ background, blocks: [text({ colour: "#FFFFFF" })] }), "#F5F5F5").status).toBe(

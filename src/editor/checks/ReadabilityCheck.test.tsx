@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BLANK, type Design } from "@/lib/design-schema";
 import type { BackgroundSpec, TextBlockSpec } from "@/lib/types";
@@ -27,13 +27,13 @@ const heading = (colour: string): TextBlockSpec => ({
   size: 32,
 });
 
-const photo = (src: string): BackgroundSpec => ({
+const photo = (src: string, backdrop = "#1E293B"): BackgroundSpec => ({
   type: "image",
   src,
   fit: "fill",
   zoom: 1,
   focus: { x: 50, y: 50 },
-  backdrop: "#1E293B",
+  backdrop,
   overlay: null,
 });
 
@@ -52,9 +52,17 @@ describe("ReadabilityCheck", () => {
   it("names the first failure and what it needs", () => {
     const d = design(BLANK.design.background, [heading("#FFFFFF")]);
     render(<ReadabilityCheck design={{ ...d, form: { ...d.form, fields: ["email"] } }} />);
+    expect(screen.getByRole("status")).toHaveTextContent(/^Heading is hard to read$/);
+    expect(screen.getByText("Heading: 1.0:1 on the background")).toBeInTheDocument();
+    expect(screen.getByText("Needs 3:1. 1 more to fix.")).toBeInTheDocument();
+  });
+
+  it("announces only the verdict, so a colour drag that keeps failing stays quiet", () => {
+    const { rerender } = render(<ReadabilityCheck design={design(BLANK.design.background, [heading("#FFFFFF")])} />);
     const status = screen.getByRole("status");
-    expect(status).toHaveTextContent("Heading: 1.0:1 on the background");
-    expect(status).toHaveTextContent("Needs 3:1. 1 more to fix.");
+    rerender(<ReadabilityCheck design={design(BLANK.design.background, [heading("#EEEEEE")])} />);
+    expect(screen.getByText(/^Heading: 1\.\d:1 on the background$/)).not.toHaveTextContent("1.0:1");
+    expect(status).toHaveTextContent(/^Heading is hard to read$/);
   });
 
   it("keeps one status region mounted as the verdict changes", () => {
@@ -62,7 +70,7 @@ describe("ReadabilityCheck", () => {
     const status = screen.getByRole("status");
     rerender(<ReadabilityCheck design={design(BLANK.design.background, [heading("#FFFFFF")])} />);
     expect(screen.getByRole("status")).toBe(status);
-    expect(status).toHaveTextContent("Heading: 1.0:1");
+    expect(status).toHaveTextContent("Heading is hard to read");
   });
 
   it("rates a photo by its average colour once sampled", async () => {
@@ -81,15 +89,30 @@ describe("ReadabilityCheck", () => {
     await screen.findByText(/^Heading: 1\.\d:1/);
     unmount();
     render(<ReadabilityCheck design={d} />);
-    expect(screen.getByRole("status")).toHaveTextContent(/^Heading: 1\.\d:1/);
+    expect(screen.getByText(/^Heading: 1\.\d:1/)).toBeInTheDocument();
     expect(getColorAsync).toHaveBeenCalledTimes(1);
   });
 
-  it("stays approximate when the photo can't be sampled", async () => {
-    getColorAsync.mockRejectedValue(new Error("tainted canvas"));
-    render(<ReadabilityCheck design={design(photo("/templates/broken.jpg"), [heading("#FFFFFF")])} />);
-    await vi.waitFor(() => expect(getColorAsync).toHaveBeenCalled());
-    await Promise.resolve();
+  it("stays on the backdrop when sampling throws, and doesn't sample that photo again", async () => {
+    getColorAsync.mockRejectedValue(new Error("network"));
+    const d = design(photo("/templates/broken.jpg", "#F5F5F5"), [heading("#111111")]);
+    const { unmount } = render(<ReadabilityCheck design={d} />);
+    await act(async () => {});
+    // Rated on the light backdrop, where dark text passes.
+    expect(screen.getByRole("status")).toHaveTextContent("Check readability over your photo");
+    unmount();
+    render(<ReadabilityCheck design={d} />);
+    await act(async () => {});
+    expect(getColorAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores the colour of a sample that reports an error (a tainted canvas)", async () => {
+    getColorAsync.mockResolvedValue({ hex: "#000000", error: new Error("tainted") });
+    // Dark text on a light backdrop passes; it would fail if the black hex were used.
+    const d = design(photo("/templates/tainted.jpg", "#F5F5F5"), [heading("#111111")]);
+    render(<ReadabilityCheck design={d} />);
+    await act(async () => {});
+    expect(getColorAsync).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("status")).toHaveTextContent("Check readability over your photo");
   });
 });

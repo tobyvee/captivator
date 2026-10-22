@@ -38,7 +38,11 @@ type Check = ReadabilityFailure & { on: "background" | "button" | "field" };
  * Failures keep the order the guest reads them in, and the message names the first.
  */
 export function checkDesign(design: Design, photoAverage?: string): ReadabilityResult {
-  const page = backgroundColours(design.background, photoAverage);
+  const bg = design.background;
+  const page = backgroundColours(bg, photoAverage);
+  // A fitted photo leaves the backdrop showing around it, so text can sit on either
+  // (T-027-fitted-photo-checks-backdrop.md).
+  if (bg.type === "image" && bg.fit === "fit" && photoAverage) page.push(...backgroundColours(bg));
   const { fields, inputBg, inputText, terms, button } = design.form;
   const checks: Check[] = [];
 
@@ -103,7 +107,7 @@ export function checkDesign(design: Design, photoAverage?: string): ReadabilityR
     const first = failing[0];
     return { status: "fail", message: `${first.label}: ${formatRatio(first.ratio)} on the ${first.on}`, failures };
   }
-  if (design.background.type === "image") {
+  if (bg.type === "image") {
     return { status: "approximate", message: "Check readability over your photo", failures };
   }
   return { status: "ok", message: "All text is readable", failures };

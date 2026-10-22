@@ -2,7 +2,7 @@
 
 import { FastAverageColor } from "fast-average-color";
 import { Check, TriangleAlert } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import type { Design } from "@/lib/design-schema";
 import { checkDesign } from "@/lib/readability";
 import { Notice } from "../controls/Notice";
@@ -13,6 +13,7 @@ const MAX_CACHED = 8; // photos are data URLs up to ~1 MB, so keep only the rece
 // Average colour per photo `src`, shared by every mount: a string once sampled, null if sampling failed.
 const averages = new Map<string, string | null>();
 const sampling = new Map<string, Promise<void>>();
+const listeners = new Set<() => void>();
 let fac: FastAverageColor | undefined;
 
 function sample(src: string): Promise<void> {
@@ -29,33 +30,35 @@ function sample(src: string): Promise<void> {
         averages.set(src, hex);
         sampling.delete(src);
         if (averages.size > MAX_CACHED) averages.delete(averages.keys().next().value!);
+        listeners.forEach((notify) => notify());
       });
     sampling.set(src, job);
   }
   return job;
 }
 
+function subscribe(notify: () => void) {
+  listeners.add(notify);
+  return () => void listeners.delete(notify);
+}
+
 /** The photo's average colour, cached by `src`. Undefined until it's sampled, or if sampling fails. */
 export function usePhotoAverage(src: string | undefined): string | undefined {
-  const [, setSampled] = useState(0);
-
   useEffect(() => {
-    if (!src || averages.has(src)) return;
-    let live = true;
-    void sample(src).then(() => {
-      if (live) setSampled((n) => n + 1);
-    });
-    return () => {
-      live = false;
-    };
+    if (src && !averages.has(src)) void sample(src);
   }, [src]);
 
-  return (src && averages.get(src)) || undefined;
+  return useSyncExternalStore(
+    subscribe,
+    () => (src && averages.get(src)) || undefined,
+    () => undefined,
+  );
 }
 
 /**
  * The design-wide readability line in the caption row under the preview. It only warns: nothing
- * here blocks editing. The status region stays mounted so a change of verdict is announced.
+ * here blocks editing. Only the verdict is live, so dragging a colour while it fails isn't announced
+ * at every step (T-027-readability-verdict-live-only.md).
  */
 export function ReadabilityCheck({ design }: { design: Design }) {
   const { background } = design;
@@ -64,7 +67,10 @@ export function ReadabilityCheck({ design }: { design: Design }) {
   const [first, ...rest] = result.failures;
 
   return (
-    <div role="status" className="flex justify-center">
+    <div className="flex justify-center">
+      <span role="status" className="sr-only">
+        {result.status === "fail" ? `${first.label} is hard to read` : result.message}
+      </span>
       {result.status === "fail" ? (
         <Notice className="max-w-[420px] text-left" title={result.message}>
           <span className="text-xs leading-[1.45] text-[#92400E]">
@@ -73,6 +79,7 @@ export function ReadabilityCheck({ design }: { design: Design }) {
         </Notice>
       ) : (
         <span
+          aria-hidden="true"
           className={`flex items-center gap-1.5 ${result.status === "ok" ? "text-[#166534]" : "text-[#92400E]"}`}
         >
           {result.status === "ok" ? (
