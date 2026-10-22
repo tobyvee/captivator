@@ -397,3 +397,66 @@ describe("rate limiting", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
+
+describe("cross-site requests", () => {
+  function post(headers: Record<string, string>) {
+    return POST(
+      new Request("https://app.example/api/unsplash", {
+        method: "POST",
+        headers: { "cf-connecting-ip": CLIENT_IP, ...headers },
+        body: JSON.stringify({ downloadLocation: DOWNLOAD }),
+      }),
+    );
+  }
+
+  it("refuses a text/plain ping with 415 and no outbound fetch", async () => {
+    const res = await post({ "Content-Type": "text/plain" });
+
+    expect(res.status).toBe(415);
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["no content type", {}],
+    ["a form content type", { "Content-Type": "application/x-www-form-urlencoded" }],
+    ["a JSON-like suffix", { "Content-Type": "application/json-patch+json" }],
+  ])("refuses a ping with %s with 415", async (_label, headers) => {
+    const res = await post(headers);
+
+    expect(res.status).toBe(415);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("accepts a JSON content type with parameters and any casing", async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 200 }));
+
+    const res = await post({ "Content-Type": "Application/JSON; charset=utf-8" });
+
+    expect(res.status).toBe(204);
+  });
+
+  it("refuses a cross-site search with 403 and no upstream call", async () => {
+    const res = await search("q=beach", { "cf-connecting-ip": CLIENT_IP, "Sec-Fetch-Site": "cross-site" });
+
+    expect(res.status).toBe(403);
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses a cross-site JSON ping with 403 and no outbound fetch", async () => {
+    const res = await post({ "Content-Type": "application/json", "Sec-Fetch-Site": "cross-site" });
+
+    expect(res.status).toBe(403);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it.each(["same-origin", "same-site", "none"])("still serves a search sent with Sec-Fetch-Site: %s", async (site) => {
+    fetchMock.mockResolvedValue(searchReply([upstreamPhoto("a1")]));
+
+    const res = await search("q=beach", { "cf-connecting-ip": CLIENT_IP, "Sec-Fetch-Site": site });
+
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});

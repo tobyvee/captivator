@@ -98,10 +98,24 @@ async function throttle(request: Request, bucket: "search" | "ping"): Promise<Re
   return json({ error }, 429);
 }
 
+/**
+ * A 403 when the browser says another site sent this request, or null to go ahead. Without it any
+ * page could make its visitors search or ping through the app's key, each under their own IP.
+ * Clients that send no `Sec-Fetch-Site` (older browsers, curl) aren't browsers being led by
+ * another site, so they pass; the rate limit still applies to them.
+ */
+function refuseCrossSite(request: Request): Response | null {
+  return request.headers.get("sec-fetch-site") === "cross-site"
+    ? json({ error: "Cross-site requests are not allowed" }, 403)
+    : null;
+}
+
 /** `GET /api/unsplash?q=` → `{ results: UnsplashPhoto[] }`. */
 export async function GET(request: Request): Promise<Response> {
   const throttled = await throttle(request, "search");
   if (throttled) return throttled;
+  const crossSite = refuseCrossSite(request);
+  if (crossSite) return crossSite;
 
   const raw = new URL(request.url).searchParams.get("q") ?? "";
   // Lower-cased with whitespace collapsed, so "Cat  Dog" and "cat dog" share one cached upstream call.
@@ -149,6 +163,12 @@ export async function GET(request: Request): Promise<Response> {
 export async function POST(request: Request): Promise<Response> {
   const throttled = await throttle(request, "ping");
   if (throttled) return throttled;
+  const crossSite = refuseCrossSite(request);
+  if (crossSite) return crossSite;
+  // Only a JSON body: a form or text/plain POST is a "simple" request another site can send
+  // without a CORS preflight, while application/json forces one, which fails here.
+  const mediaType = request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase();
+  if (mediaType !== "application/json") return json({ error: "Send the download location as JSON" }, 415);
 
   let body: unknown;
   try {
