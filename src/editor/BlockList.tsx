@@ -1,9 +1,24 @@
 "use client";
 
 import {
+  type Announcements,
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  type Modifier,
+  PointerSensor,
+  type UniqueIdentifier,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
   ChevronDown,
   ChevronUp,
   FileText,
+  GripVertical,
   Image as ImageIcon,
   type LucideIcon,
   MousePointerClick,
@@ -11,7 +26,7 @@ import {
   TextCursorInput,
   Type,
 } from "lucide-react";
-import { type JSX, type ReactNode, useId, useRef } from "react";
+import { type CSSProperties, type JSX, type ReactNode, type Ref, useId, useMemo, useRef } from "react";
 import { flushSync } from "react-dom";
 import { backgroundColours, bestTextColour } from "@/lib/contrast";
 import { type Block, type Design, FIELD_SPEC, MAX_IMAGES } from "@/lib/design-schema";
@@ -91,34 +106,65 @@ type RowProps = {
   pinned?: boolean;
   /** Shown inside the row button, after the text (a swatch). */
   swatch?: ReactNode;
+  /** A sibling control before the row button (the drag handle). */
+  leading?: ReactNode;
   /** Sibling controls beside the row button (move buttons, the Terms switch), never nested in it. */
   controls?: ReactNode;
   /** Set on the summary so sibling controls can point `aria-describedby` at it. */
   summaryId?: string;
   /** The block's id on its select button, so focus can be moved to the row. */
   blockId?: string;
+  /** The sortable node and its drag transform, for block rows. */
+  rowRef?: Ref<HTMLDivElement>;
+  style?: CSSProperties;
+  dragging?: boolean;
 };
 
 /** One row: a select button filling the row, with any controls as its siblings. */
-function Row({ icon: Icon, name, summary, selected, onSelect, pinned, swatch, controls, summaryId, blockId }: RowProps) {
+function Row({
+  icon: Icon,
+  name,
+  summary,
+  selected,
+  onSelect,
+  pinned,
+  swatch,
+  leading,
+  controls,
+  summaryId,
+  blockId,
+  rowRef,
+  style,
+  dragging,
+}: RowProps) {
   return (
     <div
+      ref={rowRef}
+      style={style}
       className={[
         "flex min-h-12 items-center rounded-lg border-[1.5px]",
         selected ? "border-blue-600 bg-blue-50" : pinned ? "border-zinc-200 bg-zinc-50" : "border-transparent bg-white",
         controls ? "pr-0.5" : "",
+        leading ? "pl-0.5" : "",
+        dragging ? "relative z-10 shadow-lg" : "",
       ].join(" ")}
     >
+      {leading}
       <button
         type="button"
         aria-current={selected ? "true" : undefined}
         data-block-id={blockId}
         onClick={onSelect}
-        className={`flex min-h-11 min-w-0 flex-1 items-center gap-2.5 self-stretch rounded-[7px] px-2.5 py-1.5 text-left text-zinc-900 ${FOCUS_RING}`}
+        className={[
+          "flex min-h-11 min-w-0 flex-1 items-center gap-2.5 self-stretch rounded-[7px] py-1.5 pr-2.5 text-left text-zinc-900",
+          // The handle's own width spaces the icon from the row's edge.
+          leading ? "pl-0" : "pl-2.5",
+          FOCUS_RING,
+        ].join(" ")}
       >
         <Icon size={18} aria-hidden="true" className={selected ? "shrink-0 text-blue-600" : "shrink-0 text-zinc-600"} />
         <span className="flex min-w-0 flex-1 flex-col">
-          <span data-row-name className="text-[13px] font-semibold">
+          <span data-row-name className="truncate text-[13px] font-semibold">
             {name}
           </span>
           <span id={summaryId} className={["truncate text-xs", selected ? "text-blue-800" : "text-zinc-600"].join(" ")}>
@@ -138,6 +184,12 @@ const MOVE_BUTTON = [
   FOCUS_RING,
 ].join(" ");
 
+const DRAG_HANDLE = [
+  "flex size-11 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg active:cursor-grabbing",
+  "hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent",
+  FOCUS_RING,
+].join(" ");
+
 type BlockRowProps = {
   block: Block;
   selected: boolean;
@@ -153,6 +205,12 @@ function BlockRow({ block, selected, first, last, move, register }: BlockRowProp
   // row's summary to tell them apart.
   const summaryId = useId();
   const name = blockName(block);
+  // A lone block has nowhere to go, like its disabled move buttons.
+  const alone = first && last;
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
+    id: block.id,
+    disabled: alone,
+  });
   return (
     <Row
       icon={block.kind === "text" ? Type : ImageIcon}
@@ -162,6 +220,24 @@ function BlockRow({ block, selected, first, last, move, register }: BlockRowProp
       blockId={block.id}
       selected={selected}
       onSelect={() => setSelection({ kind: "block", id: block.id })}
+      rowRef={setNodeRef}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      dragging={isDragging}
+      leading={
+        <button
+          ref={setActivatorNodeRef}
+          type="button"
+          {...attributes}
+          {...listeners}
+          aria-label={`Drag to reorder ${name}`}
+          // The summary tells same-named blocks apart; dnd-kit's id points at its keyboard instructions.
+          aria-describedby={`${summaryId} ${attributes["aria-describedby"]}`}
+          disabled={alone}
+          className={DRAG_HANDLE}
+        >
+          <GripVertical size={16} aria-hidden="true" className={selected ? "text-zinc-500" : "text-zinc-400"} />
+        </button>
+      }
       controls={
         <>
           <button
@@ -192,9 +268,50 @@ function BlockRow({ block, selected, first, last, move, register }: BlockRowProp
   );
 }
 
+/** Rows move only up and down. */
+const vertical: Modifier = ({ transform }) => ({ ...transform, x: 0 });
+
+function rowLabel(blocks: Design["blocks"], id: UniqueIdentifier): string {
+  const block = blocks.find((b) => b.id === id);
+  return block ? `${blockName(block)}, ${blockSummary(block)}` : "Block";
+}
+
+function position(blocks: Design["blocks"], id: UniqueIdentifier): string {
+  return `position ${blocks.findIndex((b) => b.id === id) + 1} of ${blocks.length}`;
+}
+
+/** Screen-reader announcements by block name and position, instead of dnd-kit's default ids. */
+function announcements(blocks: Design["blocks"]): Announcements {
+  // Skips the "moved" line while the drop target is unchanged, as at pick-up.
+  let lastOver: UniqueIdentifier | null = null;
+  return {
+    onDragStart: ({ active }) => {
+      lastOver = active.id;
+      return `Picked up ${rowLabel(blocks, active.id)}, ${position(blocks, active.id)}.`;
+    },
+    onDragOver: ({ active, over }) => {
+      if (!over || over.id === lastOver) return undefined;
+      lastOver = over.id;
+      return `${rowLabel(blocks, active.id)} moved to ${position(blocks, over.id)}.`;
+    },
+    onDragEnd: ({ active, over }) =>
+      `Dropped ${rowLabel(blocks, active.id)} at ${position(blocks, over?.id ?? active.id)}.`,
+    onDragCancel: ({ active }) => `Cancelled. ${rowLabel(blocks, active.id)} stays at ${position(blocks, active.id)}.`,
+  };
+}
+
 function BlockRows({ blocks, selection }: { blocks: Design["blocks"]; selection: Selection }) {
   const moveBlock = useStore((s) => s.moveBlock);
   const moveButtons = useRef(new Map<string, HTMLButtonElement>());
+  // A stable id keeps dnd-kit's accessibility ids the same on the server and the client.
+  const dndId = useId();
+  const sensors = useSensors(
+    // A few pixels of travel before a drag starts, so a tap on the handle stays a tap.
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  const ids = useMemo(() => blocks.map((b) => b.id), [blocks]);
+  const accessibility = useMemo(() => ({ announcements: announcements(blocks) }), [blocks]);
 
   function move(id: string, dir: -1 | 1) {
     // React refocuses the clicked button after its row moves in the DOM, but not once the move
@@ -208,17 +325,40 @@ function BlockRows({ blocks, selection }: { blocks: Design["blocks"]; selection:
     else moveButtons.current.delete(key);
   };
 
-  return blocks.map((block, i) => (
-    <BlockRow
-      key={block.id}
-      block={block}
-      selected={isSelected(selection, "block", block.id)}
-      first={i === 0}
-      last={i === blocks.length - 1}
-      move={move}
-      register={register}
-    />
-  ));
+  function onDragEnd({ active, over }: DragEndEvent) {
+    const id = String(active.id);
+    const from = ids.indexOf(id);
+    const to = over ? ids.indexOf(String(over.id)) : -1;
+    if (from < 0 || to < 0 || from === to) return;
+    // One swap per place moved: the undo debounce folds them into a single undo step.
+    const dir = to > from ? 1 : -1;
+    for (let i = from; i !== to; i += dir) moveBlock(id, dir);
+  }
+
+  return (
+    <DndContext
+      id={dndId}
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      modifiers={[vertical]}
+      accessibility={accessibility}
+      onDragEnd={onDragEnd}
+    >
+      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+        {blocks.map((block, i) => (
+          <BlockRow
+            key={block.id}
+            block={block}
+            selected={isSelected(selection, "block", block.id)}
+            first={i === 0}
+            last={i === blocks.length - 1}
+            move={move}
+            register={register}
+          />
+        ))}
+      </SortableContext>
+    </DndContext>
+  );
 }
 
 function AddButtons({ imageCount }: { imageCount: number }) {
@@ -351,7 +491,7 @@ export function BlockList() {
       />
 
       <p className="mt-auto rounded-lg bg-zinc-100 px-3 py-2.5 text-xs leading-normal text-zinc-700">
-        Tip: tap anything in the preview to edit it.
+        Tip: tap anything in the preview to edit it. Drag blocks to reorder.
       </p>
     </aside>
   );

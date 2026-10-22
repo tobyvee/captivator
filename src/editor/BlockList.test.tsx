@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { backgroundColours, bestTextColour } from "@/lib/contrast";
 import { BLANK, type Design, MAX_IMAGES } from "@/lib/design-schema";
 import { useStore } from "@/lib/store";
@@ -57,7 +57,9 @@ describe("BlockList", () => {
 
     const rows = Array.from(list.querySelectorAll("[data-row-name]"), (el) => el.textContent);
     expect(rows).toEqual(["Background", "Image", "Heading", "Subheading", "Image", "Fields", "Terms", "Connect button"]);
-    expect(screen.getByText("Tip: tap anything in the preview to edit it.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Tip: tap anything in the preview to edit it. Drag blocks to reorder."),
+    ).toBeInTheDocument();
   });
 
   it("selects a row on click and marks only that row as current", async () => {
@@ -262,6 +264,129 @@ describe("BlockList", () => {
       expect(ups[0]).toHaveAccessibleDescription("Your logo");
       expect(ups[1]).toHaveAccessibleDescription("Sponsor logo");
       expect(screen.getByRole("button", { name: "Move Heading down" })).toHaveAccessibleDescription("FREE WIFI");
+    });
+  });
+
+  describe("drag to reorder", () => {
+    const ROW_HEIGHT = 50;
+    const order = () => blocks().map((b) => b.id);
+    const handle = (name: string) => screen.getByRole("button", { name: `Drag to reorder ${name}` });
+    // dnd-kit's own live region (the preview has status regions too).
+    const announced = () =>
+      screen.getAllByRole("status").find((el) => el.id.startsWith("DndLiveRegion"))?.textContent;
+
+    // jsdom has no layout, so stack the block rows 50px apart in their DOM order, as the column
+    // lays them out. dnd-kit measures the rows to find where a drag lands.
+    beforeEach(() => {
+      const original = Element.prototype.getBoundingClientRect;
+      const spy = vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+        const rows = Array.from(document.querySelectorAll("button[data-block-id]"), (b) => b.parentElement);
+        const index = rows.indexOf(this as HTMLElement);
+        if (index < 0) return original.call(this);
+        return new DOMRect(0, index * ROW_HEIGHT, 240, ROW_HEIGHT - 2);
+      });
+      return () => spy.mockRestore();
+    });
+    // After a pointer drop, dnd-kit swallows clicks on the document for 50ms (so the drop isn't
+    // also a click). Let that pass before later tests click.
+    afterEach(() => new Promise((resolve) => setTimeout(resolve, 60)));
+
+    it("gives each block row a drag handle beside its select button, and pinned rows none", () => {
+      render(<BlockList />);
+      const handles = screen.getAllByRole("button", { name: /^Drag to reorder / });
+      expect(handles).toHaveLength(blocks().length);
+      expect(handles.every((h) => h.tagName === "BUTTON")).toBe(true);
+
+      const heading = handle("Heading");
+      expect(row(/^Heading/)).not.toContainElement(heading);
+      expect(row(/^Heading/).parentElement).toContainElement(heading);
+      // Same-named images are told apart by their summary, then dnd-kit's keyboard instructions.
+      expect(screen.getAllByRole("button", { name: "Drag to reorder Image" })[1]).toHaveAccessibleDescription(
+        /^Sponsor logo .*space bar/i,
+      );
+
+      for (const pinned of [/^Background/, /^Fields/, /^Terms/, /^Connect button/]) {
+        expect(row(pinned).parentElement?.querySelector("[aria-roledescription]")).toBeNull();
+        expect(within(row(pinned).parentElement as HTMLElement).queryByRole("button", { name: /^Drag/ })).toBeNull();
+      }
+    });
+
+    it("disables the handle of a lone block, like its move buttons", () => {
+      load(structuredClone(BLANK.design));
+      act(() => {
+        useStore.getState().addBlock({ kind: "text", text: "Only", role: "body", colour: "#111111", size: 16 });
+      });
+      render(<BlockList />);
+      expect(handle("Text")).toBeDisabled();
+    });
+
+    it("drags with the keyboard (Space, arrows, Space), announcing each step, in one undo step", async () => {
+      const user = userEvent.setup();
+      render(<Editor />);
+      const textOrder = () => preview().getAllByText(/FREE WIFI|Proudly sponsored by/).map((el) => el.textContent);
+      useStore.temporal.getState().clear();
+
+      handle("Heading").focus();
+      await user.keyboard("[Space]");
+      await waitFor(() => expect(announced()).toBe("Picked up Heading, FREE WIFI, position 2 of 4."));
+
+      await user.keyboard("[ArrowDown]");
+      await waitFor(() => expect(announced()).toBe("Heading, FREE WIFI moved to position 3 of 4."));
+      await user.keyboard("[ArrowDown]");
+      await waitFor(() => expect(announced()).toBe("Heading, FREE WIFI moved to position 4 of 4."));
+
+      await user.keyboard("[Space]");
+      await waitFor(() => expect(announced()).toBe("Dropped Heading, FREE WIFI at position 4 of 4."));
+      expect(order()).toEqual(["sponsor-logo", "sponsor-subheading", "sponsor-partner-logo", "sponsor-heading"]);
+      expect(textOrder()).toEqual(["Proudly sponsored by", "FREE WIFI"]);
+      // The moved row keeps focus on its handle.
+      await waitFor(() => expect(handle("Heading")).toHaveFocus());
+
+      // Two places moved is still one undo step.
+      act(() => useStore.temporal.getState().undo());
+      expect(order()).toEqual(["sponsor-logo", "sponsor-heading", "sponsor-subheading", "sponsor-partner-logo"]);
+      expect(useStore.temporal.getState().pastStates).toHaveLength(0);
+    });
+
+    it("leaves the order alone when a keyboard drag is cancelled with Escape", async () => {
+      const user = userEvent.setup();
+      render(<BlockList />);
+      const before = order();
+
+      handle("Subheading").focus();
+      await user.keyboard("[Space]");
+      await waitFor(() => expect(announced()).toMatch(/^Picked up Subheading/));
+      await user.keyboard("[ArrowUp]");
+      await user.keyboard("[Escape]");
+      await waitFor(() => expect(announced()).toBe("Cancelled. Subheading, Proudly sponsored by stays at position 3 of 4."));
+      expect(order()).toEqual(before);
+    });
+
+    it("drags with the pointer and shows the new order in the preview", async () => {
+      render(<Editor />);
+      const grip = screen.getAllByRole("button", { name: "Drag to reorder Image" })[1];
+      // The partner logo's row is the fourth (index 3); drop it on the first.
+      fireEvent.pointerDown(grip, { isPrimary: true, button: 0, clientX: 20, clientY: 3 * ROW_HEIGHT + 24 });
+      fireEvent.pointerMove(document, { clientX: 20, clientY: 3 * ROW_HEIGHT + 10 });
+      fireEvent.pointerMove(document, { clientX: 20, clientY: 20 });
+      await act(async () => {});
+      fireEvent.pointerUp(document, { clientX: 20, clientY: 20 });
+
+      await waitFor(() =>
+        expect(order()).toEqual(["sponsor-partner-logo", "sponsor-logo", "sponsor-heading", "sponsor-subheading"]),
+      );
+      const images = preview().getAllByRole("img").map((img) => img.getAttribute("alt"));
+      expect(images.indexOf("Sponsor logo")).toBeLessThan(images.indexOf("Your logo"));
+    });
+
+    it("treats a tap on the handle as a tap, not a drag", () => {
+      render(<BlockList />);
+      const before = order();
+      const grip = handle("Heading");
+      fireEvent.pointerDown(grip, { isPrimary: true, button: 0, clientX: 20, clientY: ROW_HEIGHT + 24 });
+      fireEvent.pointerUp(document, { clientX: 20, clientY: ROW_HEIGHT + 24 });
+      expect(order()).toEqual(before);
+      expect(useStore.getState().selection).toEqual({ kind: "background" });
     });
   });
 
