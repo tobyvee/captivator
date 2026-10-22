@@ -21,7 +21,8 @@ Run by the user against production (https://app.captivator.workers.dev, deploy o
 | Undo through a colour drag (one step) and a text edit; Cmd+Z in a text box undoes text, not the design | Pass | |
 | Third image or field blocked; a 4 MB phone photo lands under 150 KB | Skipped, unverified | Covered by `store.test.ts` (limits) and `images.test.ts` (downscale and encode budget) |
 | Each template loads; switching keeps the uploaded logo | Pass | |
-| White on white shows the contrast warning; five text blocks show the fit warning | Pass | Readability warning and one-tap Fix both checked |
+| White on white shows the contrast warning | Pass | The readability warning and the one-tap Fix were both checked |
+| Five text blocks show the fit warning | Pass | |
 | Keyboard only: Tab reaches every control; switches and segmented controls announce their state | Skipped, unverified | Covered by component tests for roles and `aria-checked`/`aria-pressed` state. Not checked with VoiceOver |
 
 ## Newer features

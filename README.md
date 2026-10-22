@@ -10,11 +10,11 @@ This is the Phase 0 MVP. The [product requirements (PRD)](.project/prd/Captive%2
 
 ## Run locally
 
-You need Node 22 or newer.
+You need Node 22.23 or newer.
 
 ```sh
 npm i && npm run dev      # http://localhost:5173
-npm test                  # 879 Vitest tests in 41 files
+npm test                  # the Vitest suite
 npm run build             # runs the tests, then the production build
 ```
 
@@ -47,7 +47,7 @@ Unsplash photo search is optional locally. To turn it on, copy `.dev.vars.exampl
 - **Unsplash search:** search from the Photo tab, with the photographer credit and Unsplash's required download ping.
 - **Export HTML:** one file with no JavaScript and no network requests. Every image is inlined, and the background is re-encoded to keep the page near 100 KB. A toast shows the file size, and a page over budget gets a warning but still downloads.
 
-Every check warns and never blocks editing. The editor responses send `X-Content-Type-Options`, `Referrer-Policy` and a CSP with `frame-ancestors 'none'`.
+Every check warns and never blocks editing. Every response sends `X-Content-Type-Options`, `Referrer-Policy` and a CSP with `frame-ancestors 'none'`.
 
 ## Key decisions
 
@@ -68,7 +68,7 @@ Other decisions that changed scope or departed from the spec:
 - **Unsplash search cache:** results are cached for an hour in vinext's KV-backed data cache, because Workers don't cache on `s-maxage` ([decision](.project/decisions/T-031-search-cached-by-fetch-revalidate.md)).
 - **Unsplash rate limit:** each client is throttled to 10 calls per 60 s with a Workers Rate Limiting binding. On the demo tier, one client could still use up the hourly quota, and an IPv6 client could rotate addresses. Both risks are accepted for the demo ([quota](.project/decisions/T-031-unsplash-quota-risk-accepted.md), [IPv6](.project/decisions/T-031-ipv6-rotation-accepted.md)).
 - **Stretch work:** scheduled like the rest of the work rather than held back, so all of it shipped ([decision](.project/decisions/general-stretch-tickets-scheduled.md)).
-- **Editor layout:** on wide screens, each editor column scrolls independently, so the preview stays in place. This was a fix for a failure found in real-phone testing ([decision](.project/decisions/T-036-columns-scroll-when-side-by-side.md)).
+- **Editor layout:** on wide screens, each editor column scrolls independently, so the preview stays in place. This fixes a failure found during the checklist run ([decision](.project/decisions/T-036-columns-scroll-when-side-by-side.md)).
 
 ## Path to production
 
@@ -83,11 +83,11 @@ The editor is the first piece. The [PRD](.project/prd/Captive%20Portal%20Designe
 
 ## Next steps and cuts
 
-**Cut:** nothing. No cut was requested, and all of the stretch work shipped: Unsplash search, focus-point drag, the screen switcher, the logo palette, the fit check, drag to reorder, the one-tap contrast Fix, and undo and redo.
+**Cut:** nothing. No cut was requested. Everything in the spec's cut order shipped (Unsplash search, focus-point drag, the screen switcher, the logo palette and the fit check), and so did the rest of the stretch work (drag to reorder and the one-tap contrast Fix).
 
 **Deferred:** the fade-direction control for the photo overlay. The schema stores no direction, so adding one means a schema version bump and a migration ([decision](.project/decisions/T-006-overlay-two-stop-wash.md)).
 
-**Known gaps from real-phone testing.** On a real phone, 14 checks passed and 8 were skipped, which are recorded as unverified ([checklist](.project/review/phone-checklist.md), [decision](.project/decisions/T-029-skipped-checks-unverified.md)). The one failure, where the preview slid down when Unsplash results loaded, is fixed. These remain unchecked on a device, and unit tests are the only evidence for them:
+**Known gaps from the checklist run.** 14 checks passed and 8 were skipped, which are recorded as unverified ([checklist](.project/review/phone-checklist.md), [decision](.project/decisions/T-029-skipped-checks-unverified.md)). The one failure, where the preview slid down when Unsplash results loaded, has a fix (T-036) that hasn't yet been re-checked in the deployed editor. These remain unchecked on a device, and unit tests are the only evidence for them:
 
 - The image and field limits, and a 4 MB phone photo landing under 150 KB.
 - Keyboard-only use, and VoiceOver announcing switch and segmented-control state.
