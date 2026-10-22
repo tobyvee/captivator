@@ -87,10 +87,10 @@ describe("PreviewStage", () => {
     expect(screen.queryByText("Heading")).not.toBeInTheDocument();
   });
 
-  it("offers Landing and Terms while terms are on, and switches the screen", () => {
+  it("offers all four screens while terms are on, and switches the screen", () => {
     render(<PreviewStage />);
     const buttons = within(switcher()).getAllByRole("button");
-    expect(buttons.map((b) => b.textContent)).toEqual(["Landing", "Terms"]);
+    expect(buttons.map((b) => b.textContent)).toEqual(["Landing", "Terms", "Error", "Connected"]);
     expect(within(switcher()).getByRole("button", { name: "Landing" })).toHaveAttribute(
       "aria-pressed",
       "true",
@@ -114,7 +114,8 @@ describe("PreviewStage", () => {
     setTermsMode("off");
     render(<PreviewStage />);
     const buttons = within(switcher()).getAllByRole("button");
-    expect(buttons.map((b) => b.textContent)).toEqual(["Landing"]);
+    // Sponsor still has fields, so Error stays.
+    expect(buttons.map((b) => b.textContent)).toEqual(["Landing", "Error", "Connected"]);
 
     setTermsMode("checkbox");
     expect(within(switcher()).getByRole("button", { name: "Terms" })).toBeInTheDocument();

@@ -1,11 +1,21 @@
-import type { CSSProperties, FormEvent, JSX, MouseEvent } from "react";
+import {
+  useState,
+  type CSSProperties,
+  type FormEvent,
+  type JSX,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
+import { backgroundColours, bestErrorColour } from "../lib/contrast";
 import { FIELD_SPEC, type Design } from "../lib/design-schema";
-import type { RenderMode, Screen, Selection } from "../lib/types";
+import type { FieldKindSpec, RenderMode, Screen, Selection } from "../lib/types";
+import { TERMS_LINK_ID } from "./TermsSheet";
+import { ERROR_COPY, EXAMPLE_INVALID, validateGuest, type GuestCheck } from "./validate";
 
 export type FormProps = {
   design: Design;
   mode: RenderMode;
-  screen: Screen; // "error" is drawn by T-022
+  screen: Screen;
   onSelect?: (s: Selection) => void;
   onScreenChange?: (s: Screen) => void;
 };
@@ -73,10 +83,92 @@ export const connectButtonStyle = (button: Design["form"]["button"]): CSSPropert
 
 const preventSubmit = (e: FormEvent) => e.preventDefault();
 
-export function Form({ design, mode, onSelect, onScreenChange }: FormProps): JSX.Element {
+// One Error screen on show at a time, like the terms sheet's title id.
+const errorId = (part: FieldKindSpec | "terms") => `cv-${part}-error`;
+
+const ERROR_TEXT: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  fontSize: 14,
+  fontWeight: 500,
+  textAlign: "left",
+};
+
+function ErrorMessage(props: {
+  part: FieldKindSpec | "terms";
+  colour: string;
+  alert?: boolean;
+}): JSX.Element {
+  return (
+    <span
+      id={errorId(props.part)}
+      role={props.alert ? "alert" : undefined}
+      style={{ ...ERROR_TEXT, color: props.colour }}
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+        style={{ flexShrink: 0 }}
+      >
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 8v4M12 16h.01" />
+      </svg>
+      {ERROR_COPY[props.part]}
+    </span>
+  );
+}
+
+export function Form({ design, mode, screen, onSelect, onScreenChange }: FormProps): JSX.Element {
   const { fields, inputBg, inputText, terms, button } = design.form;
   const exporting = mode === "export";
   const edit = mode === "edit";
+  const termsOn = terms.mode === "checkbox";
+
+  // What the last failed edit-mode Connect found, shown while the Error screen is up
+  // (T-022-error-screen-shows-real-failure). Dropped during render once the screen moves on.
+  const [failure, setFailure] = useState<GuestCheck | null>(null);
+  if (failure && screen !== "error") setFailure(null);
+
+  // The Error screen never reaches the export. Opened from the switcher, it shows the spec's
+  // example: the first field with an invalid value and, with terms on, the checkbox.
+  const errors: GuestCheck | null =
+    screen === "error" && !exporting
+      ? (failure ?? { ok: false, field: fields[0], terms: termsOn })
+      : null;
+  const errorColour = errors ? bestErrorColour(backgroundColours(design.background)) : "";
+
+  // In edit and preview, each field and the terms row sit in a wrapper with room for a message,
+  // so showing an error never remounts an input and loses what was typed in it. The export
+  // markup has no wrapper.
+  const slot = (key: string, gap: number, control: ReactNode, message: ReactNode) =>
+    exporting ? (
+      control
+    ) : (
+      <div key={key} style={{ width: "100%", display: "flex", flexDirection: "column", gap }}>
+        {control}
+        {message}
+      </div>
+    );
+
+  // Edit-mode Connect selects the button, then checks the preview's own inputs and shows the
+  // screen a guest would get (T-022-edit-connect-selects-then-validates).
+  const connect = (e: MouseEvent<HTMLButtonElement>) => {
+    onSelect?.({ kind: "button" });
+    const data = new FormData(e.currentTarget.form ?? undefined);
+    const values: Partial<Record<FieldKindSpec, string>> = {};
+    for (const kind of fields) values[kind] = String(data.get(kind) ?? "");
+    const result = validateGuest(fields, values, termsOn, data.has("accept_terms"));
+    setFailure(result.ok ? null : result);
+    onScreenChange?.(result.ok ? "connected" : "error");
+  };
 
   const inputStyle: CSSProperties = {
     boxSizing: "border-box",
@@ -106,8 +198,10 @@ export function Form({ design, mode, onSelect, onScreenChange }: FormProps): JSX
     if (e.target === e.currentTarget) onSelect?.({ kind: "background" });
   };
 
+  // The export's link carries the id the terms sheet's close links return to
+  // (T-021-close-to-terms-link).
   const termsLink = exporting ? (
-    <a href="#terms" style={TERMS_LINK}>
+    <a id={TERMS_LINK_ID} href="#terms" style={TERMS_LINK}>
       {terms.linkText}
     </a>
   ) : (
@@ -135,7 +229,10 @@ export function Form({ design, mode, onSelect, onScreenChange }: FormProps): JSX
         >
           {fields.map((kind) => {
             const spec = FIELD_SPEC[kind];
-            return (
+            const invalid = errors?.field === kind;
+            return slot(
+              kind,
+              6,
               <input
                 key={kind}
                 name={kind}
@@ -145,32 +242,61 @@ export function Form({ design, mode, onSelect, onScreenChange }: FormProps): JSX
                 placeholder={spec.placeholder}
                 aria-label={spec.placeholder}
                 required={exporting}
-                style={inputStyle}
-              />
+                {...(invalid
+                  ? {
+                      // A real failure keeps what was typed; the switcher's example fills one in.
+                      defaultValue: failure ? undefined : EXAMPLE_INVALID[kind],
+                      "aria-invalid": true,
+                      "aria-describedby": errorId(kind),
+                    }
+                  : null)}
+                style={
+                  invalid
+                    ? { ...inputStyle, padding: "0 12px", border: `2px solid ${errorColour}` }
+                    : inputStyle
+                }
+              />,
+              invalid && <ErrorMessage part={kind} colour={errorColour} />,
             );
           })}
         </div>
       )}
-      {terms.mode === "checkbox" && (
-        <label
-          onClick={edit ? selectTerms : undefined}
-          style={{ ...TERMS_ROW, color: terms.textColour }}
-        >
-          <input
-            type="checkbox"
-            name="accept_terms"
-            value={terms.version}
-            required={exporting}
-            style={{ width: 20, height: 20, margin: 0, flexShrink: 0, accentColor: button.bg }}
-          />
-          <span>
-            {terms.label} {termsLink}
-          </span>
-        </label>
-      )}
+      {termsOn &&
+        slot(
+          "terms",
+          2,
+          <label
+            onClick={edit ? selectTerms : undefined}
+            style={{ ...TERMS_ROW, color: terms.textColour }}
+          >
+            <input
+              type="checkbox"
+              name="accept_terms"
+              value={terms.version}
+              required={exporting}
+              {...(errors?.terms
+                ? { "aria-invalid": true, "aria-describedby": errorId("terms") }
+                : null)}
+              style={{
+                width: 20,
+                height: 20,
+                margin: 0,
+                flexShrink: 0,
+                accentColor: button.bg,
+                ...(errors?.terms
+                  ? { outline: `2px solid ${errorColour}`, outlineOffset: 2 }
+                  : null),
+              }}
+            />
+            <span>
+              {terms.label} {termsLink}
+            </span>
+          </label>,
+          errors?.terms && <ErrorMessage part="terms" colour={errorColour} alert />,
+        )}
       <button
         type={exporting ? "submit" : "button"}
-        onClick={edit ? () => onSelect?.({ kind: "button" }) : undefined}
+        onClick={edit ? connect : undefined}
         style={connectButtonStyle(button)}
       >
         {button.label}
