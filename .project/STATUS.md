@@ -11,15 +11,15 @@ tags: [project, captivator, status]
 
 ## Summary
 
-Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is being built. The PRD, tech spec and editor canvas are done. The build is split into 35 tickets in 11 parallel-safe waves (`tickets/INDEX.md`), with nothing cut and the stretch work scheduled. The app deploys to Cloudflare Workers with vinext at https://app.captivator.workers.dev, and each ticket is pushed and deployed as it lands. Waves 1 to 8 are done, and milestones 1 to 8 are closed. The guest page renders from one `SplashPage`, and the editor has its live phone and browser preview, the block list, undo and redo, the readability check, and the Background, Text, Image, Fields, Connect button and Terms panels. The template picker at `/` shows live thumbnails and offers "Continue your design" once anything is saved. Export HTML works end to end under the 100 KB budget. Each ticket is reviewed, splash-audited where it touches the guest page, and security-audited, and the wave 7 audit found nothing. 874 tests pass. Wave 8 is done: the Error and Connected guest screens (`T-022`, closing milestone 6), the logo palette (`T-026`), the small-phone fit check (`T-028`) and the rate-limited Unsplash route (`T-031`, with its quota risks accepted). Its audit found one low, which lands with `T-032`. Wave 9 is landing: the focus-point drag dot (`T-033`), the one-tap contrast Fix (`T-035`), Unsplash search in the Photo tab (`T-032`) and drag to reorder (`T-034`, closing milestone 8) are in.
+Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is being built. The PRD, tech spec and editor canvas are done. The build is split into 35 tickets in 11 parallel-safe waves (`tickets/INDEX.md`), with nothing cut and the stretch work scheduled. The app deploys to Cloudflare Workers with vinext at https://app.captivator.workers.dev, and each ticket is pushed and deployed as it lands. Waves 1 to 9 are done, and milestones 1 to 8 are closed. The guest page renders from one `SplashPage`, and the editor has its live phone and browser preview, the block list, undo and redo, the readability check, and the Background, Text, Image, Fields, Connect button and Terms panels. The template picker at `/` shows live thumbnails and offers "Continue your design" once anything is saved. Export HTML works end to end under the 100 KB budget. Each ticket is reviewed, splash-audited where it touches the guest page, and security-audited, and the wave 7 audit found nothing. 874 tests pass. Wave 8 is done: the Error and Connected guest screens (`T-022`, closing milestone 6), the logo palette (`T-026`), the small-phone fit check (`T-028`) and the rate-limited Unsplash route (`T-031`, with its quota risks accepted). Its audit found one low, which lands with `T-032`. Wave 9 is done: the focus-point drag dot (`T-033`, closing milestone 4), the one-tap contrast Fix (`T-035`), Unsplash search in the Photo tab (`T-032`) and drag to reorder (`T-034`, closing milestone 8), and its audit found nothing. Wave 10 is next: the real-phone checklist (`T-029`), which needs you and a phone.
 
 ## In progress
 
 ## Outstanding
+- [ ] T-029: Real-phone testing checklist
 
 ## Planned
 
-- [ ] T-029: Real-phone testing checklist
 - [ ] T-030: README and final deploy
 
 ## Completed
@@ -74,3 +74,4 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is bein
 - [x] T-032: Unsplash search in the Photo tab (2026-10-23)
 - [x] T-034: Drag to reorder blocks with dnd-kit (2026-10-23)
 - [x] Milestone 8 closed: undo, logo palette, readability and fit checks, plus Unsplash search, contrast Fix and drag to reorder (2026-10-23)
+- [x] Wave 9 closed; wave-wide security audit found nothing (2026-10-23)
