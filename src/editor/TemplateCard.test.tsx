@@ -245,4 +245,16 @@ describe("TemplatePickerPage", () => {
     expect(confirm).toHaveBeenCalledOnce();
     expect(push).not.toHaveBeenCalled();
   });
+
+  it("warns that picking a template replaces a saved design that failed to restore", async () => {
+    const invalid = JSON.stringify({ state: { design: { version: 2 }, name: "" }, version: 2 });
+    localStorage.setItem(STORAGE_KEY, invalid);
+    render(<TemplatePickerPage />);
+
+    expect(await screen.findByText("Couldn't restore your saved design.")).toBeInTheDocument();
+    expect(screen.getByText("Picking a template below replaces it.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Continue your design" })).not.toBeInTheDocument();
+    // Still untouched until something is picked.
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(invalid);
+  });
 });

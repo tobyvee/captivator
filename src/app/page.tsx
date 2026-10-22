@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { BLANK, type Template } from "@/lib/design-schema";
 import { useHydrated, useStore } from "@/lib/store";
 import { TEMPLATE_CREDITS, TEMPLATES } from "@/lib/templates";
+import { Notice } from "@/editor/controls/Notice";
 import { TemplateCard } from "@/editor/TemplateCard";
 
 const GRID = "grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-5";
@@ -30,6 +31,7 @@ function Placeholder() {
 function Picker() {
   const router = useRouter();
   const hasSaved = useStore((s) => s.hasSaved);
+  const restoreFailed = useStore((s) => s.restoreFailed);
   const design = useStore((s) => s.design);
   const name = useStore((s) => s.name);
   const loadTemplate = useStore((s) => s.loadTemplate);
@@ -44,25 +46,34 @@ function Picker() {
   }
 
   return (
-    <div className={GRID}>
-      {hasSaved && (
-        <TemplateCard
-          template={{ id: "saved", name: "Continue your design", description: name || "Untitled design", design }}
-          primaryLabel="Continue"
-          onUse={() => router.push("/editor")}
-        />
+    <>
+      {/* The stored design stays in storage until something is picked, so say so first
+          (T-019-picker-warns-of-failed-restore). */}
+      {restoreFailed && (
+        <Notice className="max-w-[560px]" title="Couldn't restore your saved design.">
+          <span className="text-xs leading-[1.45] text-[#92400E]">Picking a template below replaces it.</span>
+        </Notice>
       )}
-      {TEMPLATES.map((template) => (
-        <TemplateCard
-          key={template.id}
-          template={template}
-          credit={TEMPLATE_CREDITS[template.id]}
-          primaryLabel={template.id === BLANK.id ? "Start blank" : `Use ${template.name}`}
-          variant={template.id === BLANK.id ? "outline" : "solid"}
-          onUse={() => switchTo(template)}
-        />
-      ))}
-    </div>
+      <div className={GRID}>
+        {hasSaved && (
+          <TemplateCard
+            template={{ id: "saved", name: "Continue your design", description: name || "Untitled design", design }}
+            primaryLabel="Continue"
+            onUse={() => router.push("/editor")}
+          />
+        )}
+        {TEMPLATES.map((template) => (
+          <TemplateCard
+            key={template.id}
+            template={template}
+            credit={TEMPLATE_CREDITS[template.id]}
+            primaryLabel={template.id === BLANK.id ? "Start blank" : `Use ${template.name}`}
+            variant={template.id === BLANK.id ? "outline" : "solid"}
+            onUse={() => switchTo(template)}
+          />
+        ))}
+      </div>
+    </>
   );
 }
 
