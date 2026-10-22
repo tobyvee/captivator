@@ -141,7 +141,7 @@ None. Every dependency exists, there are no cycles, every `todo` ticket has `tou
 | 6 | [T-013](T-013-text-panel.md) | Text panel | P0 | 3 | 15 | T-003, T-008, T-010 | done |
 | 6 | [T-015](T-015-fields-and-button-panels.md) | Fields and Connect button panels | P0 | 3 | 15 | T-008, T-010 | done |
 | 6 | [T-024](T-024-export-button.md) | Export HTML button and size toast | P0 | 7 | 10 | T-008, T-023 | done |
-| 6 | [T-017](T-017-photo-adjustments.md) | Photo fit, zoom, focus presets and darken overlay | P1 | 4 | 20 | T-016 | todo |
+| 6 | [T-017](T-017-photo-adjustments.md) | Photo fit, zoom, focus presets and darken overlay | P1 | 4 | 20 | T-016 | done |
 | 7 | [T-027](T-027-readability-check.md) | Readability check under the preview | P1 | 8 | 15 | T-003, T-009 | todo |
 | 7 | [T-019](T-019-template-picker.md) | Template picker with live thumbnails and Continue your design | P1 | 5 | 15 | T-004, T-006, T-007, T-018 | todo |
 | 7 | [T-020](T-020-terms-panel.md) | Terms panel | P1 | 6 | 15 | T-003, T-008, T-010 | todo |

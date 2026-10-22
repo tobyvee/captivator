@@ -49,6 +49,7 @@ Build step 8, "contrast check" ([spec → Checks → Contrast](../spec/Captivato
 - T-009: the `ReadabilityCheck` stub and its place under the frame.
 
 ## Notes
+- **From T-017:** warnings use the shared `src/editor/controls/Notice.tsx` ([`T-017-notice-shared-control.md`](../decisions/T-017-notice-shared-control.md)).
 - **From T-013:** import the role weights from `@/splash/blocks/TextBlock` (`WEIGHT` is exported; [`T-013-role-weights-shared-with-splash.md`](../decisions/T-013-role-weights-shared-with-splash.md)). The Text panel shows no ratio over a photo ([`T-013-photo-line-never-rates.md`](../decisions/T-013-photo-line-never-rates.md)), so this line is where a photo design's failure shows. If the photo average is cached, the panel could reuse it later.
 ```ts
 export type ReadabilityTarget =

@@ -10,7 +10,7 @@ depends_on: [T-017]
 touches:
   - src/editor/panels/FocusGrid.tsx
 cut_rank: 2
-updated: 2026-10-22
+updated: 2026-10-23
 tags: [project, captivator, ticket, editor]
 ---
 # T-033: Focus-point drag dot
@@ -34,6 +34,9 @@ Stretch from step 4 ("3×3 focus grid (drag dot is stretch)"), cut order item 2:
 
 ## Dependencies
 - T-017: `FocusGrid.tsx` and its `value`/`onChange` API.
+
+## Notes
+- **From T-017:** add the drag dot at the exact focus point in `FocusGrid` and drop the per-square dot; extend `PhotoAdjustments.test.tsx` ([`T-017-focus-grid-photo-and-marker.md`](../decisions/T-017-focus-grid-photo-and-marker.md)).
 
 ## Decisions
 - [`T-016-photo-upload-split-from-adjustments.md`](../decisions/T-016-photo-upload-split-from-adjustments.md): Photo upload is P0 in the Background panel; fit, zoom, focus and darken are a separate P1 ticket

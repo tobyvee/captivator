@@ -11,13 +11,12 @@ tags: [project, captivator, status]
 
 ## Summary
 
-Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is being built. The PRD, tech spec and editor canvas are done. The build is split into 35 tickets in 11 parallel-safe waves (`tickets/INDEX.md`), with nothing cut and the stretch work scheduled. The app deploys to Cloudflare Workers with vinext at https://app.captivator.workers.dev, and each ticket is pushed and deployed as it lands. Waves 1 to 5 are done, and milestones 1 to 3 and 7 are closed. The guest page renders from one `SplashPage`, and Export HTML (`T-023`) builds a standalone page under the 100 KB budget. The editor has its shell, the live phone and browser preview (`T-009`), the block list (`T-012`), and the Background and Image panels (`T-016`, `T-014`), on four templates. Each ticket is reviewed, splash-audited where it touches the guest page, and security-audited, and the wave 5 audit found nothing. Wave 6 is landing: the Text panel (`T-013`), the Fields and Connect button panels (`T-015`, closing milestone 3) and the Export HTML button (`T-024`, closing milestone 7) are in, and `T-017` follows. 537 tests pass.
+Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is being built. The PRD, tech spec and editor canvas are done. The build is split into 35 tickets in 11 parallel-safe waves (`tickets/INDEX.md`), with nothing cut and the stretch work scheduled. The app deploys to Cloudflare Workers with vinext at https://app.captivator.workers.dev, and each ticket is pushed and deployed as it lands. Waves 1 to 5 are done, and milestones 1 to 3 and 7 are closed. The guest page renders from one `SplashPage`, and Export HTML (`T-023`) builds a standalone page under the 100 KB budget. The editor has its shell, the live phone and browser preview (`T-009`), the block list (`T-012`), and the Background and Image panels (`T-016`, `T-014`), on four templates. Each ticket is reviewed, splash-audited where it touches the guest page, and security-audited, and the wave 5 audit found nothing. Wave 6 is landing: the Text panel (`T-013`), the Fields and Connect button panels (`T-015`, closing milestone 3) the Export HTML button (`T-024`, closing milestone 7) and the photo adjustments (`T-017`) are in. 552 tests pass.
 
 ## In progress
 
 ## Outstanding
 
-- [ ] T-017: Photo fit, zoom, focus presets and darken overlay
 
 ## Planned
 
@@ -68,3 +67,4 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is bein
 - [x] Milestone 3 closed: editor blocks, fields, button, uploads (2026-10-23)
 - [x] T-024: Export HTML button and size toast (2026-10-23)
 - [x] Milestone 7 closed: export standalone HTML, ahead of milestones 4–6 because the waves run in parallel (2026-10-23)
+- [x] T-017: Photo fit, zoom, focus presets and darken overlay (2026-10-23)

@@ -12,7 +12,7 @@ touches:
   - src/lib/fit.test.ts
   - src/editor/checks/useFitCheck.tsx
 cut_rank: 5
-updated: 2026-10-22
+updated: 2026-10-23
 tags: [project, captivator, ticket, lib, editor]
 ---
 # T-028: Small-phone fit check
@@ -40,4 +40,5 @@ Build step 8, "fit check" ([spec → Checks → Fit](../spec/Captivator%20MVP%20
 - T-009: the `useFitCheck` stub and the UI that consumes it.
 
 ## Notes
+- **From T-017:** the fit note uses the shared `src/editor/controls/Notice.tsx` ([`T-017-notice-shared-control.md`](../decisions/T-017-notice-shared-control.md)).
 `ResizeObserver` measurement isn't unit-tested (spec); it's covered by the manual checklist (T-029).
