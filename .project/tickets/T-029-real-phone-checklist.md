@@ -57,7 +57,11 @@ These are the last non-cuttable tickets on each path, so every feature the check
 
 Cuttable tickets (T-022, T-026, T-028 and the stretch tickets) are deliberately not dependencies; check them if they shipped.
 
+## Notes
+- **From T-024 and the milestone 7 review:** download the export in Safari, Chrome and on iOS and check the file name; open the file and confirm DevTools' Network panel is empty; check `:target` opens and closes the terms sheet, native `required` messages show, and the `:focus-visible` ring appears; check `100dvh` in the iOS Captive Network Assistant and Android's login WebView; and note the real export size for Sponsor with two uploads on Safari's JPEG path (T-023's audit measured 98.1 KB) ([`T-024-browser-download-check-in-t029.md`](../decisions/T-024-browser-download-check-in-t029.md)).
+
 ## Decisions
 - [`T-029-checklist-and-readme-run-last.md`](../decisions/T-029-checklist-and-readme-run-last.md): The phone checklist and README run after every other ticket
 - [`T-029-phone-checklist-at-step-9.md`](../decisions/T-029-phone-checklist-at-step-9.md): The real-phone checklist is its own ticket at build step 9, run by the main session
 - [`general-deploy-cloudflare-vinext.md`](../decisions/general-deploy-cloudflare-vinext.md): The MVP deploys to Cloudflare Workers with vinext, not Vercel
+- [`T-024-browser-download-check-in-t029.md`](../decisions/T-024-browser-download-check-in-t029.md): T-024's download and open check is done here
