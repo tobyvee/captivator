@@ -90,7 +90,7 @@ Waves follow the greedy rules in `/prioritise-tickets`, with one override: `T-02
 |---|---|---|---|---|
 | [T-033](T-033-focus-point-drag.md) | Focus-point drag dot | P2 | 10 | `src/editor/panels/FocusGrid.tsx` |
 | [T-035](T-035-one-tap-contrast-fix.md) | One-tap contrast Fix | P2 | 10 | `src/editor/checks/ReadabilityCheck.tsx` |
-| [T-032](T-032-unsplash-search-ui.md) | Unsplash search in the Photo tab | P2 | 15 | `src/editor/panels/UnsplashSearch.tsx` |
+| [T-032](T-032-unsplash-search-ui.md) | Unsplash search in the Photo tab | P2 | 15 | `src/editor/panels/UnsplashSearch.tsx`, `src/app/api/unsplash/route.ts`, `src/app/api/unsplash/route.test.ts` |
 | [T-034](T-034-dnd-kit-reorder.md) | Drag to reorder blocks with dnd-kit | P2 | 15 | `src/editor/BlockList.tsx` |
 
 ### Wave 10 (10 min)

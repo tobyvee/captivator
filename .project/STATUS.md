@@ -11,19 +11,18 @@ tags: [project, captivator, status]
 
 ## Summary
 
-Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is being built. The PRD, tech spec and editor canvas are done. The build is split into 35 tickets in 11 parallel-safe waves (`tickets/INDEX.md`), with nothing cut and the stretch work scheduled. The app deploys to Cloudflare Workers with vinext at https://app.captivator.workers.dev, and each ticket is pushed and deployed as it lands. Waves 1 to 7 are done, and milestones 1 to 3 and 5 to 7 are closed; milestone 4 waits on its stretch ticket `T-033`. The guest page renders from one `SplashPage`, and the editor has its live phone and browser preview, the block list, undo and redo, the readability check, and the Background, Text, Image, Fields, Connect button and Terms panels. The template picker at `/` shows live thumbnails and offers "Continue your design" once anything is saved. Export HTML works end to end under the 100 KB budget. Each ticket is reviewed, splash-audited where it touches the guest page, and security-audited, and the wave 7 audit found nothing. 812 tests pass. Wave 8 is landing: the Error and Connected guest screens (`T-022`, closing milestone 6), the logo palette (`T-026`), the small-phone fit check (`T-028`) and the Unsplash route (`T-031`, rate-limited, with its quota risks accepted) are in.
+Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is being built. The PRD, tech spec and editor canvas are done. The build is split into 35 tickets in 11 parallel-safe waves (`tickets/INDEX.md`), with nothing cut and the stretch work scheduled. The app deploys to Cloudflare Workers with vinext at https://app.captivator.workers.dev, and each ticket is pushed and deployed as it lands. Waves 1 to 8 are done, and milestones 1 to 3 and 5 to 7 are closed; milestone 4 waits on its stretch ticket `T-033`. The guest page renders from one `SplashPage`, and the editor has its live phone and browser preview, the block list, undo and redo, the readability check, and the Background, Text, Image, Fields, Connect button and Terms panels. The template picker at `/` shows live thumbnails and offers "Continue your design" once anything is saved. Export HTML works end to end under the 100 KB budget. Each ticket is reviewed, splash-audited where it touches the guest page, and security-audited, and the wave 7 audit found nothing. 812 tests pass. Wave 8 is done: the Error and Connected guest screens (`T-022`, closing milestone 6), the logo palette (`T-026`), the small-phone fit check (`T-028`) and the rate-limited Unsplash route (`T-031`, with its quota risks accepted). Its audit found one low, which lands with `T-032`. Wave 9 is next: `T-033`, `T-035`, `T-032` and `T-034`.
 
 ## In progress
 
 ## Outstanding
-
-
-## Planned
-
 - [ ] T-033: Focus-point drag dot
 - [ ] T-035: One-tap contrast Fix
 - [ ] T-032: Unsplash search in the Photo tab
 - [ ] T-034: Drag to reorder blocks with dnd-kit
+
+## Planned
+
 - [ ] T-029: Real-phone testing checklist
 - [ ] T-030: README and final deploy
 

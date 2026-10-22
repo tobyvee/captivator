@@ -9,6 +9,8 @@ estimate: 15
 depends_on: [T-016, T-031]
 touches:
   - src/editor/panels/UnsplashSearch.tsx
+  - src/app/api/unsplash/route.ts
+  - src/app/api/unsplash/route.test.ts
 cut_rank: 1
 updated: 2026-10-23
 tags: [project, captivator, ticket, editor, security]
@@ -42,6 +44,7 @@ Stretch, cut order item 1 ([spec → Images and Unsplash → Unsplash → Client
 - T-031: the route and its response shape.
 
 ## Notes
+- **From the wave 8 audit:** the route must refuse cross-site requests: POST returns 415 unless `Content-Type` is `application/json` (this client sends it), and both handlers return 403 on `Sec-Fetch-Site: cross-site`, before parsing, with regression tests ([`general-wave-8-cross-site-check-in-t032.md`](../decisions/general-wave-8-cross-site-check-in-t032.md)). Also from T-031: show the 429 body's message, and treat 503 and 502 alike.
 - **From T-016:** build the background with `withPhoto(useStore.getState().design.background, src, credit)` from `BackgroundPanel.tsx`; it holds the new-photo defaults ([`T-016-with-photo-helper.md`](../decisions/T-016-with-photo-helper.md)). `UnsplashSearch` takes no props and reads the store itself.
 - **From the T-016 security audit:** `updateBackground` returns `false` when the schema rejects the background (for example a credit URL off `unsplash.com`). Check it and show an error; don't loosen the credit schema.
 

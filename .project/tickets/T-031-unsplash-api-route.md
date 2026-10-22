@@ -60,6 +60,7 @@ Stretch, scheduled at P2 ([`general-stretch-tickets-scheduled.md`](../decisions/
 - **Security:** two mediums ([review](../review/2026-10-23-security-T-031-review.md)). SEC-1, quota exhaustion: fixed with a per-client rate limit in `b71c3c0`, with the remainder (one client can still drain the demo quota) accepted by the user. SEC-2, IPv6 address rotation: a fix was written and dropped as overkill, and the gap is accepted.
 
 ## Notes
+- **Wave 8 audit (low):** cross-site browser requests reach the route; the fix lands with T-032 ([`general-wave-8-cross-site-check-in-t032.md`](../decisions/general-wave-8-cross-site-check-in-t032.md)).
 - **For T-032:** import `type UnsplashPhoto` from the route; treat 503 (not set up) and 502 (failed) alike, and show the 429 body's message rather than a generic failure. The 400ms debounce can reach 10 searches a minute for a fast typist, and cache hits count too.
 - **Fresh-clone type-check:** `npx tsc --noEmit` needs `.cloudflare/types` generated first (a dev run, a build or `npx cf workers types`), for `cloudflare:workers` and `RateLimit`.
 - **After a vinext upgrade:** recheck that `buildFetchCacheKey` still hashes the headers, so the key never sits in KV in the clear.
