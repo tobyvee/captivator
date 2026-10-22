@@ -136,38 +136,70 @@ const FORM_COMMENT: Record<FormAction, string> = {
 };
 
 // The only URL-bearing attribute values the export may carry; srcset, formaction, poster, ping,
-// background and data none. `[\s:]` also catches namespaced forms such as xlink:href.
+// background and data none. Namespaced forms such as xlink:href are checked by their local name.
 const safeAttr = (action: string): Record<string, (value: string) => boolean> => ({
   src: isRasterDataUrl,
   href: (v) => v.startsWith("#"),
   action: (v) => v === action,
 });
-const URL_ATTR = /[\s:](src|srcset|href|action|formaction|poster|ping|background|data)="([^"]*)"/gi;
+const URL_ATTRS = new Set(["src", "srcset", "href", "action", "formaction", "poster", "ping", "background", "data"]);
 
 // Elements that load, redirect or carry their own CSS. The wrapper adds the page's only <style>.
-const UNSAFE_TAG = /<(link|script|style|iframe|object|embed|base|meta|image|use|feimage)\b/i;
+const UNSAFE_TAGS = new Set([
+  "link", "script", "style", "iframe", "object", "embed", "base", "meta", "image", "use", "feimage",
+]);
 
 // CSS that can load something. A backslash covers CSS escapes; hex colours never contain one.
 const UNSAFE_CSS = /url\(|image-set\(|@import|\\/i;
 
+// A start or end tag exactly as React writes it: ` name="value"` attributes, double-quoted, with
+// only React's five escapes in the value. Anything else (single-quoted or unquoted values, other
+// character references, comments, `/` between attributes) can only come from raw markup.
+const REACT_ESCAPES: Record<string, string> = {
+  "&amp;": "&", "&quot;": '"', "&#x27;": "'", "&lt;": "<", "&gt;": ">",
+};
+const VALUE = String.raw`"(?:[^"<>&]|&(?:amp|quot|#x27|lt|gt);)*"`;
+const TAG = new RegExp(String.raw`<(\/?)([a-zA-Z][a-zA-Z0-9]*)((?: [^\s"'<>/=]+(?:=${VALUE})?)*)\/?>`, "y");
+const ATTR = /([^\s"'<>/=]+)(?:="([^"]*)")?/g;
+
+type Tag = { name: string; attrs: [name: string, value: string][] };
+
+/** Every tag in `markup`, names lower-cased and values unescaped. Fails if any `<` doesn't start one. */
+function parseTags(markup: string): Tag[] {
+  const tags: Tag[] = [];
+  for (let at = markup.indexOf("<"); at >= 0; at = markup.indexOf("<", at + 1)) {
+    TAG.lastIndex = at;
+    const m = TAG.exec(markup);
+    if (!m || (m[1] && m[3])) throw new ExportError(MSG_UNSAFE_OUTPUT);
+    const attrs = [...m[3].matchAll(ATTR)].map(([, name, value = ""]): [string, string] => [
+      name.toLowerCase(),
+      value.replace(/&(?:amp|quot|#x27|lt|gt);/g, (e) => REACT_ESCAPES[e]),
+    ]);
+    tags.push({ name: m[2].toLowerCase(), attrs });
+    at = TAG.lastIndex - 1;
+  }
+  return tags;
+}
+
 /**
- * The last line of defence, run on the rendered body before it's wrapped: no element that loads
- * or redirects, every src a raster data URL, every href an in-page fragment, every form action
- * `action` (and no command input when that's the portal service) and no inline style that can
- * fetch. Text content isn't checked, so
- * terms that mention a web address still export as inert text.
+ * The last line of defence, run on the rendered body before the fixed form comment and wrapper
+ * are added: every tag written the way React writes it, no element that loads or redirects,
+ * every src a raster data URL, every href an in-page fragment, every form action `action` (and
+ * no command input when that's the portal service) and no inline style that can fetch. Text
+ * content isn't checked, so terms that mention a web address still export as inert text.
  */
 function assertSelfContained(markup: string, action: string): void {
-  if (UNSAFE_TAG.test(markup)) throw new ExportError(MSG_UNSAFE_OUTPUT);
   const safe = safeAttr(action);
-  for (const [, attr, value] of markup.matchAll(URL_ATTR)) {
-    if (!safe[attr.toLowerCase()]?.(value)) throw new ExportError(MSG_UNSAFE_OUTPUT);
-  }
-  if (action === "[PORTAL_SUBMIT_URL]" && /\sname="command"/i.test(markup)) {
-    throw new ExportError(MSG_UNSAFE_OUTPUT);
-  }
-  for (const [, css] of markup.matchAll(/\sstyle="([^"]*)"/gi)) {
-    if (UNSAFE_CSS.test(css)) throw new ExportError(MSG_UNSAFE_OUTPUT);
+  for (const { name, attrs } of parseTags(markup)) {
+    if (UNSAFE_TAGS.has(name)) throw new ExportError(MSG_UNSAFE_OUTPUT);
+    for (const [attr, value] of attrs) {
+      const local = attr.slice(attr.lastIndexOf(":") + 1);
+      const unsafe =
+        (URL_ATTRS.has(local) && !safe[local]?.(value)) ||
+        (attr === "style" && UNSAFE_CSS.test(value)) ||
+        (attr === "name" && action === "[PORTAL_SUBMIT_URL]" && value.toLowerCase() === "command");
+      if (unsafe) throw new ExportError(MSG_UNSAFE_OUTPUT);
+    }
   }
 }
 
@@ -175,10 +207,10 @@ async function renderPage(design: Design, name: string): Promise<string> {
   const { renderToStaticMarkup } = await import("react-dom/server");
   let markup = renderToStaticMarkup(createElement(SplashPage, { design, screen: "landing", mode: "export" }));
   const action = formAction(design);
+  assertSelfContained(markup, action);
 
   const formAt = markup.indexOf("<form");
   if (formAt >= 0) markup = markup.slice(0, formAt) + FORM_COMMENT[action] + markup.slice(formAt);
-  assertSelfContained(markup, action);
 
   const html =
     '<!doctype html><html lang="en"><head><meta charset="utf-8">' +

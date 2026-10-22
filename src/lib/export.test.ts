@@ -263,6 +263,40 @@ describe("buildExportHtml: final check", () => {
     await expect(buildWith(form, withForm(["email"]))).rejects.toThrow(MSG_UNSAFE_OUTPUT);
   });
 
+  // Raw markup skips React's quoting and escaping, so it can't be read the way React output is.
+  const raw = (__html: string) => createElement("div", { dangerouslySetInnerHTML: { __html } });
+
+  it("refuses single-quoted and unquoted attribute values", async () => {
+    await expect(buildWith(raw("<img src='https://example.com/x.png' alt=''>"))).rejects.toThrow(MSG_UNSAFE_OUTPUT);
+    await expect(buildWith(raw("<div style=background:url(https://example.com/x.png)>x</div>"))).rejects.toThrow(
+      MSG_UNSAFE_OUTPUT,
+    );
+  });
+
+  it("refuses attribute values with character references React doesn't write", async () => {
+    const style = '<div style="background:url&#40;https://example.com/x.png&#41;">x</div>';
+    await expect(buildWith(raw(style))).rejects.toThrow(MSG_UNSAFE_OUTPUT);
+  });
+
+  it("refuses markup React wouldn't write, such as a comment or a slash between attributes", async () => {
+    await expect(buildWith(raw("<!-- x -->"))).rejects.toThrow(MSG_UNSAFE_OUTPUT);
+    await expect(buildWith(raw('<img/src="https://example.com/x.png">'))).rejects.toThrow(MSG_UNSAFE_OUTPUT);
+  });
+
+  it("passes customer text with quotes, ampersands, angle brackets and name=value pairs", async () => {
+    const d = withForm(["name", "email"]);
+    const odd = `Tom's "Cafe" & <Bar> a=b c='d'`;
+    d.blocks.push(
+      { id: "t", kind: "text", text: odd, role: "heading", colour: "#111111", size: 30 },
+      { id: "i", kind: "image", src: `${WEBP}SU1H`, alt: odd, size: "md" },
+    );
+    d.form.terms.body = odd;
+    d.form.terms.linkText = "terms & c='x'";
+    d.form.button.label = 'Go "now"';
+    const { html } = await build(d);
+    expect(html).toContain("Tom&#x27;s &quot;Cafe&quot; &amp; &lt;Bar&gt; a=b c=&#x27;d&#x27;");
+  });
+
   it("lets web addresses through as plain text, such as in the terms", async () => {
     const { html } = await buildWith(createElement("p", null, "See https://example.com"));
     expect(html).toContain("See https://example.com");
