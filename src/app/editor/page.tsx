@@ -13,12 +13,15 @@ import { useHydrated } from "@/lib/store";
 // The flex bases sum to 272 + 480 + 300 = 1052px, so below 1052px the inspector wraps onto
 // its own row: it fills that row and borders the stage above it instead of its left side.
 // From 1052px the columns sit side by side and each scrolls on its own, so a long inspector
-// can't push the preview down the page (T-036-columns-scroll-when-side-by-side). Tailwind v4's
-// max-[1052px] is width < 1052px and min-[1052px] is width >= 1052px, so the two never overlap.
+// can't push the preview down the page (T-036-columns-scroll-when-side-by-side). The min- and
+// max-[1052px] variants are exact complements (T-036-row-stops-wrapping-when-side-by-side).
+// Each column reserves its scrollbar's gutter, so a classic scrollbar coming and going doesn't
+// shift its content or resize the Desktop preview; the stage reserves both edges so the phone
+// stays centred (T-036-reserve-scrollbar-gutter).
 const SCROLL = "min-[1052px]:overflow-y-auto";
-const SIDE = `flex flex-col bg-white border-zinc-200 max-md:max-w-none max-md:border-b ${SCROLL}`;
+const SIDE = `flex flex-col bg-white border-zinc-200 max-md:max-w-none max-md:border-b ${SCROLL} min-[1052px]:[scrollbar-gutter:stable]`;
 const BLOCKS_COLUMN = `${SIDE} flex-[1_1_272px] max-w-[300px] md:border-r`;
-const STAGE_COLUMN = `flex flex-col flex-[1_1_480px] min-w-0 ${SCROLL}`;
+const STAGE_COLUMN = `flex flex-col flex-[1_1_480px] min-w-0 ${SCROLL} min-[1052px]:[scrollbar-gutter:stable_both-edges]`;
 const INSPECTOR_COLUMN = `${SIDE} flex-[1_1_300px] max-w-[340px] border-l max-[1052px]:max-w-none max-[1052px]:border-l-0 max-[1052px]:border-t`;
 
 type Slots = Record<"top" | "blocks" | "stage" | "inspector", ReactNode>;

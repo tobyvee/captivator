@@ -83,7 +83,15 @@ describe("EditorPage", () => {
   // jsdom can't lay out, so this checks the class contract: from 1052px the editor is
   // viewport-tall and each column scrolls, while below it the page-flow stack is unchanged.
   it.each([
-    ["editor", () => render(<EditorPage />).container],
+    [
+      "editor",
+      () => {
+        const { container } = render(<EditorPage />);
+        // The hydrated editor, not the skeleton.
+        expect(within(container).getByRole("textbox", { name: "Design name" })).toBeInTheDocument();
+        return container;
+      },
+    ],
     [
       "skeleton",
       () => {
@@ -105,6 +113,10 @@ describe("EditorPage", () => {
       expect(column).toHaveClass("min-[1052px]:overflow-y-auto");
       expect(column).not.toHaveClass("overflow-y-auto");
     }
+    // Each column reserves its scrollbar gutter, the stage on both edges so the phone stays centred.
+    expect(columns[0]).toHaveClass("min-[1052px]:[scrollbar-gutter:stable]");
+    expect(columns[1]).toHaveClass("min-[1052px]:[scrollbar-gutter:stable_both-edges]");
+    expect(columns[2]).toHaveClass("min-[1052px]:[scrollbar-gutter:stable]");
     expect(columns[2]).toHaveClass(
       "max-[1052px]:max-w-none",
       "max-[1052px]:border-l-0",
