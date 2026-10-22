@@ -49,6 +49,7 @@ Build step 8, "contrast check" ([spec → Checks → Contrast](../spec/Captivato
 - T-009: the `ReadabilityCheck` stub and its place under the frame.
 
 ## Notes
+- **From T-013:** import the role weights from `@/splash/blocks/TextBlock` (`WEIGHT` is exported; [`T-013-role-weights-shared-with-splash.md`](../decisions/T-013-role-weights-shared-with-splash.md)). The Text panel shows no ratio over a photo ([`T-013-photo-line-never-rates.md`](../decisions/T-013-photo-line-never-rates.md)), so this line is where a photo design's failure shows. If the photo average is cached, the panel could reuse it later.
 ```ts
 export type ReadabilityTarget =
   | { kind: "block"; id: string } | { kind: "terms" } | { kind: "button" } | { kind: "inputs" };
@@ -67,3 +68,5 @@ export type ReadabilityResult = { status: "ok" | "approximate" | "fail"; message
 - [`T-007-outline-button-colours.md`](../decisions/T-007-outline-button-colours.md): An outline Connect button uses bg as its border and fg as its text
 - [`general-new-modules-beyond-project-structure.md`](../decisions/general-new-modules-beyond-project-structure.md): Planning adds small modules to the spec's project structure so each ticket owns its own files
 - [`general-photo-contrast-approximate.md`](../decisions/general-photo-contrast-approximate.md): The photo contrast check is labelled approximate
+- [`T-013-role-weights-shared-with-splash.md`](../decisions/T-013-role-weights-shared-with-splash.md): `WEIGHT` is exported from the renderer
+- [`T-013-photo-line-never-rates.md`](../decisions/T-013-photo-line-never-rates.md): the Text panel never rates a photo

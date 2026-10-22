@@ -138,7 +138,7 @@ None. Every dependency exists, there are no cycles, every `todo` ticket has `tou
 | 5 | [T-016](T-016-background-panel.md) | Background panel: colour, gradient and photo upload | P0 | 4 | 15 | T-008, T-010, T-011 | done |
 | 5 | [T-012](T-012-block-list.md) | Block list with three zones, add, reorder and the Terms switch | P0 | 3 | 20 | T-003, T-008, T-011 | done |
 | 5 | [T-014](T-014-image-panel.md) | Image panel | P0 | 3 | 10 | T-008, T-011 | done |
-| 6 | [T-013](T-013-text-panel.md) | Text panel | P0 | 3 | 15 | T-003, T-008, T-010 | todo |
+| 6 | [T-013](T-013-text-panel.md) | Text panel | P0 | 3 | 15 | T-003, T-008, T-010 | done |
 | 6 | [T-015](T-015-fields-and-button-panels.md) | Fields and Connect button panels | P0 | 3 | 15 | T-008, T-010 | todo |
 | 6 | [T-024](T-024-export-button.md) | Export HTML button and size toast | P0 | 7 | 10 | T-008, T-023 | todo |
 | 6 | [T-017](T-017-photo-adjustments.md) | Photo fit, zoom, focus presets and darken overlay | P1 | 4 | 20 | T-016 | todo |
