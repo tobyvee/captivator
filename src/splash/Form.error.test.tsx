@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import { contrastRatio } from "../lib/contrast";
 import { BLANK, Design } from "../lib/design-schema";
 import type { FieldKindSpec, RenderMode, Screen, Selection } from "../lib/types";
 import { Form } from "./Form";
@@ -51,6 +52,10 @@ function Harness(props: {
 
 const shownScreen = () => screen.getByTestId("screen").textContent;
 
+// jsdom reports colours as rgb(); contrastRatio takes hex.
+const hex = (rgb: string) =>
+  "#" + (rgb.match(/\d+/g) ?? []).map((c) => Number(c).toString(16).padStart(2, "0")).join("");
+
 describe("Form export terms link", () => {
   it("carries the id the terms sheet's close links return to", () => {
     const html = renderToStaticMarkup(
@@ -85,11 +90,13 @@ describe("Form Error screen", () => {
       expect(checkbox()).toHaveAttribute("aria-invalid", "true");
       expect(checkbox()).toHaveAccessibleDescription("Please accept the terms");
       expect(checkbox()).toHaveStyle({ outline: "2px solid #b91c1c" });
+      // Only the first message is announced: the field's, not the terms'.
       const alert = screen.getByRole("alert");
-      expect(alert).toHaveTextContent("Please accept the terms");
+      expect(alert).toHaveTextContent("Enter a valid email");
       expect(alert.style.color).toBe(DARK_ERROR);
       expect(alert).toHaveStyle({ fontSize: "14px", fontWeight: "500" });
       expect(alert.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+      expect(screen.getByText("Please accept the terms").style.color).toBe(DARK_ERROR);
     },
   );
 
@@ -101,7 +108,7 @@ describe("Form Error screen", () => {
     const input = screen.getByRole("textbox");
     expect(input).toHaveValue(value);
     expect(input).toHaveAccessibleDescription(copy);
-    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("alert")).toHaveTextContent(copy);
   });
 
   it("uses light red on a dark background and dark red on a light one", () => {
@@ -116,6 +123,30 @@ describe("Form Error screen", () => {
       <Form design={design(["email"], "checkbox", "#FFFFFF")} mode="preview" screen="error" />,
     );
     expect(screen.getByRole("alert").style.color).toBe(DARK_ERROR);
+  });
+
+  it.each(["#777777", "#2563EB", "#F97316", "#808080"])(
+    "on mid-tone %s, the message text reaches 4.5:1 while the red stays on the marks",
+    (bg) => {
+      render(<Form design={design(["email"], "checkbox", bg)} mode="preview" screen="error" />);
+      const field = screen.getByRole("alert");
+      const terms = screen.getByText("Please accept the terms");
+      const mark = field.querySelector("svg")?.getAttribute("stroke") ?? "";
+      expect(mark).toMatch(/^#(FECACA|B91C1C)$/);
+      for (const message of [field, terms]) {
+        expect(contrastRatio(hex(message.style.color), bg)).toBeGreaterThanOrEqual(4.5);
+        expect(message.querySelector("svg")).toHaveAttribute("stroke", mark);
+      }
+      expect(screen.getByRole("textbox")).toHaveStyle({ border: `2px solid ${mark}` });
+      expect(checkbox()).toHaveStyle({ outline: `2px solid ${mark.toLowerCase()}` }); // jsdom lowercases outline colours
+    },
+  );
+
+  it("keeps the message in red where the red itself reaches 4.5:1", () => {
+    render(<Form design={design(["email"], "off", "#FFFFFF")} mode="preview" screen="error" />);
+    const alert = screen.getByRole("alert");
+    expect(alert.style.color).toBe(DARK_ERROR);
+    expect(alert.querySelector("svg")).toHaveAttribute("stroke", "#B91C1C");
   });
 
   it("with no fields, flags only the terms", () => {
@@ -151,7 +182,8 @@ describe("Form edit-mode Connect", () => {
     expect(screen.getByRole("textbox", { name: "Name" })).toHaveAccessibleDescription(
       "Enter your name",
     );
-    expect(screen.getByRole("alert")).toHaveTextContent("Please accept the terms");
+    expect(screen.getByRole("alert")).toHaveTextContent("Enter your name");
+    expect(checkbox()).toHaveAccessibleDescription("Please accept the terms");
   });
 
   it("with valid inputs and terms ticked, shows Connected", async () => {
@@ -189,7 +221,7 @@ describe("Form edit-mode Connect", () => {
     expect(email).toHaveValue("bob@");
     expect(email).toHaveAccessibleDescription("Enter a valid email");
     expect(checkbox()).toBeChecked();
-    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("alert")).toHaveTextContent("Enter a valid email");
   });
 
   it("flags only the terms when the fields pass", async () => {
@@ -227,7 +259,60 @@ describe("Form edit-mode Connect", () => {
     await act(() => setScreen("error"));
     expect(screen.getByRole("textbox", { name: "Name" })).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByRole("textbox", { name: "Email" })).not.toHaveAttribute("aria-invalid");
+    expect(screen.getByRole("alert")).toHaveTextContent("Enter your name");
+    expect(checkbox()).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("announces only the terms message when only the terms fail", async () => {
+    const user = userEvent.setup();
+    render(<Harness design={design(["name"])} />);
+    await user.type(screen.getByRole("textbox"), "Sam");
+    await user.click(screen.getByRole("button", { name: "Connect" }));
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
     expect(screen.getByRole("alert")).toHaveTextContent("Please accept the terms");
+  });
+
+  it("falls back to the example when the failed field is removed on the Error screen", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<Harness design={design(["email"], "off")} />);
+    await user.click(screen.getByRole("button", { name: "Connect" }));
+    expect(screen.getByRole("textbox", { name: "Email" })).toHaveAttribute("aria-invalid", "true");
+
+    rerender(<Harness design={design(["name"], "off")} />);
+    expect(shownScreen()).toBe("error");
+    const name = screen.getByRole("textbox", { name: "Name" });
+    expect(name).toHaveAttribute("aria-invalid", "true");
+    expect(name).toHaveAccessibleDescription("Enter your name");
+    expect(screen.getByRole("alert")).toHaveTextContent("Enter your name");
+  });
+
+  it("falls back to the example when terms fail and are then turned off", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<Harness design={design(["phone"])} />);
+    await user.type(screen.getByRole("textbox"), "+61 400 000 000");
+    await user.click(screen.getByRole("button", { name: "Connect" }));
+    expect(screen.getByRole("textbox")).not.toHaveAttribute("aria-invalid");
+
+    rerender(<Harness design={design(["phone"], "off")} />);
+    expect(screen.getByRole("textbox")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("alert")).toHaveTextContent("Enter a valid phone number");
+  });
+
+  it("Connect on the switcher's Error screen keeps the example value", async () => {
+    const user = userEvent.setup();
+    let setScreen: (s: Screen) => void = () => {};
+    // Mounted on Landing first, as in the editor, so the example arrives as an update.
+    render(<Harness design={design(["email"])} expose={(set) => (setScreen = set)} />);
+    await act(() => setScreen("error"));
+    const email = screen.getByRole("textbox", { name: "Email" });
+    expect(email).toHaveValue("sam@");
+    await user.click(checkbox());
+    await user.click(screen.getByRole("button", { name: "Connect" }));
+
+    expect(shownScreen()).toBe("error");
+    expect(email).toHaveValue("sam@");
+    expect(email).toHaveAttribute("aria-invalid", "true");
+    expect(checkbox()).not.toHaveAttribute("aria-invalid");
   });
 
   it("preview: Connect does nothing", async () => {

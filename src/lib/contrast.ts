@@ -2,6 +2,7 @@
 import type { BackgroundSpec } from "./types";
 
 const DARK_TEXT = "#111111";
+const BLACK = "#000000";
 const LIGHT_TEXT = "#FFFFFF";
 type TextColour = typeof DARK_TEXT | typeof LIGHT_TEXT;
 const LIGHT_ERROR = "#FECACA";
@@ -98,6 +99,17 @@ function better<T extends string>(a: T, b: T, bg: string | string[]): T {
 /** Near-black or white, whichever reads better against every colour in `bg`. */
 export function bestTextColour(bg: string | string[]): TextColour {
   return better<TextColour>(DARK_TEXT, LIGHT_TEXT, bg);
+}
+
+/**
+ * `bestTextColour` where it reaches 4.5:1 on every colour in `bg`, otherwise pure black when that
+ * reads better: on mid-tones such as #777777 neither near-black nor white reaches 4.5:1, but black
+ * reaches at least 4.58:1 on any single colour (T-021-sheet-text-black-fallback.md).
+ */
+export function readableTextColour(bg: string | string[]): string {
+  const best = bestTextColour(bg);
+  const bgs = Array.isArray(bg) ? bg : [bg];
+  return worstRatio(best, bgs) >= 4.5 ? best : better<string>(BLACK, best, bgs);
 }
 
 /** Light red on dark backgrounds, dark red on light ones, by the better worst-case ratio. */

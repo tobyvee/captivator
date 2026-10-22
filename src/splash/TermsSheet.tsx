@@ -1,5 +1,5 @@
 import type { CSSProperties, JSX, ReactNode } from "react";
-import { bestTextColour, contrastRatio, mainBackgroundColour } from "../lib/contrast";
+import { contrastRatio, mainBackgroundColour, readableTextColour } from "../lib/contrast";
 import type { Design } from "../lib/design-schema";
 import type { RenderMode, TextBlockSpec } from "../lib/types";
 import { connectButtonStyle } from "./Form";
@@ -84,8 +84,7 @@ function textColour(design: Design, sheet: string): string {
     (b): b is TextBlockSpec => b.kind === "text" && b.role === "heading",
   );
   if (heading && contrastRatio(heading.colour, sheet) >= 4.5) return heading.colour;
-  const best = bestTextColour(sheet);
-  return contrastRatio(best, sheet) >= 4.5 ? best : "#000000";
+  return readableTextColour(sheet);
 }
 
 // Rendered as text only: React escapes it, and blank lines split it into paragraphs.

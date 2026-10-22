@@ -9,6 +9,7 @@ import {
   isLargeText,
   luminance,
   mainBackgroundColour,
+  readableTextColour,
   requiredRatio,
   worstRatio,
 } from "./contrast";
@@ -135,6 +136,24 @@ describe("bestTextColour", () => {
   it("uses the worst case across several colours", () => {
     // Near-black loses badly on navy, white only moderately on yellow.
     expect(bestTextColour([NAVY, YELLOW])).toBe("#FFFFFF");
+  });
+});
+
+describe("readableTextColour", () => {
+  it("is bestTextColour where that reaches 4.5:1", () => {
+    expect(readableTextColour("#FFFFFF")).toBe("#111111");
+    expect(readableTextColour(NAVY)).toBe("#FFFFFF");
+    expect(readableTextColour([NAVY, "#0E5E6F"])).toBe("#FFFFFF");
+  });
+
+  it("is pure black on mid-tones where neither near-black nor white reaches 4.5:1", () => {
+    expect(worstRatio(bestTextColour("#777777"), ["#777777"])).toBeLessThan(4.5);
+    expect(readableTextColour("#777777")).toBe("#000000");
+    expect(contrastRatio("#000000", "#777777")).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("keeps the better of the two when black reads worse, on a gradient nothing passes", () => {
+    expect(readableTextColour(["#000000", "#777777"])).toBe("#FFFFFF");
   });
 });
 

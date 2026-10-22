@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useState,
   type CSSProperties,
   type FormEvent,
@@ -6,9 +7,14 @@ import {
   type MouseEvent,
   type ReactNode,
 } from "react";
-import { backgroundColours, bestErrorColour } from "../lib/contrast";
+import {
+  backgroundColours,
+  bestErrorColour,
+  readableTextColour,
+  worstRatio,
+} from "../lib/contrast";
 import { FIELD_SPEC, type Design } from "../lib/design-schema";
-import type { FieldKindSpec, RenderMode, Screen, Selection } from "../lib/types";
+import type { BackgroundSpec, FieldKindSpec, RenderMode, Screen, Selection } from "../lib/types";
 import { TERMS_LINK_ID } from "./TermsSheet";
 import { ERROR_COPY, EXAMPLE_INVALID, validateGuest, type GuestCheck } from "./validate";
 
@@ -95,23 +101,34 @@ const ERROR_TEXT: CSSProperties = {
   textAlign: "left",
 };
 
+type ErrorColours = { mark: string; text: string };
+
+// The red marks the error (border, outline, icon). Its text must still reach 4.5:1, and on
+// mid-tones neither red does, so there the text takes the page's readable colour
+// (T-022-error-text-contrast-floor).
+function errorColours(bg: BackgroundSpec): ErrorColours {
+  const page = backgroundColours(bg);
+  const mark = bestErrorColour(page);
+  return { mark, text: worstRatio(mark, page) >= 4.5 ? mark : readableTextColour(page) };
+}
+
 function ErrorMessage(props: {
   part: FieldKindSpec | "terms";
-  colour: string;
-  alert?: boolean;
+  colours: ErrorColours;
+  alert: boolean;
 }): JSX.Element {
   return (
     <span
       id={errorId(props.part)}
       role={props.alert ? "alert" : undefined}
-      style={{ ...ERROR_TEXT, color: props.colour }}
+      style={{ ...ERROR_TEXT, color: props.colours.text }}
     >
       <svg
         width="16"
         height="16"
         viewBox="0 0 24 24"
         fill="none"
-        stroke="currentColor"
+        stroke={props.colours.mark}
         strokeWidth="2.4"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -133,24 +150,40 @@ export function Form({ design, mode, screen, onSelect, onScreenChange }: FormPro
   const termsOn = terms.mode === "checkbox";
 
   // What the last failed edit-mode Connect found, shown while the Error screen is up
-  // (T-022-error-screen-shows-real-failure). Dropped during render once the screen moves on.
-  const [failure, setFailure] = useState<GuestCheck | null>(null);
+  // (T-022-error-screen-shows-real-failure), and whether it was pressed on the example screen.
+  // Dropped during render once the screen moves on.
+  const [failure, setFailure] = useState<{ check: GuestCheck; example: boolean } | null>(null);
   if (failure && screen !== "error") setFailure(null);
+
+  // A failure stops applying once the form can no longer show it (its field removed, or terms
+  // turned off), so the Error screen never ends up with nothing flagged.
+  const live =
+    failure &&
+    ((failure.check.field !== undefined && fields.includes(failure.check.field)) ||
+      (failure.check.terms === true && termsOn))
+      ? failure
+      : null;
 
   // The Error screen never reaches the export. Opened from the switcher, it shows the spec's
   // example: the first field with an invalid value and, with terms on, the checkbox.
-  const errors: GuestCheck | null =
-    screen === "error" && !exporting
-      ? (failure ?? { ok: false, field: fields[0], terms: termsOn })
-      : null;
-  const errorColour = errors ? bestErrorColour(backgroundColours(design.background)) : "";
+  const errorScreen = screen === "error" && !exporting;
+  const errors: GuestCheck | null = errorScreen
+    ? (live?.check ?? { ok: false, field: fields[0], terms: termsOn })
+    : null;
+  // The example's invalid value stays in the first field, also after Connect is pressed on it.
+  // A real failure keeps what was typed.
+  const example = errorScreen && (live === null || live.example);
+  const colours = errors ? errorColours(design.background) : null;
+  // Only the first message shown is announced (field before terms), so one failure is read once
+  // (T-022-alert-on-first-error-only).
+  const fieldFlagged = errors?.field !== undefined && fields.includes(errors.field);
 
   // In edit and preview, each field and the terms row sit in a wrapper with room for a message,
   // so showing an error never remounts an input and loses what was typed in it. The export
   // markup has no wrapper.
   const slot = (key: string, gap: number, control: ReactNode, message: ReactNode) =>
     exporting ? (
-      control
+      <Fragment key={key}>{control}</Fragment>
     ) : (
       <div key={key} style={{ width: "100%", display: "flex", flexDirection: "column", gap }}>
         {control}
@@ -166,7 +199,7 @@ export function Form({ design, mode, screen, onSelect, onScreenChange }: FormPro
     const values: Partial<Record<FieldKindSpec, string>> = {};
     for (const kind of fields) values[kind] = String(data.get(kind) ?? "");
     const result = validateGuest(fields, values, termsOn, data.has("accept_terms"));
-    setFailure(result.ok ? null : result);
+    setFailure(result.ok ? null : { check: result, example });
     onScreenChange?.(result.ok ? "connected" : "error");
   };
 
@@ -234,7 +267,6 @@ export function Form({ design, mode, screen, onSelect, onScreenChange }: FormPro
               kind,
               6,
               <input
-                key={kind}
                 name={kind}
                 type={spec.type}
                 autoComplete={spec.autoComplete}
@@ -242,21 +274,15 @@ export function Form({ design, mode, screen, onSelect, onScreenChange }: FormPro
                 placeholder={spec.placeholder}
                 aria-label={spec.placeholder}
                 required={exporting}
-                {...(invalid
-                  ? {
-                      // A real failure keeps what was typed; the switcher's example fills one in.
-                      defaultValue: failure ? undefined : EXAMPLE_INVALID[kind],
-                      "aria-invalid": true,
-                      "aria-describedby": errorId(kind),
-                    }
-                  : null)}
+                defaultValue={example && kind === fields[0] ? EXAMPLE_INVALID[kind] : undefined}
+                {...(invalid ? { "aria-invalid": true, "aria-describedby": errorId(kind) } : null)}
                 style={
-                  invalid
-                    ? { ...inputStyle, padding: "0 12px", border: `2px solid ${errorColour}` }
+                  invalid && colours
+                    ? { ...inputStyle, padding: "0 12px", border: `2px solid ${colours.mark}` }
                     : inputStyle
                 }
               />,
-              invalid && <ErrorMessage part={kind} colour={errorColour} />,
+              invalid && colours && <ErrorMessage part={kind} colours={colours} alert />,
             );
           })}
         </div>
@@ -283,8 +309,8 @@ export function Form({ design, mode, screen, onSelect, onScreenChange }: FormPro
                 margin: 0,
                 flexShrink: 0,
                 accentColor: button.bg,
-                ...(errors?.terms
-                  ? { outline: `2px solid ${errorColour}`, outlineOffset: 2 }
+                ...(errors?.terms && colours
+                  ? { outline: `2px solid ${colours.mark}`, outlineOffset: 2 }
                   : null),
               }}
             />
@@ -292,7 +318,9 @@ export function Form({ design, mode, screen, onSelect, onScreenChange }: FormPro
               {terms.label} {termsLink}
             </span>
           </label>,
-          errors?.terms && <ErrorMessage part="terms" colour={errorColour} alert />,
+          errors?.terms && colours && (
+            <ErrorMessage part="terms" colours={colours} alert={!fieldFlagged} />
+          ),
         )}
       <button
         type={exporting ? "submit" : "button"}
