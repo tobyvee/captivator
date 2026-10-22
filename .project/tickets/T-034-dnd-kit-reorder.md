@@ -10,7 +10,7 @@ depends_on: [T-012]
 touches:
   - src/editor/BlockList.tsx
 cut_rank:
-updated: 2026-10-22
+updated: 2026-10-23
 tags: [project, captivator, ticket, editor]
 ---
 # T-034: Drag to reorder blocks with dnd-kit
@@ -34,6 +34,9 @@ Stretch, scheduled at P2 ([`general-stretch-tickets-scheduled.md`](../decisions/
 
 ## Dependencies
 - T-012: `BlockList.tsx`, which this ticket extends.
+
+## Notes
+- **From T-012:** put the drag handle inside each block row's wrapper, beside the select button (the row's `controls` slot), and keep the up/down buttons for keyboard users ([`T-012-row-controls-focus-left-to-react.md`](../decisions/T-012-row-controls-focus-left-to-react.md)). Add "Drag blocks to reorder." back to the tip, and put the tests in `src/editor/BlockList.test.tsx`.
 
 ## Decisions
 - [`general-stretch-tickets-scheduled.md`](../decisions/general-stretch-tickets-scheduled.md): Stretch tickets are scheduled, not held until the build is ahead

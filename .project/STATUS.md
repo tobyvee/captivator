@@ -11,13 +11,12 @@ tags: [project, captivator, status]
 
 ## Summary
 
-Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is being built. The PRD, tech spec and editor canvas are done. The build is split into 35 tickets in 11 parallel-safe waves (`tickets/INDEX.md`), with nothing cut and the stretch work scheduled. The app deploys to Cloudflare Workers with vinext at https://app.captivator.workers.dev, and each ticket is pushed and deployed as it lands. Waves 1 to 4 are done. The guest page renders from one `SplashPage` (background and credit, form, terms sheet), and Export HTML (`T-023`) builds a standalone page under the 100 KB budget, checked by an allowlist guard. The editor shell (`T-008`) has its top bar, inspector and slots, with the colour and slider controls (`T-010`). There are four templates (`T-018`). Each ticket is reviewed, splash-audited where it touches the guest page, and security-audited, and the wave 4 audit found nothing. Wave 5 is landing: the preview stage (`T-009`, closing milestone 2) and the Background panel (`T-016`) are in, and `T-012` and `T-014` follow. 458 tests pass.
+Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is being built. The PRD, tech spec and editor canvas are done. The build is split into 35 tickets in 11 parallel-safe waves (`tickets/INDEX.md`), with nothing cut and the stretch work scheduled. The app deploys to Cloudflare Workers with vinext at https://app.captivator.workers.dev, and each ticket is pushed and deployed as it lands. Waves 1 to 4 are done. The guest page renders from one `SplashPage` (background and credit, form, terms sheet), and Export HTML (`T-023`) builds a standalone page under the 100 KB budget, checked by an allowlist guard. The editor shell (`T-008`) has its top bar, inspector and slots, with the colour and slider controls (`T-010`). There are four templates (`T-018`). Each ticket is reviewed, splash-audited where it touches the guest page, and security-audited, and the wave 4 audit found nothing. Wave 5 is landing: the preview stage (`T-009`, closing milestone 2), the Background panel (`T-016`) and the block list (`T-012`) are in, and `T-014` follows. 477 tests pass.
 
 ## In progress
 
 ## Outstanding
 
-- [ ] T-012: Block list with three zones, add, reorder and the Terms switch
 - [ ] T-014: Image panel
 
 ## Planned
@@ -65,3 +64,4 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is bein
 - [x] T-009: Preview stage with phone and browser frames (2026-10-23)
 - [x] Milestone 2 closed: splash renderer with mobile and desktop preview (2026-10-23)
 - [x] T-016: Background panel: colour, gradient and photo upload (2026-10-23)
+- [x] T-012: Block list with three zones, add, reorder and the Terms switch (2026-10-23)
