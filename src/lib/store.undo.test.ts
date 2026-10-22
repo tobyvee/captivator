@@ -200,3 +200,71 @@ describe("updateForm with Terms selected", () => {
     expect(state().screen).toBe("landing");
   });
 });
+
+describe("undo and redo keep the screen valid", () => {
+  it("returns to Landing when undo turns terms off on the Terms screen", () => {
+    state().updateForm({ terms: { mode: "off" } });
+    vi.advanceTimersByTime(500);
+    state().setSelection({ kind: "terms" });
+    state().updateForm({ terms: { mode: "checkbox" } });
+    expect(state().screen).toBe("terms");
+    expect(history().pastStates).toHaveLength(2);
+
+    history().undo();
+    expect(state().design.form.terms.mode).toBe("off");
+    expect(state().screen).toBe("landing");
+    // The screen fix-up isn't an undo step of its own.
+    expect(history().pastStates).toHaveLength(1);
+    expect(history().futureStates).toHaveLength(1);
+  });
+
+  it("shows the Terms screen again when redo turns terms back on with Terms selected", () => {
+    state().updateForm({ terms: { mode: "off" } });
+    vi.advanceTimersByTime(500);
+    state().setSelection({ kind: "terms" });
+    state().updateForm({ terms: { mode: "checkbox" } });
+    history().undo();
+
+    history().redo();
+    expect(state().design.form.terms.mode).toBe("checkbox");
+    expect(state().screen).toBe("terms");
+    expect(history().pastStates).toHaveLength(2);
+    expect(history().futureStates).toEqual([]);
+  });
+
+  it("returns to Landing when undo leaves nothing to fail on the Error screen", () => {
+    state().updateForm({ terms: { mode: "off" }, fields: [] });
+    vi.advanceTimersByTime(500);
+    state().updateForm({ fields: ["email"] });
+    state().setScreen("error");
+
+    history().undo();
+    expect(state().design.form.fields).toEqual([]);
+    expect(state().screen).toBe("landing");
+    expect(history().pastStates).toHaveLength(1);
+  });
+
+  it("keeps the Error screen when something can still fail", () => {
+    state().updateForm({ terms: { mode: "off" }, fields: ["email"] });
+    vi.advanceTimersByTime(500);
+    state().updateForm({ fields: ["email", "name"] });
+    state().setScreen("error");
+
+    history().undo();
+    expect(state().screen).toBe("error");
+  });
+
+  it("writes the undone design to storage once", () => {
+    state().setSelection({ kind: "terms" });
+    state().updateForm({ terms: { mode: "off" } });
+    vi.advanceTimersByTime(500);
+    state().updateForm({ terms: { mode: "checkbox" } });
+    vi.advanceTimersByTime(300);
+    storage.setItem.mockClear();
+
+    history().undo();
+    vi.advanceTimersByTime(300);
+    expect(storage.setItem).toHaveBeenCalledTimes(1);
+    expect(readStored().state.design.form.terms.mode).toBe("off");
+  });
+});

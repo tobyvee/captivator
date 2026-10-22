@@ -72,6 +72,23 @@ function screenFor(selection: Selection, design: Design, screen: Screen): Screen
   return screen === "terms" ? "landing" : screen;
 }
 
+// The screen after the form changes from `prev` to `form`. Turning terms on while Terms is
+// selected shows the Terms sheet (T-025-terms-switch-shows-terms-screen); a screen the form can
+// no longer produce falls back to Landing (T-004-terms-selection-switches-screen). `updateForm`
+// and the undo subscriber below share it (T-025-undo-keeps-screen-valid).
+function screenAfter(
+  prev: FormSpec,
+  form: FormSpec,
+  selection: Selection,
+  screen: Screen,
+): Screen {
+  const termsOn = form.terms.mode === "checkbox";
+  if (selection.kind === "terms" && termsOn && prev.terms.mode !== "checkbox") return "terms";
+  if (screen === "terms" && !termsOn) return "landing";
+  if (screen === "error" && !termsOn && form.fields.length === 0) return "landing";
+  return screen;
+}
+
 // Carries the customer's own text and images into a new template by position, skipping any
 // value that is one of the templates' defaults (T-004-template-switch-carry-rule).
 function carryContent(current: Design, target: Template): Design {
@@ -248,18 +265,7 @@ export const useStore = create<EditorState>()(
               terms: { ...design.form.terms, ...patch.terms },
               button: { ...design.form.button, ...patch.button },
             };
-            const termsOff = form.terms.mode === "off";
-            const nothingCanFail = termsOff && form.fields.length === 0;
-            // Turning terms on while Terms is selected shows the Terms sheet, as selecting Terms
-            // does (T-025-terms-switch-shows-terms-screen).
-            const termsTurnedOn =
-              design.form.terms.mode !== "checkbox" && form.terms.mode === "checkbox";
-            const nextScreen =
-              selection.kind === "terms" && termsTurnedOn
-                ? "terms"
-                : (screen === "terms" && termsOff) || (screen === "error" && nothingCanFail)
-                  ? "landing"
-                  : screen;
+            const nextScreen = screenAfter(design.form, form, selection, screen);
             return commit({ ...design, form }, { screen: nextScreen }) !== null;
           },
 
@@ -283,7 +289,7 @@ export const useStore = create<EditorState>()(
         partialize: (s) => ({ design: s.design }),
         equality: (past, current) => past.design === current.design,
         limit: UNDO_LIMIT,
-        handleSet: (handleSet) => debounceUndo(handleSet),
+        handleSet: debounceUndo,
       },
     ),
     {
@@ -311,6 +317,16 @@ export const useStore = create<EditorState>()(
     },
   ),
 );
+
+// Undo and redo set the design without going through `updateForm`, so its screen rules are
+// applied to every design change here (T-025-undo-keeps-screen-valid). After an action that
+// already chose its screen this finds nothing to change. The nested setState leaves the design
+// untouched, so it records no undo step and the storage wrapper writes the design only once.
+useStore.subscribe((s, prev) => {
+  if (s.design === prev.design) return;
+  const screen = screenAfter(prev.design.form, s.design.form, s.selection, s.screen);
+  if (screen !== s.screen) useStore.setState({ screen });
+});
 
 /** Restores the saved design once, after mount, and reports when that has happened. */
 export function useHydrated(): boolean {

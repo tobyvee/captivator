@@ -27,6 +27,7 @@ function isTextEntry(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   if (target instanceof HTMLInputElement) return !NON_TEXT_INPUTS.has(target.type);
   if (target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return true;
+  // jsdom doesn't implement isContentEditable, so the attribute check stands in for it there.
   return (
     target.isContentEditable ||
     target.closest("[contenteditable]:not([contenteditable='false'])") !== null
