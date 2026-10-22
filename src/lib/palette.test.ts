@@ -23,8 +23,12 @@ describe("dedupePalette", () => {
     expect(dedupePalette(colours, 2)).toEqual(["#000000", "#FFFFFF"]);
   });
 
-  it("drops invalid entries and expands short hex", () => {
-    expect(dedupePalette(["not-a-colour", "#abc", "#12345", "#AABBCC"])).toEqual(["#AABBCC"]);
+  it.each(["not-a-colour", "#abc", "#12345", "#1234567", "aabbcc", "#ggggggg"])("drops %j, which isn't 6-digit hex", (colour) => {
+    expect(dedupePalette([colour])).toEqual([]);
+  });
+
+  it("keeps a valid colour after invalid ones, uppercased", () => {
+    expect(dedupePalette(["#abc", "#12345", "#aabbcc"])).toEqual(["#AABBCC"]);
   });
 });
 
@@ -53,10 +57,30 @@ describe("kmeans", () => {
     ]);
   });
 
-  it("is deterministic and returns nothing for no pixels", () => {
+  it("seeds from evenly spaced pixels, so a spread of colours gives fixed centres", () => {
     const pixels: Rgb[] = Array.from({ length: 64 }, (_, i) => [i * 4, 255 - i * 4, (i * 37) % 256]);
-    expect(kmeans(pixels, 4)).toEqual(kmeans(pixels, 4));
+    expect(kmeans(pixels, 4)).toEqual([
+      [176, 79, 62],
+      [76, 179, 176],
+      [200, 55, 197],
+      [43, 212, 52],
+    ]);
+  });
+
+  it("returns nothing for no pixels", () => {
     expect(kmeans([], 4)).toEqual([]);
+  });
+
+  it("still assigns pixels once when asked for zero iterations", () => {
+    const pixels: Rgb[] = [
+      [200, 0, 0],
+      [1, 2, 3],
+      [1, 2, 3],
+    ];
+    expect(kmeans(pixels, 2, 0)).toEqual([
+      [1, 2, 3],
+      [200, 0, 0],
+    ]);
   });
 });
 
@@ -69,6 +93,24 @@ describe("paletteFromPixels", () => {
       ...Array.from({ length: 6 }, (): [number, number, number, number] => [0, 255, 0, 100]),
     ]);
     expect(paletteFromPixels(data)).toEqual(["#0F2A44", "#FACC15"]);
+  });
+
+  it("puts the dominant colour first even when it isn't the largest k-means cluster", () => {
+    // fast-average-color buckets the two identical reds together, while k-means groups the
+    // seven blues into clusters and the largest of those is blue.
+    const rgb: Rgb[] = [
+      [220, 30, 30],
+      [220, 30, 30],
+      [0, 0, 100],
+      [0, 0, 125],
+      [0, 0, 150],
+      [0, 0, 175],
+      [0, 0, 200],
+      [0, 0, 225],
+      [0, 0, 250],
+    ];
+    expect(kmeans(rgb, 4)[0]).not.toEqual([220, 30, 30]);
+    expect(paletteFromPixels(new Uint8ClampedArray(rgb.flatMap((p) => [...p, 255])))[0]).toBe("#DC1E1E");
   });
 
   it("returns nothing for a fully transparent image", () => {

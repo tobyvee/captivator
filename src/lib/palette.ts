@@ -5,6 +5,8 @@
 import { FastAverageColor } from "fast-average-color";
 
 export type Rgb = [number, number, number];
+/** Three channels that aren't sRGB, e.g. CIE Lab. */
+type Triple = [number, number, number];
 
 const SAMPLE_SIZE = 32;
 const CLUSTERS = 4;
@@ -15,9 +17,6 @@ const MIN_ALPHA = 128;
 const MIN_DELTA_E = 10;
 
 const HEX6 = /^#([0-9a-f]{6})$/i;
-const HEX3 = /^#([0-9a-f]{3})$/i;
-
-let fac: FastAverageColor | undefined;
 
 /** Up to 4 distinct `#RRGGBB` swatches from an image data URL. Any failure gives `[]`. */
 export async function extractPalette(dataUrl: string): Promise<string[]> {
@@ -52,8 +51,7 @@ export function paletteFromPixels(data: ArrayLike<number>): string[] {
   // bucket, so it gets the same opaque-only sample as k-means.
   const opaque = new Uint8ClampedArray(pixels.length * 4);
   pixels.forEach(([r, g, b], i) => opaque.set([r, g, b, 255], i * 4));
-  fac ??= new FastAverageColor();
-  const [r, g, b] = fac.getColorFromArray4(opaque, { algorithm: "dominant" });
+  const [r, g, b] = new FastAverageColor().getColorFromArray4(opaque, { algorithm: "dominant" });
 
   return dedupePalette([toHex([r, g, b]), ...kmeans(pixels, CLUSTERS).map(toHex)]);
 }
@@ -62,6 +60,7 @@ export function paletteFromPixels(data: ArrayLike<number>): string[] {
  * Groups pixels into at most `k` clusters and returns their centres, largest cluster first.
  * Seeds are evenly spaced pixels, so the result is deterministic. Empty clusters are dropped,
  * so fewer than `k` centres come back when the pixels have fewer distinct colours.
+ * At least one iteration always runs, since cluster sizes come from assigning pixels.
  */
 export function kmeans(pixels: Rgb[], k: number, iterations = ITERATIONS): Rgb[] {
   if (pixels.length === 0 || k < 1) return [];
@@ -69,7 +68,7 @@ export function kmeans(pixels: Rgb[], k: number, iterations = ITERATIONS): Rgb[]
   let centres: Rgb[] = Array.from({ length: n }, (_, i) => [...pixels[Math.floor((i * pixels.length) / n)]]);
   let sizes: number[] = [];
 
-  for (let iter = 0; iter < iterations; iter++) {
+  for (let iter = 0; iter < Math.max(1, iterations); iter++) {
     const sums = centres.map(() => [0, 0, 0]);
     sizes = centres.map(() => 0);
     for (const p of pixels) {
@@ -95,11 +94,11 @@ export function kmeans(pixels: Rgb[], k: number, iterations = ITERATIONS): Rgb[]
 }
 
 /**
- * Uppercase `#RRGGBB` colours in their original order, dropping invalid hex and any colour
- * within ΔE 10 (CIE76) of one already kept, capped at `max`.
+ * Uppercase `#RRGGBB` colours in their original order, dropping anything that isn't 6-digit
+ * hex and any colour within ΔE 10 (CIE76) of one already kept, capped at `max`.
  */
 export function dedupePalette(colours: string[], max = CLUSTERS): string[] {
-  const kept: { hex: string; lab: Rgb }[] = [];
+  const kept: { hex: string; lab: Triple }[] = [];
   for (const colour of colours) {
     if (kept.length >= max) break;
     const rgb = parseHex(colour);
@@ -124,13 +123,12 @@ function nearest(p: Rgb, centres: Rgb[]): number {
   return best;
 }
 
-function distSq(a: Rgb, b: Rgb): number {
+function distSq(a: Triple, b: Triple): number {
   return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
 }
 
 function parseHex(colour: string): Rgb | null {
-  const s = colour.trim();
-  const six = HEX6.exec(s)?.[1] ?? HEX3.exec(s)?.[1].replace(/./g, "$&$&");
+  const six = HEX6.exec(colour.trim())?.[1];
   if (!six) return null;
   return [0, 2, 4].map((i) => parseInt(six.slice(i, i + 2), 16)) as Rgb;
 }
@@ -141,7 +139,7 @@ function toHex(rgb: Rgb): string {
 }
 
 /** sRGB to CIE Lab (D65). */
-function toLab(rgb: Rgb): Rgb {
+function toLab(rgb: Rgb): Triple {
   const [r, g, b] = rgb.map((v) => {
     const c = v / 255;
     return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
