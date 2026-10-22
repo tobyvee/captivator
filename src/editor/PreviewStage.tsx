@@ -18,10 +18,7 @@ const CAPTIONS = {
 
 function Notice({ title, children }: { title: string; children?: ReactNode }) {
   return (
-    <div
-      role="status"
-      className="flex max-w-[420px] items-start gap-2.5 rounded-lg border border-[#FDE68A] bg-[#FFFBEB] px-3 py-2.5"
-    >
+    <div className="flex max-w-[420px] items-start gap-2.5 rounded-lg border border-[#FDE68A] bg-[#FFFBEB] px-3 py-2.5">
       <TriangleAlert size={18} strokeWidth={2.2} aria-hidden="true" className="mt-px shrink-0 text-[#92400E]" />
       <div className="flex min-w-0 flex-col gap-0.5">
         <span className="text-[13px] font-semibold text-[#78350F]">{title}</span>
@@ -79,28 +76,32 @@ export function PreviewStage() {
         <ReadabilityCheck design={design} />
       </div>
 
-      {fit.tooTall && (
-        <Notice title="Too tall for small phones">
-          <span className="text-xs leading-[1.45] text-[#92400E]">
-            On a small phone like an iPhone SE, guests have to scroll to reach Connect. Shorten
-            text, remove a block or use smaller images.
-          </span>
-        </Notice>
-      )}
+      {/* One live region that is always mounted, so screen readers announce a notice when it
+          appears. When it's empty, its negative margin cancels the stage's gap. */}
+      <div role="status" className="flex flex-col items-center gap-4 empty:-mt-4">
+        {fit.tooTall && (
+          <Notice title="Too tall for small phones">
+            <span className="text-xs leading-[1.45] text-[#92400E]">
+              On a small phone like an iPhone SE, guests have to scroll to reach Connect. Shorten
+              text, remove a block or use smaller images.
+            </span>
+          </Notice>
+        )}
 
-      {saveFailed && <Notice title="Couldn't save locally. Your changes stay in this tab only." />}
+        {saveFailed && <Notice title="Couldn't save locally. Your changes stay in this tab only." />}
 
-      {restoreFailed && (
-        <Notice title="Couldn't restore your saved design.">
-          <button
-            type="button"
-            onClick={dismissRestoreFailed}
-            className="-ml-2 flex min-h-11 items-center self-start rounded-md px-2 text-xs font-semibold text-[#78350F] underline hover:text-[#451A03] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-          >
-            Dismiss
-          </button>
-        </Notice>
-      )}
+        {restoreFailed && (
+          <Notice title="Couldn't restore your saved design.">
+            <button
+              type="button"
+              onClick={dismissRestoreFailed}
+              className="-ml-2 flex min-h-11 items-center self-start rounded-md px-2 text-xs font-semibold text-[#78350F] underline hover:text-[#451A03] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            >
+              Dismiss
+            </button>
+          </Notice>
+        )}
+      </div>
 
       {fit.probe}
     </section>

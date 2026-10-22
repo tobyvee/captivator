@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 
 type Props = { children: ReactNode; title: string };
 
@@ -18,12 +19,16 @@ export function BrowserFrame({ children, title }: Props) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
 
-  // A layout effect, so the first observation lands before the first paint. ResizeObserver
-  // reports the box's size as soon as it starts observing.
+  // Measured in a layout effect, whose state update React flushes before the first paint, so
+  // Desktop never shows a frame at full size. Resizes flush synchronously too, so they don't lag.
   useLayoutEffect(() => {
     const box = boxRef.current;
-    if (!box || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
+    if (!box) return;
+    setWidth(box.clientWidth);
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) =>
+      flushSync(() => setWidth(entry.contentRect.width)),
+    );
     observer.observe(box);
     return () => observer.disconnect();
   }, []);
@@ -32,7 +37,7 @@ export function BrowserFrame({ children, title }: Props) {
   const scale = width > 0 ? Math.min(1, width / PAGE_WIDTH) : 1;
 
   return (
-    <div className="w-full min-w-0 overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-[0_18px_40px_rgba(24,24,27,0.16)]">
+    <div className="w-full max-w-[1282px] min-w-0 overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-[0_18px_40px_rgba(24,24,27,0.16)]">
       <div
         aria-hidden="true"
         className="flex h-[34px] items-center gap-2 border-b border-zinc-200 bg-zinc-100 px-3"

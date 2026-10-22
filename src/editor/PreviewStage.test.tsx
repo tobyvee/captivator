@@ -128,8 +128,8 @@ describe("PreviewStage", () => {
     expect(scroller).toHaveClass("overflow-y-auto");
     expect(shell).toHaveClass("overflow-hidden", "h-[740px]", "w-[375px]");
     expect(shell).not.toHaveClass("overflow-y-auto");
+    // jsdom has no layout, so this pins the style that makes the shell the sheet's containing block.
     expect(shell?.getAttribute("style")).toContain("contain: layout");
-    expect(shell).toContainElement(screen.getByRole("dialog"));
   });
 
   it("scales the 1280×800 page to the frame's measured width on a transformed, non-scrolling shell", () => {

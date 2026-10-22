@@ -12,7 +12,7 @@ type Props<T extends string> = {
 /** A row of toggle buttons where exactly one is pressed. Fills its container's width when it can. */
 export function Segmented<T extends string>({ label, options, value, onChange }: Props<T>) {
   return (
-    <div role="group" aria-label={label} className="flex gap-0.5 rounded-lg bg-zinc-100 p-[3px]">
+    <div role="group" aria-label={label} className="flex gap-0.5 rounded-lg bg-zinc-200 p-[3px]">
       {options.map((option) => {
         const pressed = option.value === value;
         return (
