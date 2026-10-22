@@ -96,14 +96,15 @@ export function FocusGrid({ value, onChange, src, describedBy }: Props) {
 
   return (
     <>
-      <div className="relative h-[150px] overflow-hidden rounded-lg bg-[#0B1F2E]">
+      {/* No overflow-hidden here: it would clip the dot's 44px tap target at 0% and 100%. */}
+      <div className="relative h-[150px] rounded-lg bg-[#0B1F2E]">
         {/* The same photo as the preview, so screen readers skip it. */}
-        {src && <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover" />}
+        {src && <img src={src} alt="" className="absolute inset-0 h-full w-full rounded-lg object-cover" />}
         <div
           role="group"
           aria-label="Focus point"
           aria-describedby={describedBy}
-          className="absolute inset-0 grid grid-cols-3 grid-rows-3"
+          className="absolute inset-0 grid grid-cols-3 grid-rows-3 overflow-hidden rounded-lg"
         >
           {STOPS.map((y, row) =>
             STOPS.map((x, column) => (

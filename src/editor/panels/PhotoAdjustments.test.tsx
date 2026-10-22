@@ -207,6 +207,10 @@ describe("FocusGrid", () => {
     render(<FocusGrid value={{ x: 37, y: 62 }} onChange={vi.fn()} />);
     expect(dot()).toHaveAccessibleName("Focus point, 37% across, 62% down");
     expect(dot()).toHaveStyle({ left: "37%", top: "62%" });
+    // Nothing around the dot clips its 44px tap target when it sits at an edge.
+    for (let el = dot().parentElement; el && el !== document.body; el = el.parentElement) {
+      expect(el).not.toHaveClass("overflow-hidden");
+    }
     expect(dot()).toHaveAccessibleDescription(
       "Drag the dot for fine control, or tap a square. Arrow keys move the dot 5%.",
     );
