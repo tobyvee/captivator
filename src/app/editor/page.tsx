@@ -10,20 +10,28 @@ import { useHydrated } from "@/lib/store";
 // The page owns the three columns' sizes and surfaces, so the skeleton and the editor share
 // one layout and each column's component only fills its slot (T-008-landmarks-are-siblings).
 // Below md every column takes the full width, so the stack reads as one column.
-const SIDE = "flex flex-col bg-white border-zinc-200 max-md:max-w-none max-md:border-b";
-const BLOCKS_COLUMN = `${SIDE} flex-[1_1_272px] max-w-[300px] md:border-r`;
-const STAGE_COLUMN = "flex flex-col flex-[1_1_480px] min-w-0";
 // The flex bases sum to 272 + 480 + 300 = 1052px, so below 1052px the inspector wraps onto
 // its own row: it fills that row and borders the stage above it instead of its left side.
+// From 1052px the columns sit side by side and each scrolls on its own, so a long inspector
+// can't push the preview down the page (T-036-columns-scroll-when-side-by-side). Tailwind v4's
+// max-[1052px] is width < 1052px and min-[1052px] is width >= 1052px, so the two never overlap.
+const SCROLL = "min-[1052px]:overflow-y-auto";
+const SIDE = `flex flex-col bg-white border-zinc-200 max-md:max-w-none max-md:border-b ${SCROLL}`;
+const BLOCKS_COLUMN = `${SIDE} flex-[1_1_272px] max-w-[300px] md:border-r`;
+const STAGE_COLUMN = `flex flex-col flex-[1_1_480px] min-w-0 ${SCROLL}`;
 const INSPECTOR_COLUMN = `${SIDE} flex-[1_1_300px] max-w-[340px] border-l max-[1052px]:max-w-none max-[1052px]:border-l-0 max-[1052px]:border-t`;
 
 type Slots = Record<"top" | "blocks" | "stage" | "inspector", ReactNode>;
 
 function Layout({ top, blocks, stage, inspector }: Slots) {
   return (
-    <div className="flex min-h-screen flex-col">
+    // Side by side, the editor is exactly viewport-tall and the row takes what the top bar
+    // leaves. The row must not wrap there: a wrapping row sizes its line to the tallest
+    // column's content, so the columns would overflow it instead of scrolling
+    // (T-036-row-stops-wrapping-when-side-by-side).
+    <div className="flex min-h-screen flex-col min-[1052px]:h-dvh min-[1052px]:min-h-0">
       {top}
-      <div className="flex grow flex-wrap items-stretch">
+      <div className="flex grow flex-wrap items-stretch min-[1052px]:min-h-0 min-[1052px]:flex-nowrap">
         <div className={BLOCKS_COLUMN}>{blocks}</div>
         <main className={STAGE_COLUMN}>{stage}</main>
         <div className={INSPECTOR_COLUMN}>{inspector}</div>

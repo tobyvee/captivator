@@ -79,6 +79,38 @@ describe("EditorPage", () => {
     expect(new Set(columns.map((column) => column?.parentElement)).size).toBe(1);
     expect(Array.from(main.parentElement?.children ?? [])).toEqual(columns);
   });
+
+  // jsdom can't lay out, so this checks the class contract: from 1052px the editor is
+  // viewport-tall and each column scrolls, while below it the page-flow stack is unchanged.
+  it.each([
+    ["editor", () => render(<EditorPage />).container],
+    [
+      "skeleton",
+      () => {
+        const container = document.createElement("div");
+        container.innerHTML = renderToString(<EditorPage />);
+        return container;
+      },
+    ],
+  ])("scrolls each column on its own when side by side, in the %s", (_, mount) => {
+    const main = within(mount()).getByRole("main");
+    const row = main.parentElement;
+    const outer = row?.parentElement;
+    const columns = Array.from(row?.children ?? []);
+    expect(columns).toHaveLength(3);
+
+    expect(outer).toHaveClass("min-h-screen", "min-[1052px]:h-dvh", "min-[1052px]:min-h-0");
+    expect(row).toHaveClass("grow", "flex-wrap", "min-[1052px]:min-h-0", "min-[1052px]:flex-nowrap");
+    for (const column of columns) {
+      expect(column).toHaveClass("min-[1052px]:overflow-y-auto");
+      expect(column).not.toHaveClass("overflow-y-auto");
+    }
+    expect(columns[2]).toHaveClass(
+      "max-[1052px]:max-w-none",
+      "max-[1052px]:border-l-0",
+      "max-[1052px]:border-t",
+    );
+  });
 });
 
 describe("TopBar", () => {
