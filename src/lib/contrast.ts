@@ -103,8 +103,8 @@ export function bestTextColour(bg: string | string[]): TextColour {
 
 /**
  * `bestTextColour` where it reaches 4.5:1 on every colour in `bg`, otherwise pure black when that
- * reads better: on mid-tones such as #777777 neither near-black nor white reaches 4.5:1, but black
- * reaches at least 4.58:1 on any single colour (T-021-sheet-text-black-fallback.md).
+ * reads better: on mid-tones such as #777777 neither near-black nor white reaches 4.5:1, and where
+ * neither does on a single colour, black does, at 4.58:1 or more (T-021-sheet-text-black-fallback.md).
  */
 export function readableTextColour(bg: string | string[]): string {
   const best = bestTextColour(bg);

@@ -296,6 +296,9 @@ describe("Form edit-mode Connect", () => {
     rerender(<Harness design={design(["phone"], "off")} />);
     expect(screen.getByRole("textbox")).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByRole("alert")).toHaveTextContent("Enter a valid phone number");
+    // A known limit: the example's defaultValue can't replace what was typed, so the valid
+    // number stays beside the message (T-022-example-fallback-keeps-typed-value).
+    expect(screen.getByRole("textbox")).toHaveValue("+61 400 000 000");
   });
 
   it("Connect on the switcher's Error screen keeps the example value", async () => {
