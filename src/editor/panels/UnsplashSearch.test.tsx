@@ -218,7 +218,9 @@ describe("UnsplashSearch", () => {
         downloadLocation: "https://api.unsplash.com/photos/h1/download?ixid=abc",
       },
     });
-    expect(screen.getByRole("button", { name: "Photo by Jo Doe" })).toHaveAttribute("aria-pressed", "true");
+    const result = screen.getByRole("button", { name: "Photo by Jo Doe" });
+    expect(result).toHaveAttribute("aria-current", "true");
+    expect(result).not.toHaveAttribute("aria-pressed");
     expect(pings()).toHaveLength(1);
     const [url, init] = pings()[0] ?? [];
     expect(url).toBe("/api/unsplash");

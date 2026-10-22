@@ -177,12 +177,12 @@ export function UnsplashSearch() {
               <li key={photo.id}>
                 <button
                   type="button"
-                  aria-pressed={selected}
+                  aria-current={selected || undefined}
                   onClick={() => pick(photo)}
                   className={[
                     "block h-24 w-full overflow-hidden rounded-md bg-[#0B1F2E] p-0",
-                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600",
-                    selected ? "outline-3 outline-offset-2 outline-blue-600" : "",
+                    "outline-offset-2 outline-blue-600 focus-visible:outline-3 focus-visible:outline-offset-4",
+                    selected ? "outline-3" : "",
                   ].join(" ")}
                 >
                   <img
