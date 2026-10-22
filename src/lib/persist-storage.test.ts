@@ -33,7 +33,10 @@ let onError: ReturnType<typeof vi.fn<(e: unknown) => void>>;
 let onSuccess: ReturnType<typeof vi.fn<() => void>>;
 
 const make = (options: Partial<DebouncedStorageOptions> = {}) =>
-  createDebouncedStorage({ onError, onSuccess, getStorage: () => storage, ...options });
+  createDebouncedStorage<unknown>({ onError, onSuccess, getStorage: () => storage, ...options });
+
+const value = (state: unknown) => ({ state, version: 2 });
+const json = (state: unknown) => JSON.stringify(value(state));
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -49,47 +52,64 @@ afterEach(() => {
 describe("createDebouncedStorage", () => {
   it("writes only the latest value, once, after 300ms", () => {
     const s = make();
-    s.setItem("k", "1");
-    s.setItem("k", "2");
+    s.setItem("k", value("1"));
+    s.setItem("k", value("2"));
     vi.advanceTimersByTime(299);
     expect(storage.setItem).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1);
     expect(storage.setItem).toHaveBeenCalledTimes(1);
-    expect(storage.getItem("k")).toBe("2");
+    expect(storage.getItem("k")).toBe(json("2"));
     expect(onSuccess).toHaveBeenCalledTimes(1);
   });
 
   it("restarts the timer on each write", () => {
     const s = make();
-    s.setItem("k", "1");
+    s.setItem("k", value("1"));
     vi.advanceTimersByTime(200);
-    s.setItem("k", "2");
+    s.setItem("k", value("2"));
     vi.advanceTimersByTime(200);
     expect(storage.setItem).not.toHaveBeenCalled();
     vi.advanceTimersByTime(100);
-    expect(storage.getItem("k")).toBe("2");
+    expect(storage.getItem("k")).toBe(json("2"));
   });
 
   it("honours a custom delay", () => {
     const s = make({ delay: 50 });
-    s.setItem("k", "1");
+    s.setItem("k", value("1"));
     vi.advanceTimersByTime(50);
-    expect(storage.getItem("k")).toBe("1");
+    expect(storage.getItem("k")).toBe(json("1"));
   });
 
-  it("reads a pending value before storage, and storage otherwise", () => {
-    storage.data.set("k", "stored");
+  it("reads a pending value before storage, and parses storage otherwise", () => {
+    storage.data.set("k", json("stored"));
     const s = make();
-    expect(s.getItem("k")).toBe("stored");
-    s.setItem("k", "pending");
-    expect(s.getItem("k")).toBe("pending");
+    expect(s.getItem("k")).toEqual(value("stored"));
+    const pending = value("pending");
+    s.setItem("k", pending);
+    expect(s.getItem("k")).toBe(pending);
     expect(s.getItem("missing")).toBeNull();
   });
 
-  it("removeItem cancels a pending write and removes the stored value", () => {
-    storage.data.set("k", "stored");
+  it("throws on corrupt stored JSON, for persist to report", () => {
+    storage.data.set("k", "{not json");
+    expect(() => make().getItem("k")).toThrow(SyntaxError);
+  });
+
+  it("serialises once for several rapid writes, when the timer fires", () => {
+    let stringified = 0;
+    const counted = (n: number) => ({ toJSON: () => (stringified++, n) });
     const s = make();
-    s.setItem("k", "pending");
+    for (let n = 1; n <= 5; n++) s.setItem("k", value(counted(n)));
+    expect(stringified).toBe(0);
+    vi.advanceTimersByTime(300);
+    expect(stringified).toBe(1);
+    expect(storage.getItem("k")).toBe(json(5));
+  });
+
+  it("removeItem cancels a pending write and removes the stored value", () => {
+    storage.data.set("k", json("stored"));
+    const s = make();
+    s.setItem("k", value("pending"));
     s.removeItem("k");
     vi.advanceTimersByTime(300);
     expect(storage.setItem).not.toHaveBeenCalled();
@@ -98,9 +118,9 @@ describe("createDebouncedStorage", () => {
 
   it("flush writes the pending value now, and only once", () => {
     const s = make();
-    s.setItem("k", "1");
+    s.setItem("k", value("1"));
     s.flush();
-    expect(storage.getItem("k")).toBe("1");
+    expect(storage.getItem("k")).toBe(json("1"));
     vi.advanceTimersByTime(300);
     s.flush();
     expect(storage.setItem).toHaveBeenCalledTimes(1);
@@ -111,7 +131,7 @@ describe("createDebouncedStorage", () => {
       throw quotaError();
     });
     const s = make();
-    s.setItem("k", "1");
+    s.setItem("k", value("1"));
     expect(() => vi.advanceTimersByTime(300)).not.toThrow();
     expect(onError).toHaveBeenCalledTimes(1);
     expect(onError.mock.calls[0][0]).toMatchObject({ name: "QuotaExceededError" });
@@ -123,7 +143,7 @@ describe("createDebouncedStorage", () => {
       throw quotaError();
     });
     const s = make();
-    s.setItem("k", "1");
+    s.setItem("k", value("1"));
     expect(() => s.flush()).not.toThrow();
     expect(onError).toHaveBeenCalledTimes(1);
     expect(onError.mock.calls[0][0]).toMatchObject({ name: "QuotaExceededError" });
@@ -135,7 +155,7 @@ describe("createDebouncedStorage", () => {
         throw new DOMException("Access denied", "SecurityError");
       },
     });
-    s.setItem("k", "1");
+    s.setItem("k", value("1"));
     expect(() => s.flush()).not.toThrow();
     expect(onError).toHaveBeenCalledTimes(1);
   });
@@ -143,27 +163,27 @@ describe("createDebouncedStorage", () => {
   it("flushes a pending write on pagehide", () => {
     const events = fakeEvents();
     const s = make({ events });
-    s.setItem("k", "1");
+    s.setItem("k", value("1"));
     events.window.dispatchEvent(new Event("pagehide"));
-    expect(storage.getItem("k")).toBe("1");
+    expect(storage.getItem("k")).toBe(json("1"));
   });
 
   it("flushes a pending write when the page becomes hidden, not when it becomes visible", () => {
     const events = fakeEvents();
     const s = make({ events });
-    s.setItem("k", "1");
+    s.setItem("k", value("1"));
     events.document.dispatchEvent(new Event("visibilitychange"));
     expect(storage.setItem).not.toHaveBeenCalled();
     events.document.visibilityState = "hidden";
     events.document.dispatchEvent(new Event("visibilitychange"));
-    expect(storage.getItem("k")).toBe("1");
+    expect(storage.getItem("k")).toBe(json("1"));
   });
 
   it("works without page events (server and tests)", () => {
     expect(typeof window).toBe("undefined");
     const s = make();
-    s.setItem("k", "1");
+    s.setItem("k", value("1"));
     vi.advanceTimersByTime(300);
-    expect(storage.getItem("k")).toBe("1");
+    expect(storage.getItem("k")).toBe(json("1"));
   });
 });

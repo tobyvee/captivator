@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BLANK, Template, type Design } from "./design-schema";
 import { STORAGE_KEY, useStore } from "./store";
 import { PLACEHOLDER_LOGO, SPONSOR } from "./templates";
+import type { ImageBackground } from "./types";
 
 const fakeStorage = () => {
   const data = new Map<string, string>();
@@ -25,6 +26,13 @@ const UPLOAD_2 = "data:image/webp;base64,REVG";
 
 const fixture = (id: string, design: Partial<Design>): Template =>
   Template.parse({ id, name: id, description: "", design: { ...BLANK.design, ...design } });
+
+// Sponsor's background is a photo; this gives it a new src (and optional credit).
+const sponsorPhoto = (patch: Partial<ImageBackground>): ImageBackground => {
+  const bg = SPONSOR.design.background;
+  if (bg.type !== "image") throw new Error("Sponsor's background is expected to be a photo");
+  return { ...bg, ...patch };
+};
 
 const blockIds = () => state().design.blocks.map((b) => b.id);
 const textBlockId = () => state().design.blocks.find((b) => b.kind === "text")!.id; // Sponsor has text blocks
@@ -218,8 +226,7 @@ describe("updateBackground", () => {
 
   it("refuses a javascript: image src", () => {
     const before = state().design;
-    const bg = { ...SPONSOR.design.background, src: "javascript:alert(1)" };
-    expect(state().updateBackground(bg as Design["background"])).toBe(false); // Sponsor's is an image
+    expect(state().updateBackground(sponsorPhoto({ src: "javascript:alert(1)" }))).toBe(false);
     expect(state().design).toBe(before);
   });
 });
@@ -315,11 +322,7 @@ describe("loadTemplate", () => {
       profileUrl: "https://unsplash.com/@ann",
       downloadLocation: "https://api.unsplash.com/photos/1/download",
     };
-    state().updateBackground({
-      ...SPONSOR.design.background,
-      src: "https://images.unsplash.com/photo-1",
-      credit,
-    } as Design["background"]); // Sponsor's is an image
+    state().updateBackground(sponsorPhoto({ src: "https://images.unsplash.com/photo-1", credit }));
     state().loadTemplate(target);
     expect(state().design.background).toEqual({
       ...target.design.background,
@@ -329,7 +332,7 @@ describe("loadTemplate", () => {
   });
 
   it("doesn't carry a photo into a template without one", () => {
-    state().updateBackground({ ...SPONSOR.design.background, src: UPLOAD_2 } as Design["background"]);
+    state().updateBackground(sponsorPhoto({ src: UPLOAD_2 }));
     state().loadTemplate(BLANK);
     expect(state().design).toEqual(BLANK.design);
   });
@@ -339,6 +342,21 @@ describe("loadTemplate", () => {
     state().updateBlock(logo.id, { src: UPLOAD });
     state().loadTemplate(BLANK);
     expect(state().design.blocks).toEqual([]);
+  });
+
+  it("security: leaves the design unchanged for a template that fails the schema", () => {
+    const bad = "http://example.com/logo.png"; // not on the image src allowlist
+    const invalid = {
+      ...target,
+      design: {
+        ...target.design,
+        blocks: [{ id: "bad", kind: "image", src: bad, alt: "Logo", size: "sm" }],
+      },
+    } as Template; // bypasses Template.parse, as a hand-built template could
+    state().loadTemplate(invalid);
+    expect(state().design).toBe(SPONSOR.design);
+    vi.advanceTimersByTime(300);
+    expect(storage.data.get(STORAGE_KEY) ?? "").not.toContain(bad);
   });
 });
 
@@ -381,10 +399,16 @@ describe("persistence", () => {
     });
   });
 
-  it("migrates an older version to Sponsor", async () => {
+  it("migrates an older version to Sponsor and reports the restore as failed", async () => {
     writeStored({ design: customDesign, name: "Old" }, 1);
     await useStore.persist.rehydrate();
-    expect(state()).toMatchObject({ design: SPONSOR.design, name: "", hasHydrated: true });
+    expect(state()).toMatchObject({
+      design: SPONSOR.design,
+      name: "",
+      hasHydrated: true,
+      restored: false,
+      restoreFailed: true,
+    });
   });
 
   it("security: ignores a stored design with a javascript: image src and sets restoreFailed", async () => {
@@ -413,6 +437,66 @@ describe("persistence", () => {
     expect(state().name).toBe("");
   });
 
+  describe("writes only when the design or name changes", () => {
+    it("writes nothing when hydrating with nothing stored", async () => {
+      await useStore.persist.rehydrate();
+      vi.advanceTimersByTime(300);
+      expect(storage.setItem).not.toHaveBeenCalled();
+      expect(storage.data.has(STORAGE_KEY)).toBe(false);
+    });
+
+    it("leaves a restored design in storage as it was", async () => {
+      writeStored({ design: customDesign, name: "Bob's Cafe" });
+      await useStore.persist.rehydrate();
+      vi.advanceTimersByTime(300);
+      expect(storage.setItem).not.toHaveBeenCalled();
+    });
+
+    it("writes nothing for UI state alone", () => {
+      state().setDevice("desktop");
+      state().setScreen("connected");
+      state().setSelection({ kind: "button" });
+      state().setLogoPalette(["#112233"]);
+      state().dismissRestoreFailed();
+      vi.advanceTimersByTime(300);
+      expect(storage.setItem).not.toHaveBeenCalled();
+    });
+
+    it("keeps a stored design that failed to restore until the customer edits", async () => {
+      const invalid = JSON.stringify({ state: { design: { version: 2 }, name: "" }, version: 2 });
+      storage.data.set(STORAGE_KEY, invalid);
+      await useStore.persist.rehydrate();
+      expect(state().restoreFailed).toBe(true);
+      vi.advanceTimersByTime(300);
+      expect(storage.data.get(STORAGE_KEY)).toBe(invalid);
+
+      state().updateForm({ button: { label: "GO" } });
+      vi.advanceTimersByTime(300);
+      expect(readStored().state.design.form.button.label).toBe("GO");
+    });
+
+    it("keeps corrupt JSON in storage until the customer edits", async () => {
+      storage.data.set(STORAGE_KEY, "{not json");
+      await useStore.persist.rehydrate();
+      vi.advanceTimersByTime(300);
+      expect(storage.data.get(STORAGE_KEY)).toBe("{not json");
+    });
+
+    it("keeps an older version in storage until the customer edits", async () => {
+      writeStored({ design: customDesign, name: "Old" }, 1);
+      await useStore.persist.rehydrate();
+      vi.advanceTimersByTime(300);
+      expect(readStored().version).toBe(1);
+    });
+
+    it("writes a real edit", () => {
+      expect(state().updateBlock(textBlockId(), { text: "Edited" })).toBe(true);
+      vi.advanceTimersByTime(300);
+      expect(storage.setItem).toHaveBeenCalledTimes(1);
+      expect(readStored().state.design).toEqual(state().design);
+    });
+  });
+
   it("writes only { design, name }, debounced", () => {
     state().setName("Bob's Cafe");
     state().setSelection({ kind: "terms" });
@@ -434,11 +518,9 @@ describe("persistence", () => {
     state().setName("A");
     expect(() => vi.advanceTimersByTime(300)).not.toThrow();
     expect(state().saveFailed).toBe(true);
-    // Setting the flag schedules one more write, which fails quietly without retrying forever.
-    vi.advanceTimersByTime(300);
-    expect(storage.setItem).toHaveBeenCalledTimes(2);
+    // Setting the flag changes neither design nor name, so it doesn't retry the write.
     vi.advanceTimersByTime(3000);
-    expect(storage.setItem).toHaveBeenCalledTimes(2);
+    expect(storage.setItem).toHaveBeenCalledTimes(1);
 
     storage.setItem.mockImplementation((key, value) => void storage.data.set(key, value));
     state().setName("B");

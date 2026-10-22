@@ -1,6 +1,8 @@
+// For client components only: it imports a React hook. Importing it on the server is safe
+// (`skipHydration` means nothing reads localStorage at import time), but nothing should use it there.
 import { useEffect } from "react";
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { persist, type PersistStorage } from "zustand/middleware";
 import { Design, type Template } from "./design-schema";
 import { createDebouncedStorage } from "./persist-storage";
 import { SPONSOR, TEMPLATES } from "./templates";
@@ -99,9 +101,8 @@ function carryContent(current: Design, target: Template): Design {
   return { ...target.design, background, blocks };
 }
 
-const debouncedStorage = createDebouncedStorage({
-  // Only flip the flag when it changes: setting state schedules another write, and an
-  // unconditional set after every failed write would retry forever.
+const debouncedStorage = createDebouncedStorage<Partial<Persisted>>({
+  // Only flip the flag when it changes, so listeners don't re-render after every write.
   onError: () => {
     if (!useStore.getState().saveFailed) useStore.setState({ saveFailed: true });
   },
@@ -109,6 +110,34 @@ const debouncedStorage = createDebouncedStorage({
     if (useStore.getState().saveFailed) useStore.setState({ saveFailed: false });
   },
 });
+
+// `persist` writes after every setState, UI flags and hydration included. Storage should only
+// change when the customer changes the design or name, so a visit that edits nothing leaves it
+// alone: no "Continue your design" for an untouched template, and a stored design that failed
+// to restore isn't overwritten before the customer sees the notice
+// (T-004-write-only-on-design-change). Design identity changes only on a successful design
+// action (T-004-store-keeps-parsed-design), so reference equality is enough.
+let synced: Partial<Persisted> = defaultPersisted();
+const storage: PersistStorage<Partial<Persisted>, void> = {
+  getItem: debouncedStorage.getItem,
+  setItem: (key, value) => {
+    if (value.state.design === synced.design && value.state.name === synced.name) return;
+    synced = value.state;
+    debouncedStorage.setItem(key, value);
+  },
+  removeItem: debouncedStorage.removeItem,
+};
+
+function mergeStored(persisted: unknown, current: EditorState): EditorState {
+  if (typeof persisted !== "object" || persisted === null) return current;
+  const stored: { design?: unknown; name?: unknown } = persisted;
+  const name =
+    typeof stored.name === "string" && stored.name.length <= MAX_NAME ? stored.name : current.name;
+  const parsed = Design.safeParse(stored.design);
+  return parsed.success
+    ? { ...current, design: parsed.data, name, restored: true }
+    : { ...current, name, restoreFailed: true };
+}
 
 export const useStore = create<EditorState>()(
   persist(
@@ -137,9 +166,9 @@ export const useStore = create<EditorState>()(
 
         loadTemplate: (template) => {
           const extra = { selection: { kind: "background" }, screen: "landing" } as const;
-          if (!commit(carryContent(get().design, template), extra)) {
-            set({ ...extra, design: template.design });
-          }
+          // If the carried design fails the schema, fall back to the template's own, which
+          // goes through the same check: a template that fails it changes nothing.
+          if (!commit(carryContent(get().design, template), extra)) commit(template.design, extra);
         },
 
         updateBackground: (background) => commit({ ...get().design, background }) !== null,
@@ -165,15 +194,12 @@ export const useStore = create<EditorState>()(
           const { design, selection, screen } = get();
           if (!design.blocks.some((b) => b.id === id)) return;
           const blocks = design.blocks.filter((b) => b.id !== id);
-          if (selection.kind === "block" && selection.id === id) {
-            const background: Selection = { kind: "background" };
-            commit(
-              { ...design, blocks },
-              { selection: background, screen: screenFor(background, design, screen) },
-            );
-          } else {
-            commit({ ...design, blocks });
-          }
+          const background: Selection = { kind: "background" };
+          const stale = selection.kind === "block" && selection.id === id;
+          commit(
+            { ...design, blocks },
+            stale ? { selection: background, screen: screenFor(background, design, screen) } : {},
+          );
         },
 
         moveBlock: (id, dir) => {
@@ -219,22 +245,17 @@ export const useStore = create<EditorState>()(
     {
       name: STORAGE_KEY,
       version: STORAGE_VERSION,
-      storage: createJSONStorage(() => debouncedStorage),
+      storage,
       partialize: (s): Persisted => ({ design: s.design, name: s.name }),
-      // Only called when the stored version differs. There is no older format to upgrade.
-      migrate: () => defaultPersisted(),
+      // Only called when the stored version differs. There is no older format to upgrade, so
+      // return nothing usable: merge keeps Sponsor and reports the restore as failed.
+      migrate: (): Partial<Persisted> => ({}),
       // localStorage can be hand-edited, so the stored design must pass the schema to be used.
       merge: (persisted, current) => {
-        if (typeof persisted !== "object" || persisted === null) return current;
-        const stored: { design?: unknown; name?: unknown } = persisted;
-        const name =
-          typeof stored.name === "string" && stored.name.length <= MAX_NAME
-            ? stored.name
-            : current.name;
-        const parsed = Design.safeParse(stored.design);
-        return parsed.success
-          ? { ...current, design: parsed.data, name, restored: true }
-          : { ...current, name, restoreFailed: true };
+        const next = mergeStored(persisted, current);
+        // What hydration leaves in the store counts as saved, so hydrating writes nothing.
+        synced = { design: next.design, name: next.name };
+        return next;
       },
       skipHydration: true,
       // Corrupt JSON throws in getItem and arrives here as `error`, with the default kept.

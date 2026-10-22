@@ -1,4 +1,4 @@
-import type { StateStorage } from "zustand/middleware";
+import type { PersistStorage, StorageValue } from "zustand/middleware";
 
 export type DebouncedStorageOptions = {
   /** How long a write waits for further writes, in ms. */
@@ -12,7 +12,7 @@ export type DebouncedStorageOptions = {
   events?: { window: EventTarget; document: EventTarget & { visibilityState: string } };
 };
 
-export type DebouncedStorage = StateStorage<void> & { flush(): void };
+export type DebouncedStorage<S> = PersistStorage<S, void> & { flush(): void };
 
 const pageEvents = (): DebouncedStorageOptions["events"] =>
   typeof window !== "undefined" && typeof document !== "undefined"
@@ -20,18 +20,19 @@ const pageEvents = (): DebouncedStorageOptions["events"] =>
     : undefined;
 
 /**
- * A Zustand `StateStorage` that holds the latest value per key and writes it after `delay` ms
- * of quiet, so a slider drag is one localStorage write rather than dozens. A pending write is
- * flushed when the page is hidden or closed, so the last edit isn't lost.
+ * A Zustand `PersistStorage` that holds the latest value per key and serialises and writes it
+ * after `delay` ms of quiet, so a slider drag is one `JSON.stringify` and one localStorage write
+ * rather than dozens. A pending write is flushed when the page is hidden or closed, so the last
+ * edit isn't lost.
  */
-export function createDebouncedStorage({
+export function createDebouncedStorage<S>({
   delay = 300,
   onError,
   onSuccess,
   getStorage = () => globalThis.localStorage,
   events = pageEvents(),
-}: DebouncedStorageOptions): DebouncedStorage {
-  const pending = new Map<string, string>();
+}: DebouncedStorageOptions): DebouncedStorage<S> {
+  const pending = new Map<string, StorageValue<S>>();
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   const flush = () => {
@@ -41,7 +42,7 @@ export function createDebouncedStorage({
     pending.clear();
     for (const [key, value] of writes) {
       try {
-        getStorage().setItem(key, value);
+        getStorage().setItem(key, JSON.stringify(value));
         onSuccess?.();
       } catch (error) {
         onError(error);
@@ -55,7 +56,15 @@ export function createDebouncedStorage({
   });
 
   return {
-    getItem: (key) => pending.get(key) ?? getStorage().getItem(key),
+    getItem: (key) => {
+      const value = pending.get(key);
+      if (value) return value;
+      const raw = getStorage().getItem(key);
+      // Corrupt JSON throws here, which persist reports to onRehydrateStorage. The shape is
+      // unchecked: persist only reads `state` and a numeric `version`, and the store's `merge`
+      // validates `state` against the schema.
+      return raw === null ? null : (JSON.parse(raw) as StorageValue<S>);
+    },
     setItem: (key, value) => {
       pending.set(key, value);
       clearTimeout(timer);
