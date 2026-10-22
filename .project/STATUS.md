@@ -17,7 +17,6 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is bein
 
 ## Outstanding
 - [ ] T-029: Real-phone testing checklist
-- [ ] T-036: Editor columns scroll independently, so the preview stays put (a checklist failure)
 
 ## Planned
 
@@ -76,3 +75,4 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is bein
 - [x] T-034: Drag to reorder blocks with dnd-kit (2026-10-23)
 - [x] Milestone 8 closed: undo, logo palette, readability and fit checks, plus Unsplash search, contrast Fix and drag to reorder (2026-10-23)
 - [x] Wave 9 closed; wave-wide security audit found nothing (2026-10-23)
+- [x] T-036: Editor columns scroll independently, so the preview stays put (a checklist failure) (2026-10-23)
