@@ -149,11 +149,34 @@ describe("UnsplashSearch", () => {
     expect(screen.getByRole("button", { name: "Photo by Jo Doe" })).toBeInTheDocument();
   });
 
+  it("announces how many photos were found, for screen readers only", async () => {
+    render(<UnsplashSearch />);
+    await searchFor("tide pools", found([photo("t1"), photo("t2")]));
+    expect(status()).toHaveTextContent("2 photos found for “tide pools”");
+    expect(status()).toHaveClass("sr-only");
+
+    await searchFor("rock pool", found([photo("t3")]));
+    expect(status()).toHaveTextContent("1 photo found for “rock pool”");
+  });
+
+  it("announces a cached repeat query too", async () => {
+    render(<UnsplashSearch />);
+    await searchFor("palm", found([photo("p1")]));
+    await searchFor("pine", found([photo("p2")]));
+    const before = status().textContent;
+
+    type("Palm");
+
+    expect(status().textContent).not.toBe(before);
+    expect(status()).toHaveTextContent("1 photo found for “palm”");
+  });
+
   it("says when nothing was found", async () => {
     render(<UnsplashSearch />);
     await searchFor("zzqqxx", found([]));
 
     expect(status()).toHaveTextContent("No photos found");
+    expect(status()).not.toHaveClass("sr-only");
     expect(screen.queryByRole("list")).not.toBeInTheDocument();
   });
 

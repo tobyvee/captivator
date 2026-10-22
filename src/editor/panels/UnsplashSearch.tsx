@@ -126,13 +126,17 @@ export function UnsplashSearch() {
     }).catch(() => {});
   }
 
+  const found = view.status === "done" ? view.photos.length : 0;
   const status =
     view.status === "loading"
       ? "Searching…"
       : view.status === "failed"
         ? view.message
-        : view.status === "done" && view.photos.length === 0
-          ? "No photos found"
+        : view.status === "done"
+          ? found === 0
+            ? "No photos found"
+            : // Names the query, so a cached result with the same count as the last one is still announced.
+              `${found} ${found === 1 ? "photo" : "photos"} found for “${q}”`
           : null;
 
   return (
@@ -194,8 +198,9 @@ export function UnsplashSearch() {
         </ul>
       )}
 
-      {/* Both live regions stay mounted so screen readers announce text when it arrives. */}
-      <p role="status" className="text-xs leading-snug text-zinc-600 empty:-mt-2">
+      {/* Both live regions stay mounted so screen readers announce text when it arrives. The count
+          is for screen readers only: sighted users see the grid. */}
+      <p role="status" className={found > 0 ? "sr-only" : "text-xs leading-snug text-zinc-600 empty:-mt-2"}>
         {status}
       </p>
       <p role="alert" className="text-xs leading-snug text-red-700 empty:-mt-2">
