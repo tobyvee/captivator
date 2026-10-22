@@ -21,7 +21,7 @@ tags: [project, captivator, ticket, editor]
 # T-009: Preview stage with phone and browser frames
 
 ## Context
-Build step 2 (PhoneFrame, BrowserFrame, live preview) and step 3's click-to-select in the preview ([spec → Editor UI → Preview stage](../spec/Captivator%20MVP%20%E2%80%94%20Tech%20Spec.md)). This replaces the `PreviewStage` stub from T-008. It also creates the stage's own slots: a Landing/Terms `ScreenSwitcher` (T-022 adds Error and Connected), and stubs for the readability line (T-027) and fit check (T-028). Canvas artboards: `Main` (phone frame, switcher, notes under the frame, small-phone fold line) and `DesktopPreview` (browser frame). Decisions: [`T-009-landing-terms-switcher-in-step-2.md`](../decisions/T-009-landing-terms-switcher-in-step-2.md), [`general-splashpage-callback-props.md`](../decisions/general-splashpage-callback-props.md), [`general-persistence-versioning-and-flush.md`](../decisions/general-persistence-versioning-and-flush.md).
+Build step 2 (PhoneFrame, BrowserFrame, live preview) and step 3's click-to-select in the preview ([spec → Editor UI → Preview stage](../spec/Captivator%20MVP%20%E2%80%94%20Tech%20Spec.md)). This replaces the `PreviewStage` stub from T-008. It also creates the stage's own slots: a Landing/Terms `ScreenSwitcher` (T-022 adds Error and Connected), and stubs for the readability line (T-027) and fit check (T-028). Canvas artboards: `Main` (phone frame, switcher, notes under the frame, small-phone fold line) and `DesktopPreview` (browser frame). Decisions: [`general-splash-root-grows-in-frame.md`](../decisions/general-splash-root-grows-in-frame.md), [`T-009-landing-terms-switcher-in-step-2.md`](../decisions/T-009-landing-terms-switcher-in-step-2.md), [`general-splashpage-callback-props.md`](../decisions/general-splashpage-callback-props.md), [`general-persistence-versioning-and-flush.md`](../decisions/general-persistence-versioning-and-flush.md).
 
 ## Scope
 - **`PreviewStage.tsx`:**
@@ -35,8 +35,8 @@ Build step 2 (PhoneFrame, BrowserFrame, live preview) and step 3's click-to-sele
     - "Couldn't save locally. Your changes stay in this tab only." when `saveFailed`.
     - "Couldn't restore your saved design." with a Dismiss button (`dismissRestoreFailed`) when `restoreFailed`.
   - Render `fit.probe` somewhere in the stage. Get `fit` from `useFitCheck(design)`.
-- **`frames/PhoneFrame.tsx`:** `PhoneFrame({ children, showFold })`. 375×740 inner viewport, 10px `#18181B` border, 46px radius, `overflow: hidden`. With `showFold`, draw the dashed amber line at 600px from the top with the "Small-phone fold" chip (canvas `Main`).
-- **`frames/BrowserFrame.tsx`:** `BrowserFrame({ children, title })`. A 1280×800 page scaled to the stage width with `transform: scale(s)`, where `s = min(1, width / 1280)` from a `ResizeObserver`. The outer box reserves `800 * s` height. Add a simple browser bar (three dots and "Sign in to {title || "Guest WiFi"}").
+- **`frames/PhoneFrame.tsx`:** `PhoneFrame({ children, showFold })`. 375×740 inner viewport, 10px `#18181B` border, 46px radius. The viewport scrolls (`overflow-x: hidden; overflow-y: auto`) because the `inFrame` root grows with its content ([`general-splash-root-grows-in-frame.md`](../decisions/general-splash-root-grows-in-frame.md)). With `showFold`, draw the dashed amber line at 600px from the top of the scrolled content (inside the scroll container, so it moves with the page) with the "Small-phone fold" chip (canvas `Main`).
+- **`frames/BrowserFrame.tsx`:** `BrowserFrame({ children, title })`. A 1280×800 page (vertically scrollable, `overflow-y: auto`, for designs taller than 800px) scaled to the stage width with `transform: scale(s)`, where `s = min(1, width / 1280)` from a `ResizeObserver`. The outer box reserves `800 * s` height. Add a simple browser bar (three dots and "Sign in to {title || "Guest WiFi"}").
 - **`ScreenSwitcher.tsx`:** `ScreenSwitcher()` reads the store and renders a `Segmented` labelled "Preview screen". Options: Landing, and Terms only when `terms.mode === "checkbox"`. It shows the current `screen` and calls `setScreen`.
 - **`checks/ReadabilityCheck.tsx`** (stub → T-027): `export function ReadabilityCheck({ design }: { design: Design }) { return null; }`.
 - **`checks/useFitCheck.tsx`** (stub → T-028): `export function useFitCheck(design: Design): { tooTall: boolean; height: number | null; probe: ReactNode } { return { tooTall: false, height: null, probe: null }; }`.
@@ -45,6 +45,7 @@ Build step 2 (PhoneFrame, BrowserFrame, live preview) and step 3's click-to-sele
 ## Acceptance criteria
 - [ ] The preview updates on every store change, in both Mobile and Desktop.
 - [ ] Clicking a block in the preview selects it (outline, name chip, inspector panel). Clicking the page background selects Background.
+- [ ] A design taller than the frame scrolls inside it, with the background behind all of it, in both Mobile and Desktop.
 - [ ] Desktop shows the background filling the 1280-wide page with the content column at 420px, scaled to fit the stage without horizontal scroll.
 - [ ] The switcher shows Landing and Terms (Terms hidden when terms are off) and changes `screen`.
 - [ ] The save-failure and restore-failure notices appear when their flags are set (check by setting the flags in the store).
@@ -61,6 +62,7 @@ Build step 2 (PhoneFrame, BrowserFrame, live preview) and step 3's click-to-sele
 - `useFitCheck` is a `.tsx` file because T-028's probe renders JSX.
 
 ## Decisions
+- [`general-splash-root-grows-in-frame.md`](../decisions/general-splash-root-grows-in-frame.md): In the editor frames the splash root grows with its content, and the frame scrolls
 - [`T-008-editor-shell-creates-slots.md`](../decisions/T-008-editor-shell-creates-slots.md): The editor shell owns Inspector.tsx and TopBar.tsx and creates every later editor component as a stub
 - [`T-009-landing-terms-switcher-in-step-2.md`](../decisions/T-009-landing-terms-switcher-in-step-2.md): PreviewStage ships a Landing/Terms switcher; Error and Connected are added by the cuttable guest-screens ticket
 - [`general-new-modules-beyond-project-structure.md`](../decisions/general-new-modules-beyond-project-structure.md): Planning adds small modules to the spec's project structure so each ticket owns its own files

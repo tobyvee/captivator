@@ -17,7 +17,7 @@ tags: [project, captivator, ticket, export, security]
 # T-023: Export HTML builder
 
 ## Context
-Build step 7 ([spec → Export HTML](../spec/Captivator%20MVP%20%E2%80%94%20Tech%20Spec.md), *Images and Unsplash → Export re-encode*, *Unit tests* → export). Export is P0 and never cut. It turns the current `Design` into one standalone HTML file with no JavaScript and no network requests, which guests could load on open Wi-Fi, so it's a trust boundary. Decisions: [`general-export-form-action.md`](../decisions/general-export-form-action.md), [`general-export-inlines-all-images.md`](../decisions/general-export-inlines-all-images.md), [`general-export-background-reencode.md`](../decisions/general-export-background-reencode.md), [`general-root-min-height-in-export-style.md`](../decisions/general-root-min-height-in-export-style.md), [`general-splashpage-render-mode.md`](../decisions/general-splashpage-render-mode.md), [`general-minimum-ios-version.md`](../decisions/general-minimum-ios-version.md).
+Build step 7 ([spec → Export HTML](../spec/Captivator%20MVP%20%E2%80%94%20Tech%20Spec.md), *Images and Unsplash → Export re-encode*, *Unit tests* → export). Export is P0 and never cut. It turns the current `Design` into one standalone HTML file with no JavaScript and no network requests, which guests could load on open Wi-Fi, so it's a trust boundary. Decisions: [`general-export-form-action.md`](../decisions/general-export-form-action.md), [`general-export-inlines-all-images.md`](../decisions/general-export-inlines-all-images.md), [`general-export-background-reencode.md`](../decisions/general-export-background-reencode.md), [`general-splash-root-grows-in-frame.md`](../decisions/general-splash-root-grows-in-frame.md), [`general-splashpage-render-mode.md`](../decisions/general-splashpage-render-mode.md), [`general-minimum-ios-version.md`](../decisions/general-minimum-ios-version.md).
 
 ## Scope
 `src/lib/export.ts` (API in Notes):
@@ -90,5 +90,5 @@ export function downloadHtml(html: string, name: string): void;
 - [`general-export-form-action.md`](../decisions/general-export-form-action.md): An export with guest fields posts to a portal-service placeholder, not the router
 - [`general-export-inlines-all-images.md`](../decisions/general-export-inlines-all-images.md): Export inlines every image that isn't already a data URL
 - [`general-minimum-ios-version.md`](../decisions/general-minimum-ios-version.md): The guest page targets iOS 15.4 and newer
-- [`general-root-min-height-in-export-style.md`](../decisions/general-root-min-height-in-export-style.md): The root min-height pair lives in the export style block
+- [`general-splash-root-grows-in-frame.md`](../decisions/general-splash-root-grows-in-frame.md): In the editor frames the splash root grows with its content, and the frame scrolls (supersedes `general-root-min-height-in-export-style.md`)
 - [`general-splashpage-render-mode.md`](../decisions/general-splashpage-render-mode.md): SplashPage takes a render mode of edit, preview or export

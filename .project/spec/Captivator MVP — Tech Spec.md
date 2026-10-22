@@ -186,7 +186,7 @@ The editor is three columns (block list 280px, preview stage, inspector 320px) u
 - **Column:** `display: flex; flex-direction: column; align-items: center; gap: 18px; max-width: 420px; margin: 0 auto; padding: 56px 28px 40px; text-align: center`.
 - **Order:** content blocks in array order, then a `flex: 1` spacer, then the form. With `compact` (used by the fit check) the spacer is omitted.
 - **No absolute positioning or fixed heights for content.**
-- **Inside the editor frames,** the root uses `height: 100%` when `inFrame` is set, so it fills the phone or browser frame rather than the window.
+- **Inside the editor frames,** the root uses `min-height: 100%` when `inFrame` is set, so it fills the phone or browser frame rather than the window and grows with its content; the frame scrolls (`general-splash-root-grows-in-frame.md`).
 
 **Background (`Background.tsx`):**
 

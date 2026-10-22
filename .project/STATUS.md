@@ -18,7 +18,6 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is bein
 ## Outstanding
 
 - [ ] Cloudflare setup (user): an API token from the "Edit Cloudflare Workers" template, plus `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as GitHub Actions secrets, then re-run the Deploy workflow for T-001's push
-- [ ] T-005: SplashPage skeleton with text and image blocks
 - [ ] T-011: Image upload pipeline and ImageUpload control
 - [ ] T-003: Contrast helpers
 
@@ -62,3 +61,4 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is bein
 - [x] Build planned and prioritised: 35 tickets in 11 waves (2026-10-22)
 - [x] T-001: Scaffold the Next.js app on vinext, with dependencies, Vitest, the deploy workflow and schema tests (2026-10-22)
 - [x] T-002: Blank and Sponsor templates (2026-10-22)
+- [x] T-005: SplashPage skeleton with text and image blocks (2026-10-22)

@@ -39,6 +39,7 @@ Build step 6, "Error and Connected" plus the rest of the screen switcher ([spec 
   - A column in the T-005 layout: the logo (first image block) at the top; a spacer; a 72px tick badge (circle in the first heading's colour, or `bestTextColour(bg)`; the tick uses the background's main colour, the same rule as the Terms sheet: `colour`, gradient `from` or photo `backdrop`); h1 "You're online" (`role="status"`, 40px/800, same colour); a spacer.
   - If there's a second image block (the sponsor): "Thanks to our sponsor" and that image.
   - A CONTINUE button styled like Connect → `onContinue` (edit/preview).
+  - In edit and preview, the column wrapper has `pointerEvents: "none"` and CONTINUE has `pointerEvents: "auto"`, so a click on empty space reaches the root and selects the background ([`T-022-connected-clicks-fall-through.md`](../decisions/T-022-connected-clicks-fall-through.md)); test it.
 - **`ScreenSwitcher.tsx`** (extend T-009): add "Error" (only when `canFail(form)`) and "Connected".
 - **Out of scope:** the terms sheet (T-021); export markup (T-007/T-023; this ticket must not change export output).
 
@@ -61,6 +62,7 @@ Build step 6, "Error and Connected" plus the rest of the screen switcher ([spec 
 - The canvas's "Enjoy the event." line isn't generated from the design, so leave it out.
 
 ## Decisions
+- [`T-022-connected-clicks-fall-through.md`](../decisions/T-022-connected-clicks-fall-through.md): The Connected screen's column lets clicks on empty space fall through to the root
 - [`T-005-splashpage-skeleton-creates-stubs.md`](../decisions/T-005-splashpage-skeleton-creates-stubs.md): The SplashPage skeleton owns composition and creates every child component as a stub
 - [`T-007-form-renders-terms-row-in-step-2.md`](../decisions/T-007-form-renders-terms-row-in-step-2.md): The Form renders the terms row from build step 2; the error state comes with the guest screens
 - [`T-009-landing-terms-switcher-in-step-2.md`](../decisions/T-009-landing-terms-switcher-in-step-2.md): PreviewStage ships a Landing/Terms switcher; Error and Connected are added by the cuttable guest-screens ticket
