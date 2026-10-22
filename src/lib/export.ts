@@ -135,22 +135,35 @@ const FORM_COMMENT: Record<FormAction, string> = {
   "[ROUTER_FORM_ACTION]": ROUTER_COMMENT,
 };
 
-// The only URL-bearing attribute values the export may carry; srcset, formaction, poster, ping,
-// background and data none. Namespaced forms such as xlink:href are checked by their local name.
-const safeAttr = (action: string): Record<string, (value: string) => boolean> => ({
-  src: isRasterDataUrl,
-  href: (v) => v.startsWith("#"),
-  action: (v) => v === action,
-});
-const URL_ATTRS = new Set(["src", "srcset", "href", "action", "formaction", "poster", "ping", "background", "data"]);
-
-// Elements that load, redirect or carry their own CSS. The wrapper adds the page's only <style>.
-const UNSAFE_TAGS = new Set([
-  "link", "script", "style", "iframe", "object", "embed", "base", "meta", "image", "use", "feimage",
+// The export guard is an allowlist (T-023-export-guard-allowlist): only the elements and
+// attributes SplashPage renders in export mode. A renderer change that adds one fails the export
+// until it's added here, with a decision.
+const ALLOWED_TAGS = new Set([
+  "a", "button", "div", "form", "h1", "h2", "img", "input", "label", "p", "path", "section", "span", "svg",
+]);
+const ALLOWED_ATTRS = new Set([
+  "action", "alt", "aria-hidden", "aria-label", "aria-labelledby", "aria-modal", "autocomplete", "class", "d",
+  "fill", "height", "href", "id", "inputmode", "method", "name", "placeholder", "required", "role", "src",
+  "stroke", "stroke-linecap", "stroke-width", "style", "tabindex", "type", "value", "viewbox", "width",
 ]);
 
 // CSS that can load something. A backslash covers CSS escapes; hex colours never contain one.
 const UNSAFE_CSS = /url\(|image-set\(|@import|\\/i;
+
+// SVG paint can reference a URL too, so it's limited to the forms the icons use.
+const PAINT = /^(none|currentcolor|#[0-9a-f]{3,8})$/i;
+
+/** Rules for the allowed attributes whose value could load, link or post somewhere. */
+const valueRules = (action: FormAction): Record<string, (value: string) => boolean> => ({
+  src: isRasterDataUrl,
+  href: (v) => v.startsWith("#"),
+  action: (v) => v === action,
+  // The router's login command never rides along with guest details.
+  name: (v) => action === "[ROUTER_FORM_ACTION]" || v.toLowerCase() !== "command",
+  style: (v) => !UNSAFE_CSS.test(v),
+  fill: (v) => PAINT.test(v),
+  stroke: (v) => PAINT.test(v),
+});
 
 // A start or end tag exactly as React writes it: ` name="value"` attributes, double-quoted, with
 // only React's five escapes in the value. Anything else (single-quoted or unquoted values, other
@@ -183,22 +196,17 @@ function parseTags(markup: string): Tag[] {
 
 /**
  * The last line of defence, run on the rendered body before the fixed form comment and wrapper
- * are added: every tag written the way React writes it, no element that loads or redirects,
+ * are added: every tag written the way React writes it, only allowed elements and attributes,
  * every src a raster data URL, every href an in-page fragment, every form action `action` (and
- * no command input when that's the portal service) and no inline style that can fetch. Text
- * content isn't checked, so terms that mention a web address still export as inert text.
+ * no command input when that's the portal service), and no inline style or SVG paint that can
+ * fetch. Text content isn't checked, so terms that mention a web address export as inert text.
  */
-function assertSelfContained(markup: string, action: string): void {
-  const safe = safeAttr(action);
+function assertSelfContained(markup: string, action: FormAction): void {
+  const rules = valueRules(action);
   for (const { name, attrs } of parseTags(markup)) {
-    if (UNSAFE_TAGS.has(name)) throw new ExportError(MSG_UNSAFE_OUTPUT);
+    if (!ALLOWED_TAGS.has(name)) throw new ExportError(MSG_UNSAFE_OUTPUT);
     for (const [attr, value] of attrs) {
-      const local = attr.slice(attr.lastIndexOf(":") + 1);
-      const unsafe =
-        (URL_ATTRS.has(local) && !safe[local]?.(value)) ||
-        (attr === "style" && UNSAFE_CSS.test(value)) ||
-        (attr === "name" && action === "[PORTAL_SUBMIT_URL]" && value.toLowerCase() === "command");
-      if (unsafe) throw new ExportError(MSG_UNSAFE_OUTPUT);
+      if (!ALLOWED_ATTRS.has(attr) || rules[attr]?.(value) === false) throw new ExportError(MSG_UNSAFE_OUTPUT);
     }
   }
 }

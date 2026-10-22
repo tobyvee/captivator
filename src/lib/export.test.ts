@@ -14,7 +14,7 @@ import {
   PAGE_BUDGET,
   type ExportDeps,
 } from "./export";
-import { BLANK, SPONSOR } from "./templates";
+import { BLANK, SPONSOR, TEMPLATES } from "./templates";
 
 const WEBP = "data:image/webp;base64,";
 
@@ -230,6 +230,75 @@ describe("buildExportHtml: final check", () => {
   it("refuses a ping attribute, even on an in-page link", async () => {
     const a = createElement("a", { href: "#x", ping: "https://example.com" }, "x");
     await expect(buildWith(a)).rejects.toThrow(MSG_UNSAFE_OUTPUT);
+  });
+
+  const svg = (...children: ReturnType<typeof createElement>[]) =>
+    createElement("svg", { width: 18, height: 18, viewBox: "0 0 24 24" }, ...children);
+  const CSS_URL = "url(https://example.com/x.svg#a)";
+
+  it("refuses CSS url() references in SVG paint and reference attributes", async () => {
+    for (const prop of ["fill", "mask", "clipPath", "cursor", "filter", "markerStart", "markerMid", "markerEnd"]) {
+      await expect(buildWith(svg(createElement("rect", { width: 10, height: 10, [prop]: CSS_URL })))).rejects.toThrow(
+        MSG_UNSAFE_OUTPUT,
+      );
+    }
+  });
+
+  it("allows only none, currentColor or a hex colour in fill and stroke, even on allowed elements", async () => {
+    for (const prop of ["fill", "stroke"]) {
+      await expect(buildWith(svg(createElement("path", { d: "M0 0", [prop]: CSS_URL })))).rejects.toThrow(
+        MSG_UNSAFE_OUTPUT,
+      );
+    }
+    const { html } = await buildWith(svg(createElement("path", { d: "M0 0", fill: "#C6F432", stroke: "currentColor" })));
+    expect(html).toContain('fill="#C6F432"');
+  });
+
+  it("refuses SVG animation elements that could set a link or a load", async () => {
+    const set = createElement("set", { attributeName: "href", to: "https://example.com" });
+    await expect(buildWith(svg(createElement("a", { href: "#x" }, set)))).rejects.toThrow(MSG_UNSAFE_OUTPUT);
+    for (const tag of ["animate", "animateTransform", "animateMotion"]) {
+      const anim = createElement(tag, { attributeName: "href", values: "https://example.com" });
+      await expect(buildWith(svg(createElement("a", { href: "#x" }, anim)))).rejects.toThrow(MSG_UNSAFE_OUTPUT);
+    }
+  });
+
+  it("refuses an element the splash page doesn't render", async () => {
+    const video = createElement("video", { src: `${WEBP}AA` });
+    await expect(buildWith(video)).rejects.toThrow(MSG_UNSAFE_OUTPUT);
+    await expect(buildWith(raw("<VIDEO></VIDEO>"))).rejects.toThrow(MSG_UNSAFE_OUTPUT);
+  });
+
+  it("refuses an attribute the splash page doesn't render, including ping, formaction and srcset", async () => {
+    const unknown = [
+      createElement("form", { action: "[ROUTER_FORM_ACTION]", target: "_blank" }),
+      createElement("a", { href: "#x", ping: "https://example.com" }, "x"),
+      createElement("button", { type: "submit", formAction: "https://example.com" }, "x"),
+      createElement("img", { src: `${WEBP}AA`, srcSet: "https://example.com/x.png 2x", alt: "" }),
+    ];
+    for (const element of unknown) await expect(buildWith(element)).rejects.toThrow(MSG_UNSAFE_OUTPUT);
+  });
+
+  it("passes every template and every form, background and block variant the splash page renders", async () => {
+    const designs: Design[] = TEMPLATES.map((t) => clone(t.design));
+    const credited = unsplashDesign(); // photo background with a credit, terms on, image blocks
+    credited.form.terms.mode = "checkbox";
+    const clickThrough = withForm([], false);
+    clickThrough.background = { type: "gradient", from: "#000000", to: "#FFFFFF", direction: "diagonal" };
+    clickThrough.form.button.variant = "outline";
+    const blocks = withForm(["phone"]);
+    blocks.blocks = [
+      { id: "h1", kind: "text", text: "Hi", role: "heading", colour: "#111111", size: 30 },
+      { id: "h2", kind: "text", text: "There", role: "heading", colour: "#111111", size: 24 },
+      { id: "s", kind: "text", text: "Sub", role: "subheading", colour: "#111111", size: 16 },
+      { id: "b", kind: "text", text: "Body", role: "body", colour: "#111111", size: 14 },
+      { id: "i1", kind: "image", src: `${WEBP}SU1H`, alt: "One", size: "sm" },
+      { id: "i2", kind: "image", src: "/templates/sponsor.jpg", alt: "Two", size: "lg" },
+    ];
+    for (const design of [...designs, credited, clickThrough, blocks]) {
+      const { html } = await build(design);
+      expect(html).toContain("</form>");
+    }
   });
 
   it("passes the real photo-background exports: gradients, 8-digit hex tints and the close icon", async () => {
