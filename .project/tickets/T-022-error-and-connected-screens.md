@@ -58,6 +58,7 @@ Build step 6, "Error and Connected" plus the rest of the screen switcher ([spec 
 - T-009: `ScreenSwitcher.tsx`, which this ticket extends. `Connected.tsx`'s stub comes from T-005, via T-007.
 
 ## Notes
+- **From T-020:** `TERMS_TEXT` (`{ size: 14, weight: 400 }`) is exported from `src/lib/readability.ts`; `Form.tsx`'s terms row could use it so the editor's checks and the guest row can't drift ([`T-020-panels-share-rate-text.md`](../decisions/T-020-panels-share-rate-text.md)). Optional.
 - **Export guard:** `src/lib/export.ts` checks exported markup against an allowlist of elements, attributes and values ([`T-023-export-guard-allowlist.md`](../decisions/T-023-export-guard-allowlist.md)). `id` is already allowed, so the terms-link id needs no change. If the export markup gains any other element or attribute, the export fails until the allowlist is extended with a decision. Run the export tests.
 - The canvas's error copy ("Enter a full email address", "Please accept the terms to connect") differs from the spec; use the spec's (decision).
 - The canvas's "Enjoy the event." line isn't generated from the design, so leave it out.
