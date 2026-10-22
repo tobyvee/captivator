@@ -2,10 +2,10 @@
 
 import { Check, TriangleAlert } from "lucide-react";
 import { useId } from "react";
-import { useShallow } from "zustand/react/shallow";
 import { backgroundColours, formatRatio, requiredRatio, worstRatio } from "@/lib/contrast";
 import { useStore } from "@/lib/store";
 import type { TextBlockSpec } from "@/lib/types";
+import { WEIGHT } from "@/splash/blocks/TextBlock";
 import { ColourField } from "../controls/ColourField";
 import { Segmented, type SegmentedOption } from "../controls/Segmented";
 import { Slider } from "../controls/Slider";
@@ -23,8 +23,6 @@ const STYLES: SegmentedOption<Role>[] = [
 ];
 
 const PRESET_SIZE: Record<Role, number> = { heading: 40, subheading: 20, body: 16 };
-// The renderer's weights (spec → Blocks), which decide whether the text counts as large.
-const WEIGHT: Record<Role, number> = { heading: 800, subheading: 500, body: 400 };
 
 type Readability =
   | { kind: "photo" }
@@ -43,30 +41,34 @@ function readability(block: TextBlockSpec, bgs: string[] | null): Readability {
     : { kind: "fail", ratio: formatRatio(ratio), required };
 }
 
+// The canvas's green "Easy to read" box, and the amber notice style (T-009-notices-share-amber-style).
+const TONE = {
+  pass: { box: "border-[#BBF7D0] bg-[#F0FDF4]", icon: "text-[#166534]", title: "text-[#14532D]", detail: "text-[#166534]" },
+  warn: { box: "border-[#FDE68A] bg-[#FFFBEB]", icon: "text-[#92400E]", title: "text-[#78350F]", detail: "text-[#92400E]" },
+};
+
 function ContrastLine({ block }: { block: TextBlockSpec }) {
-  // A shallow-compared list of colours, so edits elsewhere in the design don't re-render the line.
-  const bgs = useStore(
-    useShallow((s) => (s.design.background.type === "image" ? null : backgroundColours(s.design.background))),
-  );
-  const result = readability(block, bgs);
+  const background = useStore((s) => s.design.background);
+  const result = readability(block, background.type === "image" ? null : backgroundColours(background));
   const pass = result.kind === "pass";
+  const tone = TONE[pass ? "pass" : "warn"];
   const Icon = pass ? Check : TriangleAlert;
 
   return (
     <div
       className={[
         "flex gap-2.5 rounded-lg border p-3",
-        pass ? "border-[#BBF7D0] bg-[#F0FDF4]" : "border-[#FDE68A] bg-[#FFFBEB]",
+        tone.box,
       ].join(" ")}
     >
-      <Icon size={18} aria-hidden="true" className={`shrink-0 ${pass ? "text-[#166534]" : "text-[#92400E]"}`} />
+      <Icon size={18} aria-hidden="true" className={`shrink-0 ${tone.icon}`} />
       <div className="flex flex-col gap-0.5">
         {/* Only the verdict is live, so it's announced when it flips, not on every drag step. */}
-        <span role="status" className={`text-[13px] font-semibold ${pass ? "text-[#14532D]" : "text-[#78350F]"}`}>
+        <span role="status" className={`text-[13px] font-semibold ${tone.title}`}>
           {result.kind === "photo" ? "Check readability over your photo" : pass ? "Easy to read" : "Hard to read"}
         </span>
         {result.kind !== "photo" && (
-          <span className={`text-xs leading-[1.45] ${pass ? "text-[#166534]" : "text-[#92400E]"}`}>
+          <span className={`text-xs leading-[1.45] ${tone.detail}`}>
             {result.kind === "pass"
               ? `${result.ratio} against the background.${result.gradient ? " Checked at both ends of the gradient." : ""}`
               : `${result.ratio}, needs ${result.required}:1.`}
