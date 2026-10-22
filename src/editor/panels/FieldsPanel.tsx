@@ -7,7 +7,7 @@ import type { FieldKindSpec } from "@/lib/types";
 import { ColourField } from "../controls/ColourField";
 
 const MAX_FIELDS = 2;
-const FOCUS_RING = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563EB]";
+const FOCUS_RING = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600";
 
 /** Name / Email / Phone checkboxes (up to two, in tick order) and the input colours. */
 export function FieldsPanel() {

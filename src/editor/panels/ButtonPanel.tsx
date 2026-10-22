@@ -1,10 +1,11 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId } from "react";
 import { useStore } from "@/lib/store";
 import type { FormSpec } from "@/lib/types";
 import { ColourField } from "../controls/ColourField";
 import { Segmented, type SegmentedOption } from "../controls/Segmented";
+import { useRequiredDraft } from "../controls/useRequiredDraft";
 
 const MAX_LABEL = 24;
 
@@ -19,22 +20,18 @@ export function ButtonPanel() {
   const updateForm = useStore((s) => s.updateForm);
   const labelId = useId();
 
-  // The store refuses an empty label (T-004-store-rejects-invalid-designs), so the input keeps a
-  // local draft. It follows the stored label when that changes from outside, e.g. undo.
-  const [draft, setDraft] = useState(button.label);
-  const [syncedLabel, setSyncedLabel] = useState(button.label);
-  if (button.label !== syncedLabel) {
-    setSyncedLabel(button.label);
-    setDraft(button.label);
-  }
-
-  const labelMissing = draft.trim() === "";
+  // The store refuses an empty label, so the input edits a draft that follows outside changes.
+  const {
+    draft,
+    missing: labelMissing,
+    onChange: onLabelChange,
+  } = useRequiredDraft(button.label, (label) => updateForm({ button: { label } }));
   const describedBy = `${labelId}-count${labelMissing ? ` ${labelId}-error` : ""}`;
 
   return (
     <div className="flex flex-col gap-[18px]">
       <div className="flex flex-col gap-1.5">
-        <label htmlFor={labelId} className="text-[13px] font-semibold text-zinc-900">
+        <label htmlFor={labelId} className="text-[13px] font-semibold">
           Label
         </label>
         <input
@@ -45,11 +42,7 @@ export function ButtonPanel() {
           required
           aria-invalid={labelMissing || undefined}
           aria-describedby={describedBy}
-          onChange={(e) => {
-            const label = e.currentTarget.value;
-            setDraft(label);
-            if (label.trim() !== "") updateForm({ button: { label } });
-          }}
+          onChange={(e) => onLabelChange(e.currentTarget.value)}
           className={[
             "min-h-11 w-full rounded-lg border px-2.5 text-[15px] text-zinc-900",
             "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600",
@@ -69,7 +62,7 @@ export function ButtonPanel() {
       <ColourField label="Text colour" value={button.fg} onChange={(fg) => updateForm({ button: { fg } })} />
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-[13px] font-semibold text-zinc-900" aria-hidden="true">
+        <span className="text-[13px] font-semibold" aria-hidden="true">
           Style
         </span>
         <Segmented

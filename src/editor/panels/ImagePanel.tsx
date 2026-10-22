@@ -1,10 +1,11 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId } from "react";
 import { useStore } from "@/lib/store";
 import type { ImageBlockSpec } from "@/lib/types";
 import { ImageUpload } from "../controls/ImageUpload";
 import { Segmented, type SegmentedOption } from "../controls/Segmented";
+import { useRequiredDraft } from "../controls/useRequiredDraft";
 
 const SIZES: SegmentedOption<ImageBlockSpec["size"]>[] = [
   { value: "sm", label: "Small" },
@@ -22,20 +23,14 @@ export function ImagePanel({ id }: { id: string }) {
   const updateBlock = useStore((s) => s.updateBlock);
   const setLogoPalette = useStore((s) => s.setLogoPalette);
   const altId = useId();
-  const storedAlt = block?.alt ?? "";
-
-  // The store refuses an empty alt (T-004-store-rejects-invalid-designs), so the input keeps a
-  // local draft. It follows the stored alt when that changes from outside, e.g. undo.
-  const [draft, setDraft] = useState(storedAlt);
-  const [syncedAlt, setSyncedAlt] = useState(storedAlt);
-  if (storedAlt !== syncedAlt) {
-    setSyncedAlt(storedAlt);
-    setDraft(storedAlt);
-  }
+  // The store refuses an empty alt, so the input edits a draft that follows outside changes.
+  const {
+    draft,
+    missing: altMissing,
+    onChange: onAltChange,
+  } = useRequiredDraft(block?.alt ?? "", (alt) => updateBlock(id, { alt }));
 
   if (!block) return null;
-
-  const altMissing = draft.trim() === "";
 
   return (
     <div className="flex flex-col gap-[18px]">
@@ -63,11 +58,7 @@ export function ImagePanel({ id }: { id: string }) {
           required
           aria-invalid={altMissing || undefined}
           aria-describedby={altMissing ? `${altId}-hint ${altId}-error` : `${altId}-hint`}
-          onChange={(e) => {
-            const alt = e.currentTarget.value;
-            setDraft(alt);
-            if (alt.trim() !== "") updateBlock(id, { alt });
-          }}
+          onChange={(e) => onAltChange(e.currentTarget.value)}
           className={[
             "min-h-11 w-full rounded-lg border px-2.5 text-[15px] text-zinc-900",
             "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600",

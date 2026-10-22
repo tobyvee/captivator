@@ -3,6 +3,7 @@ import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { useStore } from "@/lib/store";
+import type { FieldKindSpec } from "@/lib/types";
 import { SplashPage } from "@/splash/SplashPage";
 import { FieldsPanel } from "./FieldsPanel";
 
@@ -17,7 +18,7 @@ beforeEach(() => {
 
 const form = () => useStore.getState().design.form;
 const box = (name: string) => screen.getByRole("checkbox", { name });
-const setFields = (fields: ("name" | "email" | "phone")[]) =>
+const setFields = (fields: FieldKindSpec[]) =>
   act(() => {
     useStore.getState().updateForm({ fields });
   });

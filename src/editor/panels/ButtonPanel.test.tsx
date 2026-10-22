@@ -110,10 +110,27 @@ describe("ButtonPanel", () => {
   it("reaches every control by keyboard, in order", async () => {
     render(<ButtonPanel />);
     const user = userEvent.setup();
-    await user.tab();
-    expect(labelInput()).toHaveFocus();
-    await user.tab(); // Button colour swatch
-    await user.tab(); // its hex input
-    expect(screen.getByRole("textbox", { name: "Button colour" })).toHaveFocus();
+    const expectNext = async (control: HTMLElement) => {
+      await user.tab();
+      expect(control).toHaveFocus();
+    };
+
+    await expectNext(labelInput());
+    // Each ColourField: swatch, hex input, then its "In this design" suggestions.
+    const swatches = screen.getAllByRole("button", { name: "Open colour picker" });
+    const suggestionRows = screen.getAllByRole("group", { name: "In this design" });
+    expect(swatches).toHaveLength(2);
+    for (const [i, label] of (["Button colour", "Text colour"] as const).entries()) {
+      await expectNext(swatches[i]);
+      await expectNext(screen.getByRole("textbox", { name: label }));
+      const suggestions = within(suggestionRows[i]).getAllByRole("button");
+      expect(suggestions.length).toBeGreaterThan(0);
+      for (const suggestion of suggestions) await expectNext(suggestion);
+    }
+    await expectNext(within(styleGroup()).getByRole("button", { name: "Solid" }));
+    await expectNext(within(styleGroup()).getByRole("button", { name: "Outline" }));
+
+    await user.tab(); // past the last control
+    expect(document.body).toHaveFocus();
   });
 });
