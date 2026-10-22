@@ -56,6 +56,7 @@ Also `downloadHtml(html, name)`: a `Blob` (`text/html`), `URL.createObjectURL`, 
 - T-021: the export-mode `<section id="terms" class="cv-terms">`.
 
 ## Notes
+- **From the wave 3 audit:** the design `name` (any string up to 60 characters) is HTML-escaped in `<title>`, and if the download filename uses it, it is reduced to safe filename characters with a fallback such as `splash.html`.
 ```ts
 export const PAGE_BUDGET = 100 * 1024;
 export type ExportDeps = {

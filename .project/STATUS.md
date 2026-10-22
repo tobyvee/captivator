@@ -11,20 +11,19 @@ tags: [project, captivator, status]
 
 ## Summary
 
-Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is being built. The PRD, tech spec and editor canvas are done. The build is split into 35 tickets in 11 parallel-safe waves (`tickets/INDEX.md`), with nothing cut and the stretch work scheduled. The app deploys to Cloudflare Workers with vinext, because Vercel couldn't be used, and each ticket is pushed as it lands. Waves 1 and 2 are done: the scaffold (`T-001`), the Blank and Sponsor templates (`T-002`), the `SplashPage` skeleton (`T-005`), the image upload pipeline (`T-011`) and the contrast helpers (`T-003`). Each is reviewed and security-audited, and 137 tests pass. The deploy workflow builds and tests every push, but can't deploy until the user adds the Cloudflare secrets. The next step is wave 3: `T-004`, `T-007`, `T-006` and `T-021`.
+Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is being built. The PRD, tech spec and editor canvas are done. The build is split into 35 tickets in 11 parallel-safe waves (`tickets/INDEX.md`), with nothing cut and the stretch work scheduled. The app deploys to Cloudflare Workers with vinext at https://app.captivator.workers.dev, and each ticket is pushed and deployed as it lands. Waves 1 to 3 are done. Milestone 1 (scaffold, schema and store) is closed. The guest page renderer is in place: `SplashPage` with the background and photo credit (`T-006`), the form (`T-007`) and the terms sheet (`T-021`), on top of the persisted store (`T-004`), templates, image pipeline and contrast helpers. Each ticket is reviewed, splash-audited where it touches the guest page, and security-audited, and the wave 3 audit found nothing. 307 tests pass. The next step is wave 4: `T-008`, `T-010`, `T-023` and `T-018`.
 
 ## In progress
 
 ## Outstanding
 
-- [ ] Cloudflare setup (user): an API token from the "Edit Cloudflare Workers" template, plus `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as GitHub Actions secrets, then re-run the latest Deploy run (`gh run rerun` on the newest run in `gh run list --workflow deploy.yml`)
-
-## Planned
-
 - [ ] T-008: Editor shell, top bar, inspector router and component slots
 - [ ] T-010: ColourField and Slider controls
 - [ ] T-023: Export HTML builder
 - [ ] T-018: Photo hero and Minimal templates
+
+## Planned
+
 - [ ] T-009: Preview stage with phone and browser frames
 - [ ] T-016: Background panel: colour, gradient and photo upload
 - [ ] T-012: Block list with three zones, add, reorder and the Terms switch
@@ -62,3 +61,5 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is bein
 - [x] T-007: Form renderer: fields, terms row, Connect and render modes (2026-10-23)
 - [x] T-006: Background renderer: colour, gradient and photo (2026-10-23)
 - [x] T-021: Terms sheet for the preview and the no-JS export (2026-10-23)
+- [x] Cloudflare setup: API token and account ID secrets added; pushes deploy to app.captivator.workers.dev (2026-10-23)
+- [x] Wave 3 closed; wave-wide security audit found nothing (2026-10-23)
