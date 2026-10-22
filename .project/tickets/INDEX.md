@@ -150,7 +150,7 @@ None. Every dependency exists, there are no cycles, every `todo` ticket has `tou
 | 8 | [T-026](T-026-logo-palette.md) | Logo palette extraction | P1 | 8 | 10 | T-011 | done |
 | 8 | [T-028](T-028-fit-check.md) | Small-phone fit check | P1 | 8 | 10 | T-005, T-009 | done |
 | 8 | [T-031](T-031-unsplash-api-route.md) | Unsplash search and download-ping API route | P2 | 8 | 25 | T-001 | done |
-| 9 | [T-033](T-033-focus-point-drag.md) | Focus-point drag dot | P2 | 4 | 10 | T-017 | todo |
+| 9 | [T-033](T-033-focus-point-drag.md) | Focus-point drag dot | P2 | 4 | 10 | T-017 | done |
 | 9 | [T-035](T-035-one-tap-contrast-fix.md) | One-tap contrast Fix | P2 | 8 | 10 | T-027 | todo |
 | 9 | [T-032](T-032-unsplash-search-ui.md) | Unsplash search in the Photo tab | P2 | 8 | 15 | T-016, T-031 | todo |
 | 9 | [T-034](T-034-dnd-kit-reorder.md) | Drag to reorder blocks with dnd-kit | P2 | 8 | 15 | T-012 | todo |

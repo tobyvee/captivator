@@ -58,6 +58,7 @@ These are the last non-cuttable tickets on each path, so every feature the check
 Cuttable tickets (T-022, T-026, T-028 and the stretch tickets) are deliberately not dependencies; check them if they shipped.
 
 ## Notes
+- **From T-033:** drag the focus dot on a real phone and with a mouse, including from its edge and at the box's corners; check the arrow keys move it and a screen reader announces the position.
 - **From T-028:** on Sponsor, check there's no fold line or "Too tall for small phones" out of the box, that one extra text block shows both, that five more show both and removing them clears it ([`T-028-manual-fit-check-in-t029.md`](../decisions/T-028-manual-fit-check-in-t029.md), [`T-028-sponsor-one-pixel-inside-fold.md`](../decisions/T-028-sponsor-one-pixel-inside-fold.md)).
 - **From T-026:** upload a multi-colour logo and check 3–4 distinct swatches appear under "From your logo" in the colour pickers ([`T-026-manual-palette-check-in-t029.md`](../decisions/T-026-manual-palette-check-in-t029.md)).
 - **From T-022:** check the four-screen switcher by eye, and the editor's Connect flow (empty inputs show Error; valid inputs with terms ticked show Connected; CONTINUE returns to Landing) in a real browser, where `pointer-events` decides what a click hits.
