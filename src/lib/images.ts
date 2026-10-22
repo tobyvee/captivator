@@ -18,7 +18,7 @@ export const MSG_UNREADABLE = "We couldn't read that image.";
 type SniffedType = "png" | "jpeg" | "webp" | "svg";
 
 const SNIFF_BYTES = 32;
-/** An SVG with no intrinsic size is drawn at this size. */
+/** An SVG with no intrinsic size is drawn at this size, whatever the kind's cap. */
 const SVG_FALLBACK_SIZE = 600;
 const WEBP_QUALITY = 0.8;
 const JPEG_QUALITY = 0.82;
@@ -71,22 +71,14 @@ export async function inlineFromUrl(src: string, kind: ImageKind): Promise<strin
 
 /** Re-encodes a stored image as WebP (JPEG where WebP can't be encoded) at the given size and quality. */
 export async function encodeAt(src: string, longEdge: number, quality: number): Promise<string> {
-  const blob = await fetchBlob(src);
-  const type = sniffImageType(new Uint8Array(await blob.slice(0, SNIFF_BYTES).arrayBuffer()));
-  if (!type || type === "svg") throw new UploadError(MSG_UNREADABLE);
-  const source = await decode(blob, type);
-  try {
+  return withDecoded(await fetchBlob(src), { allowSvg: false }, async (source) => {
     const canvas = drawScaled(source, longEdge);
     const out =
       (await encodeIfType(canvas, "image/webp", quality)) ??
       (await encodeIfType(canvas, "image/jpeg", quality));
     if (!out) throw new UploadError(MSG_UNREADABLE);
-    return await toRasterDataUrl(out);
-  } catch (err) {
-    throw err instanceof UploadError ? err : new UploadError(MSG_UNREADABLE);
-  } finally {
-    source.close();
-  }
+    return toRasterDataUrl(out);
+  });
 }
 
 const REENCODE_SIZES = [1000, 800];
@@ -108,36 +100,83 @@ export async function reencodeToFit(
       if (smallest === null || dataUrl.length < smallest.length) smallest = dataUrl;
     }
   }
-  return { dataUrl: smallest as string, fits: false };
+  if (smallest === null) throw new Error("reencodeToFit has no sizes or qualities to try");
+  return { dataUrl: smallest, fits: false };
 }
 
 // ---------------------------------------------------------------------------
 // Browser-only internals (canvas, createImageBitmap, FileReader).
 
+/**
+ * Fetches `src` without ever holding more than MAX_UPLOAD_BYTES of it: a declared Content-Length
+ * over the limit is refused before the body is read, and a body that runs past the limit is
+ * cancelled as soon as it does.
+ */
 async function fetchBlob(src: string): Promise<Blob> {
+  const controller = new AbortController();
   try {
-    const res = await fetch(src);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.blob();
-  } catch {
-    throw new UploadError(MSG_UNREADABLE);
+    const res = await fetch(src, { signal: controller.signal });
+    if (!res.ok || !res.body) throw new UploadError(MSG_UNREADABLE);
+    if (Number(res.headers.get("content-length")) > MAX_UPLOAD_BYTES) throw new UploadError(MSG_TOO_BIG);
+
+    const reader = res.body.getReader();
+    const chunks: Uint8Array<ArrayBuffer>[] = [];
+    let total = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_UPLOAD_BYTES) {
+        reader.cancel().catch(() => {});
+        throw new UploadError(MSG_TOO_BIG);
+      }
+      chunks.push(value);
+    }
+    return new Blob(chunks);
+  } catch (err) {
+    controller.abort();
+    throw err instanceof UploadError ? err : new UploadError(MSG_UNREADABLE);
   }
 }
 
-type Decoded = { image: CanvasImageSource; width: number; height: number; close: () => void };
+type Decoded = {
+  image: CanvasImageSource;
+  width: number;
+  height: number;
+  /** A vector source with a declared size, which can be drawn larger without losing detail. */
+  vector: boolean;
+  close: () => void;
+};
 
 async function processBlob(blob: Blob, kind: ImageKind): Promise<string> {
+  return withDecoded(blob, { allowSvg: true }, async (source, type) => {
+    const canvas = drawScaled(source, LONG_EDGE[kind]);
+    const mayBeTransparent = kind === "image" && type !== "jpeg";
+    return toRasterDataUrl(await encodeBest(canvas, mayBeTransparent));
+  });
+}
+
+/**
+ * The one way into a decoder: rejects a blob over MAX_UPLOAD_BYTES, then one whose bytes don't
+ * sniff as an allowed type, and only then decodes it, runs `fn` and closes the source. Any
+ * failure other than an UploadError (a tainted canvas, a failed encode) becomes MSG_UNREADABLE.
+ */
+async function withDecoded<T>(
+  blob: Blob,
+  { allowSvg }: { allowSvg: boolean },
+  fn: (source: Decoded, type: SniffedType) => Promise<T>,
+): Promise<T> {
   if (blob.size > MAX_UPLOAD_BYTES) throw new UploadError(MSG_TOO_BIG);
   const type = sniffImageType(new Uint8Array(await blob.slice(0, SNIFF_BYTES).arrayBuffer()));
-  if (!type) throw new UploadError(MSG_WRONG_TYPE);
+  // An upload tells the customer which types to use. The export's re-encode works on images
+  // already in the design, where the customer can't choose a type, so it only says it failed.
+  if (!type) throw new UploadError(allowSvg ? MSG_WRONG_TYPE : MSG_UNREADABLE);
+  if (type === "svg" && !allowSvg) throw new UploadError(MSG_UNREADABLE);
 
   const source = await decode(blob, type);
   try {
-    const canvas = drawScaled(source, LONG_EDGE[kind]);
-    const mayBeTransparent = kind === "image" && type !== "jpeg";
-    return await toRasterDataUrl(await encodeBest(canvas, mayBeTransparent));
+    return await fn(source, type);
   } catch (err) {
-    // A tainted canvas or a failed encode: the customer only needs to know it didn't work.
     throw err instanceof UploadError ? err : new UploadError(MSG_UNREADABLE);
   } finally {
     source.close();
@@ -148,7 +187,13 @@ async function decode(blob: Blob, type: SniffedType): Promise<Decoded> {
   try {
     if (type !== "svg") {
       const bitmap = await createImageBitmap(blob);
-      return { image: bitmap, width: bitmap.width, height: bitmap.height, close: () => bitmap.close() };
+      return {
+        image: bitmap,
+        width: bitmap.width,
+        height: bitmap.height,
+        vector: false,
+        close: () => bitmap.close(),
+      };
     }
     // SVG is rasterised through an <img>, which runs no scripts and loads nothing external.
     // The blob is re-typed so the browser treats the sniffed bytes as SVG whatever the file claimed.
@@ -162,6 +207,7 @@ async function decode(blob: Blob, type: SniffedType): Promise<Decoded> {
         image: img,
         width: sized ? img.naturalWidth : SVG_FALLBACK_SIZE,
         height: sized ? img.naturalHeight : SVG_FALLBACK_SIZE,
+        vector: sized,
         close: () => URL.revokeObjectURL(url),
       };
     } catch (err) {
@@ -174,7 +220,10 @@ async function decode(blob: Blob, type: SniffedType): Promise<Decoded> {
 }
 
 function drawScaled(source: Decoded, longEdge: number): HTMLCanvasElement {
-  const { width, height } = targetSize(source.width, source.height, longEdge);
+  // A raster never upscales. An SVG's declared size is often tiny (a 160 x 48 logo), so it's
+  // drawn at the cap instead; there are no pixels to stretch.
+  const grow = source.vector ? longEdge / Math.max(source.width, source.height) : 1;
+  const { width, height } = targetSize(source.width * grow, source.height * grow, longEdge);
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;

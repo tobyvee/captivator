@@ -2,7 +2,7 @@
 
 import { useId, useState, type ChangeEvent } from "react";
 import { Upload } from "lucide-react";
-import { processUpload, UploadError, type ImageKind } from "@/lib/images";
+import { MSG_UNREADABLE, processUpload, UploadError, type ImageKind } from "@/lib/images";
 import { extractPalette } from "@/lib/palette";
 
 const ACCEPT = "image/png,image/jpeg,image/webp,image/svg+xml";
@@ -31,7 +31,8 @@ export function ImageUpload({ kind, label, onUploaded, onPalette, disabled, desc
     const file = input.files?.[0];
     // Clear the value so picking the same file again still fires a change.
     input.value = "";
-    if (!file) return;
+    // The input stays enabled (and focusable) while busy, so a pick made then is ignored here.
+    if (busy || !file) return;
 
     setBusy(true);
     setError(null);
@@ -48,7 +49,7 @@ export function ImageUpload({ kind, label, onUploaded, onPalette, disabled, desc
         extractPalette(dataUrl).then(onPalette, () => {});
       }
     } catch (err) {
-      setError(err instanceof UploadError ? err.message : "We couldn't read that image.");
+      setError(err instanceof UploadError ? err.message : MSG_UNREADABLE);
     } finally {
       setBusy(false);
     }
@@ -58,7 +59,7 @@ export function ImageUpload({ kind, label, onUploaded, onPalette, disabled, desc
     [describedBy, error && `${id}-error`, warning && `${id}-warning`].filter(Boolean).join(" ") || undefined;
 
   return (
-    <div className={["flex flex-col gap-2", className].filter(Boolean).join(" ")}>
+    <div className={["flex flex-col", className].filter(Boolean).join(" ")}>
       <label
         aria-busy={busy || undefined}
         className={[
@@ -74,21 +75,19 @@ export function ImageUpload({ kind, label, onUploaded, onPalette, disabled, desc
           type="file"
           accept={ACCEPT}
           className="sr-only"
-          disabled={inactive}
+          disabled={disabled}
+          aria-disabled={busy || undefined}
           aria-describedby={describedByIds}
           onChange={handleChange}
         />
       </label>
-      {error && (
-        <p id={`${id}-error`} role="alert" className="text-xs leading-snug text-red-700">
-          {error}
-        </p>
-      )}
-      {warning && (
-        <p id={`${id}-warning`} role="status" className="text-xs leading-snug text-amber-800">
-          {warning}
-        </p>
-      )}
+      {/* Both live regions stay mounted so screen readers announce text when it arrives. */}
+      <p id={`${id}-error`} role="alert" className="text-xs leading-snug text-red-700 [&:not(:empty)]:mt-2">
+        {error}
+      </p>
+      <p id={`${id}-warning`} role="status" className="text-xs leading-snug text-amber-800 [&:not(:empty)]:mt-2">
+        {warning}
+      </p>
     </div>
   );
 }

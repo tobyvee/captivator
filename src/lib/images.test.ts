@@ -6,6 +6,8 @@ import {
   MSG_UNREADABLE,
   MSG_WRONG_TYPE,
   UploadError,
+  encodeAt,
+  inlineFromUrl,
   processUpload,
   reencodeToFit,
   sniffImageType,
@@ -19,6 +21,17 @@ const PNG = bytes([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], [0, 0, 0, 13
 const JPEG = bytes([0xff, 0xd8, 0xff, 0xe0, 0, 0x10], "JFIF");
 const WEBP = bytes("RIFF", [0x24, 0, 0, 0], "WEBPVP8 ");
 const SVG = bytes('<svg xmlns="http://www.w3.org/2000/svg"/>');
+const MB = 1024 * 1024;
+
+/** Asserts a customer-facing UploadError with exactly this message, not just any Error. */
+async function expectUploadError(promise: Promise<unknown>, message: string) {
+  const err = await promise.then(
+    () => null,
+    (e: unknown) => e,
+  );
+  expect(err).toBeInstanceOf(UploadError);
+  expect(err).toHaveProperty("message", message);
+}
 
 describe("targetSize", () => {
   it("caps the long edge of a landscape image and keeps its aspect ratio", () => {
@@ -89,7 +102,7 @@ describe("processUpload", () => {
     const big = new File([PNG, new Uint8Array(MAX_UPLOAD_BYTES)], "photo.png", { type: "image/png" });
     const slice = vi.spyOn(big, "slice");
 
-    await expect(processUpload(big, "background")).rejects.toThrow(new UploadError(MSG_TOO_BIG));
+    await expectUploadError(processUpload(big, "background"), MSG_TOO_BIG);
     expect(slice).not.toHaveBeenCalled();
     expectNoDecoding(decoders);
   });
@@ -98,7 +111,7 @@ describe("processUpload", () => {
     const decoders = stubDecoders();
     const file = new File([PNG, new Uint8Array(MAX_UPLOAD_BYTES - PNG.length)], "photo.png");
 
-    await expect(processUpload(file, "image")).rejects.toThrow(MSG_UNREADABLE);
+    await expectUploadError(processUpload(file, "image"), MSG_UNREADABLE);
     expect(decoders.createImageBitmap).toHaveBeenCalledOnce();
   });
 
@@ -106,7 +119,7 @@ describe("processUpload", () => {
     const decoders = stubDecoders();
     const file = new File([bytes("<html><script>alert(1)</script></html>")], "logo.png", { type: "image/png" });
 
-    await expect(processUpload(file, "image")).rejects.toThrow(new UploadError(MSG_WRONG_TYPE));
+    await expectUploadError(processUpload(file, "image"), MSG_WRONG_TYPE);
     expectNoDecoding(decoders);
   });
 
@@ -114,7 +127,7 @@ describe("processUpload", () => {
     const decoders = stubDecoders();
     const file = new File([bytes("GIF89a", [1, 0, 1, 0])], "photo.jpg", { type: "image/jpeg" });
 
-    await expect(processUpload(file, "background")).rejects.toThrow(MSG_WRONG_TYPE);
+    await expectUploadError(processUpload(file, "background"), MSG_WRONG_TYPE);
     expectNoDecoding(decoders);
   });
 
@@ -123,16 +136,21 @@ describe("processUpload", () => {
     const file = new File([JPEG], "notes.txt", { type: "text/plain" });
 
     // The fake decoder fails, so the customer sees the unreadable message.
-    await expect(processUpload(file, "image")).rejects.toThrow(new UploadError(MSG_UNREADABLE));
+    await expectUploadError(processUpload(file, "image"), MSG_UNREADABLE);
     expect(decoders.createImageBitmap).toHaveBeenCalledOnce();
   });
 });
 
 // A stand-in for the browser's decoders, canvas and FileReader, so the pipeline's choices
 // (which encoder wins, what comes out) run in Node. It draws nothing.
-function fakeBrowser(opts: { encodes: string[]; sizes: Record<string, number>; alpha?: number; svgSize?: number }) {
+function fakeBrowser(opts: {
+  encodes: string[];
+  sizes: Record<string, number>;
+  alpha?: number;
+  svgSize?: { width: number; height: number };
+}) {
   const drawn: { width: number; height: number }[] = [];
-  const requested: string[] = [];
+  const requested: [type: string, quality: number | undefined][] = [];
   const canvas = {
     width: 0,
     height: 0,
@@ -141,8 +159,8 @@ function fakeBrowser(opts: { encodes: string[]; sizes: Record<string, number>; a
       getImageData: () => ({ data: new Uint8ClampedArray([0, 0, 0, opts.alpha ?? 255]) }),
     }),
     // Like Safari, an encoder the browser lacks quietly returns PNG.
-    toBlob: (cb: (b: Blob | null) => void, type: string) => {
-      requested.push(type);
+    toBlob: (cb: (b: Blob | null) => void, type: string, quality?: number) => {
+      requested.push([type, quality]);
       const real = opts.encodes.includes(type) ? type : "image/png";
       cb(new Blob([new Uint8Array(opts.sizes[real] ?? 1)], { type: real }));
     },
@@ -153,8 +171,8 @@ function fakeBrowser(opts: { encodes: string[]; sizes: Record<string, number>; a
     "Image",
     class {
       src = "";
-      naturalWidth = opts.svgSize ?? 0;
-      naturalHeight = opts.svgSize ?? 0;
+      naturalWidth = opts.svgSize?.width ?? 0;
+      naturalHeight = opts.svgSize?.height ?? 0;
       decode = async () => {};
     },
   );
@@ -177,18 +195,19 @@ function fakeBrowser(opts: { encodes: string[]; sizes: Record<string, number>; a
   return { drawn, requested };
 }
 
+const sizes = { "image/webp": 300, "image/jpeg": 400, "image/png": 900 };
+
 describe("processUpload encoding", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
-  const sizes = { "image/webp": 300, "image/jpeg": 400, "image/png": 900 };
-
-  it("draws a photo at the target size and returns WebP with its size", async () => {
-    const { drawn } = fakeBrowser({ encodes: ["image/webp", "image/jpeg", "image/png"], sizes });
+  it("draws a photo at the target size and returns WebP 0.8 with its size", async () => {
+    const { drawn, requested } = fakeBrowser({ encodes: ["image/webp", "image/jpeg", "image/png"], sizes });
     const result = await processUpload(new File([JPEG], "photo.jpg"), "background");
     expect(drawn).toEqual([{ width: 1600, height: 1200 }]);
+    expect(requested).toEqual([["image/webp", 0.8]]);
     expect(result.dataUrl).toMatch(/^data:image\/webp;base64,/);
     expect(result).toMatchObject({ bytes: result.dataUrl.length, tooLarge: false });
   });
@@ -209,19 +228,32 @@ describe("processUpload encoding", () => {
     const { requested } = fakeBrowser({ encodes: ["image/jpeg", "image/png"], sizes, alpha: 0 });
     const { dataUrl } = await processUpload(new File([PNG], "logo.png"), "image");
     expect(dataUrl).toMatch(/^data:image\/png;base64,/);
-    expect(requested).not.toContain("image/jpeg");
+    expect(requested.map(([type]) => type)).not.toContain("image/jpeg");
   });
 
   it("rasterises an SVG to a canvas and never returns SVG", async () => {
-    const { drawn } = fakeBrowser({ encodes: ["image/webp", "image/png"], sizes, svgSize: 2400 });
+    const { drawn } = fakeBrowser({ encodes: ["image/webp", "image/png"], sizes, svgSize: { width: 2400, height: 2400 } });
     const { dataUrl } = await processUpload(new File([SVG], "logo.svg", { type: "image/svg+xml" }), "image");
     expect(drawn).toEqual([{ width: 600, height: 600 }]);
     expect(dataUrl).toMatch(/^data:image\/webp;base64,/);
     expect(dataUrl).not.toContain("svg");
   });
 
+  it("draws a small SVG at the cap rather than its declared size", async () => {
+    const { drawn } = fakeBrowser({ encodes: ["image/webp", "image/png"], sizes, svgSize: { width: 160, height: 48 } });
+    await processUpload(new File([SVG], "logo.svg"), "image");
+    expect(drawn).toEqual([{ width: 600, height: 180 }]);
+  });
+
+  it("never upscales a small raster", async () => {
+    const { drawn } = fakeBrowser({ encodes: ["image/webp"], sizes });
+    vi.stubGlobal("createImageBitmap", async () => ({ width: 160, height: 48, close: () => {} }));
+    await processUpload(new File([PNG], "logo.png"), "image");
+    expect(drawn).toEqual([{ width: 160, height: 48 }]);
+  });
+
   it("draws an SVG with no intrinsic size at 600 x 600", async () => {
-    const { drawn } = fakeBrowser({ encodes: ["image/webp"], sizes, svgSize: 0 });
+    const { drawn } = fakeBrowser({ encodes: ["image/webp"], sizes });
     await processUpload(new File([SVG], "logo.svg"), "background");
     expect(drawn).toEqual([{ width: 600, height: 600 }]);
   });
@@ -231,6 +263,134 @@ describe("processUpload encoding", () => {
     const result = await processUpload(new File([JPEG], "photo.jpg"), "background");
     expect(result.tooLarge).toBe(true);
     expect(result.bytes).toBeGreaterThan(150 * 1024);
+  });
+});
+
+// A fetch stub whose body is pulled one chunk at a time, so a test can see how much was read.
+function streamedFetch(opts: { chunks: number; chunkBytes: number; head?: Uint8Array; headers?: HeadersInit }) {
+  const body = { pulls: 0, cancelled: false };
+  const stream = new ReadableStream<Uint8Array>(
+    {
+      pull(controller) {
+        if (body.pulls === opts.chunks) return controller.close();
+        const chunk = new Uint8Array(opts.chunkBytes);
+        if (body.pulls === 0 && opts.head) chunk.set(opts.head);
+        body.pulls++;
+        controller.enqueue(chunk);
+      },
+      cancel() {
+        body.cancelled = true;
+      },
+    },
+    { highWaterMark: 0 },
+  );
+  const response = new Response(stream, { headers: opts.headers });
+  vi.stubGlobal("fetch", vi.fn(async () => response));
+  return { body, response };
+}
+
+function stubFetchedBody(body: BodyInit, init?: ResponseInit) {
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(body, init)));
+}
+
+describe("inlineFromUrl", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("resizes a fetched JPEG to the kind's cap", async () => {
+    const { drawn } = fakeBrowser({ encodes: ["image/webp"], sizes });
+    stubFetchedBody(new Blob([JPEG]));
+    const dataUrl = await inlineFromUrl("/templates/cafe.jpg", "image");
+    expect(drawn).toEqual([{ width: 600, height: 450 }]);
+    expect(dataUrl).toMatch(/^data:image\/webp;base64,/);
+  });
+
+  it("rejects a fetched HTML body before decoding", async () => {
+    const { drawn } = fakeBrowser({ encodes: ["image/webp"], sizes });
+    stubFetchedBody("<!DOCTYPE html><html><body>Not found</body></html>", {
+      headers: { "content-type": "image/jpeg" },
+    });
+    await expectUploadError(inlineFromUrl("/templates/cafe.jpg", "background"), MSG_WRONG_TYPE);
+    expect(drawn).toEqual([]);
+  });
+
+  it("rejects a response that isn't OK", async () => {
+    fakeBrowser({ encodes: ["image/webp"], sizes });
+    stubFetchedBody(new Blob([JPEG]), { status: 404 });
+    await expectUploadError(inlineFromUrl("/templates/missing.jpg", "background"), MSG_UNREADABLE);
+  });
+
+  it("stops reading a body with no Content-Length once it passes 10 MB, before decoding", async () => {
+    const decode = vi.fn();
+    vi.stubGlobal("createImageBitmap", decode);
+    const { body } = streamedFetch({ chunks: 64, chunkBytes: MB, head: PNG });
+
+    await expectUploadError(inlineFromUrl("https://images.unsplash.com/photo", "background"), MSG_TOO_BIG);
+    // The 11th megabyte crosses the limit; nothing after it is requested.
+    expect(body.pulls).toBe(11);
+    expect(body.cancelled).toBe(true);
+    expect(decode).not.toHaveBeenCalled();
+  });
+
+  it("refuses a declared Content-Length over 10 MB without reading the body", async () => {
+    const decode = vi.fn();
+    vi.stubGlobal("createImageBitmap", decode);
+    const { body, response } = streamedFetch({
+      chunks: 20,
+      chunkBytes: MB,
+      head: PNG,
+      headers: { "content-length": "20000000" },
+    });
+
+    await expectUploadError(inlineFromUrl("https://images.unsplash.com/photo", "background"), MSG_TOO_BIG);
+    expect(body.pulls).toBe(0);
+    expect(response.bodyUsed).toBe(false);
+    expect(decode).not.toHaveBeenCalled();
+  });
+});
+
+describe("encodeAt", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("requests WebP at the given quality and long edge", async () => {
+    const { drawn, requested } = fakeBrowser({ encodes: ["image/webp", "image/jpeg"], sizes });
+    stubFetchedBody(new Blob([JPEG]));
+    const dataUrl = await encodeAt("data:image/jpeg;base64,", 1000, 0.6);
+    expect(drawn).toEqual([{ width: 1000, height: 750 }]);
+    expect(requested).toEqual([["image/webp", 0.6]]);
+    expect(dataUrl).toMatch(/^data:image\/webp;base64,/);
+  });
+
+  it("falls back to JPEG at the same quality when WebP comes back as another type", async () => {
+    const { requested } = fakeBrowser({ encodes: ["image/jpeg"], sizes });
+    stubFetchedBody(new Blob([PNG]));
+    const dataUrl = await encodeAt("data:image/png;base64,", 800, 0.5);
+    expect(requested).toEqual([
+      ["image/webp", 0.5],
+      ["image/jpeg", 0.5],
+    ]);
+    expect(dataUrl).toMatch(/^data:image\/jpeg;base64,/);
+  });
+
+  it("rejects SVG bytes without decoding them", async () => {
+    const { drawn } = fakeBrowser({ encodes: ["image/webp"], sizes });
+    stubFetchedBody(new Blob([SVG]));
+    await expectUploadError(encodeAt("/templates/logo.svg", 1000, 0.7), MSG_UNREADABLE);
+    expect(drawn).toEqual([]);
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
+  });
+
+  it("rejects an image over 10 MB before decoding", async () => {
+    const decode = vi.fn();
+    vi.stubGlobal("createImageBitmap", decode);
+    stubFetchedBody(new Blob([PNG, new Uint8Array(11 * MB)]));
+    await expectUploadError(encodeAt("/templates/huge.png", 1000, 0.7), MSG_TOO_BIG);
+    expect(decode).not.toHaveBeenCalled();
   });
 });
 
