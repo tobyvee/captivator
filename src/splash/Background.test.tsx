@@ -172,7 +172,7 @@ describe("Credit", () => {
   });
 
   it("keeps a 500-character name to one ellipsized line that can't wrap up over Connect", () => {
-    const name = `<b>${"x".repeat(493)}`;
+    const name = `<b>${"x".repeat(497)}`;
     const html = credit("edit", { name });
     const [line] = elements(html);
     expect(line.style).toMatchObject({
@@ -182,8 +182,16 @@ describe("Credit", () => {
       "max-width": "calc(100% - 20px)",
       "box-sizing": "border-box",
     });
-    expect(html).toContain(`&lt;b&gt;${"x".repeat(493)}`);
-    expect(elements(html).map((e) => e.tag)).toEqual(["p", "a", "a"]);
+    expect(html).toContain(`&lt;b&gt;${"x".repeat(497)}`);
+    expect(elements(html).map((e) => e.tag)).toEqual(["p", "span", "a", "a"]);
+    // The name ellipsizes inside its own box, so "/ Unsplash" stays visible after it.
+    expect(elements(html)[1].style).toMatchObject({
+      display: "inline-block",
+      "max-width": "18em",
+      overflow: "hidden",
+      "text-overflow": "ellipsis",
+    });
+    expect(html).toMatch(/<\/span> \/ <a[^>]*>Unsplash<\/a><\/p>$/);
   });
 
   it.each<RenderMode>(["edit", "export"])(

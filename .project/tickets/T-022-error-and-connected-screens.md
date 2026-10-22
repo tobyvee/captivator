@@ -14,7 +14,7 @@ touches:
   - src/splash/Connected.tsx
   - src/editor/ScreenSwitcher.tsx
 cut_rank: 3
-updated: 2026-10-22
+updated: 2026-10-23
 tags: [project, captivator, ticket, splash]
 ---
 # T-022: Error and Connected guest screens
@@ -38,7 +38,7 @@ Build step 6, "Error and Connected" plus the rest of the screen switcher ([spec 
 - **`Connected.tsx`** (replace the T-005 stub):
   - A column in the T-005 layout: the logo (first image block) at the top; a spacer; a 72px tick badge (circle in the first heading's colour, or `bestTextColour(bg)`; the tick uses the background's main colour, the same rule as the Terms sheet: `colour`, gradient `from` or photo `backdrop`); h1 "You're online" (`role="status"`, 40px/800, same colour); a spacer.
   - If there's a second image block (the sponsor): "Thanks to our sponsor" and that image.
-  - A CONTINUE button styled like Connect → `onContinue` (edit/preview).
+  - A CONTINUE button styled like Connect (`connectButtonStyle` from `Form.tsx`) → `onContinue` (edit/preview). Keep at least 28px of bottom padding below it, so the photo credit SplashPage draws at the bottom right (T-006) never overlaps it.
   - In edit and preview, the column wrapper has `pointerEvents: "none"` and CONTINUE has `pointerEvents: "auto"`, so a click on empty space reaches the root and selects the background ([`T-022-connected-clicks-fall-through.md`](../decisions/T-022-connected-clicks-fall-through.md)); test it.
 - **`ScreenSwitcher.tsx`** (extend T-009): add "Error" (only when `canFail(form)`) and "Connected".
 - **Out of scope:** the terms sheet (T-021); export markup (T-007/T-023; this ticket must not change export output).

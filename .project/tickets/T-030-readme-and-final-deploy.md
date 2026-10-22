@@ -10,7 +10,7 @@ depends_on: [T-029]
 touches:
   - README.md
 cut_rank:
-updated: 2026-10-22
+updated: 2026-10-23
 tags: [project, captivator, ticket, docs]
 ---
 # T-030: README and final deploy
@@ -36,7 +36,7 @@ Build step 9, "README and final deploy" ([spec → Testing, deploy and README �
    - Portal service on Cloudflare Workers + Hono.
    - RADIUS before data capture.
    - Consent records and terms versions.
-   - Unsplash self-hosting pending confirmation.
+   - Unsplash self-hosting pending confirmation, and the exported page's plain-text photo credit, since links can't work in the login sheet before sign-in ([`T-006-export-credit-plain-text.md`](../decisions/T-006-export-credit-plain-text.md)).
    - A link to the PRD.
 6. What I'd do next, and what was cut and why (from `.project/tickets/INDEX.md`'s Cut list and the cut decisions). Include the deferred fade-direction control.
 
@@ -55,6 +55,7 @@ Credit the template photographers (Marcel Strauß, Miguel Dominguez, Woliul Hasa
 - T-029: the checklist results and any cuts are known before the README describes them.
 
 ## Decisions
+- [`T-006-export-credit-plain-text.md`](../decisions/T-006-export-credit-plain-text.md): The exported guest page shows the photo credit as plain text, without links
 - [`T-002-template-photos-and-credits.md`](../decisions/T-002-template-photos-and-credits.md): Template photos come from the canvas assets, and their credits live beside the templates, not in background.credit
 - [`T-006-overlay-two-stop-wash.md`](../decisions/T-006-overlay-two-stop-wash.md): The photo overlay renders as a top-to-bottom gradient of its two colours; fade direction is deferred
 - [`T-029-checklist-and-readme-run-last.md`](../decisions/T-029-checklist-and-readme-run-last.md): The phone checklist and README run after every other ticket

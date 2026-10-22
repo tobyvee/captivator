@@ -196,6 +196,9 @@ export function SplashPage({
       onClick={selectBackground}
       style={{
         position: "relative",
+        // Its own stacking context, so the column and credit z-indexes never compete with the
+        // editor or picker chrome around it.
+        isolation: "isolate",
         display: "flex",
         flexDirection: "column",
         boxSizing: "border-box",

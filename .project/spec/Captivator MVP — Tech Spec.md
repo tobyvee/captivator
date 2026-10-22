@@ -177,6 +177,7 @@ The editor is three columns (block list 280px, preview stage, inspector 320px) u
 | `required` on inputs and the terms checkbox | absent | absent | present |
 | Form `method`, `action` and hidden `command` | absent | absent | present |
 | Root `class="cv-root"` (see Layout) | absent | absent | present |
+| Unsplash photo credit | "Photo: {name} / Unsplash" with both links (`target="_blank"`) | same as `edit` | plain text, no links ([decision](../decisions/T-006-export-credit-plain-text.md)) |
 
 **Minimum target:** iOS 15.4 and Android WebView on Chrome 108 or newer. That covers flexbox `gap`, `dvh` units and `accent-color`, all of which the output uses. Older WebKit is out of scope for the MVP.
 
@@ -340,7 +341,7 @@ Every pure module gets Vitest unit tests, written by Claude Code in the same ste
 | `fit` | The decision function warns above 600px and not at or below it. |
 | `SplashPage` (jsdom) | Each field renders the `type`, `autocomplete` and `inputmode` from `FIELD_SPEC`. The terms row is absent when off. The checkbox is never pre-checked. Text blocks render in array order. `edit` and `preview` modes render no `required`, form `action` or `cv-root`; `export` renders all three and an `<a href="#terms">`. |
 | Unsplash route | Trims the API response to the allowed fields. Refuses a download ping to any host but `api.unsplash.com`. |
-| export | Output starts with a doctype and has a viewport meta. It contains no http(s) URLs except the Unsplash credit links (every image is a data URL). Required fields and the terms checkbox carry required. The terms sheet has id="terms" and a :target rule. A design with fields posts to the \[PORTAL\_SUBMIT\_URL\] placeholder and has no `command` input; a design with no fields posts to \[ROUTER\_FORM\_ACTION\] with `command=login`. Design-name text is HTML-escaped in the title. A design using a template photo (`/templates/...`) exports it as a data URL. The `<style>` block contains the `.cv-root` `100vh`/`100dvh` pair. |
+| export | Output starts with a doctype and has a viewport meta. It contains no http(s) URLs at all: every image is a data URL and the photo credit is plain text, and there is no `<link`. Required fields and the terms checkbox carry required. The terms sheet has id="terms" and a :target rule. A design with fields posts to the \[PORTAL\_SUBMIT\_URL\] placeholder and has no `command` input; a design with no fields posts to \[ROUTER\_FORM\_ACTION\] with `command=login`. Design-name text is HTML-escaped in the title. A design using a template photo (`/templates/...`) exports it as a data URL. The `<style>` block contains the `.cv-root` `100vh`/`100dvh` pair. |
 
 **Not unit-tested:** canvas downscaling and fast-average-color (need a real browser), `ResizeObserver` measurement, and visual layout. These are covered by the manual checklist.
 

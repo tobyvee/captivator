@@ -46,6 +46,15 @@ const CREDIT: CSSProperties = {
 
 const LINK: CSSProperties = { color: "inherit", textDecoration: "underline" };
 
+// The name ellipsizes on its own, so a long one can't push "/ Unsplash" out of view.
+const NAME: CSSProperties = {
+  display: "inline-block",
+  maxWidth: "18em",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  verticalAlign: "bottom",
+};
+
 const UTM = { utm_source: "captivator", utm_medium: "referral" };
 const UNSPLASH_HOME = "https://unsplash.com/?utm_source=captivator&utm_medium=referral";
 
@@ -78,13 +87,15 @@ export function Credit({ credit, mode }: CreditProps): JSX.Element {
       Photo:{" "}
       {name && (
         <>
-          {href ? (
-            <a href={href} target="_blank" rel="noopener noreferrer" style={LINK}>
-              {name}
-            </a>
-          ) : (
-            name
-          )}{" "}
+          <span style={NAME}>
+            {href ? (
+              <a href={href} target="_blank" rel="noopener noreferrer" style={LINK}>
+                {name}
+              </a>
+            ) : (
+              name
+            )}
+          </span>{" "}
           /{" "}
         </>
       )}

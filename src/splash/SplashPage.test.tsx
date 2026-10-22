@@ -83,6 +83,14 @@ describe("SplashPage render modes", () => {
     expect(root.style.position).toBe("relative");
   });
 
+  it.each<RenderMode>(["edit", "preview", "export"])(
+    "%s: the root isolates its own stacking context",
+    (mode) => {
+      const { container } = render(<SplashPage design={MIXED} screen="landing" mode={mode} />);
+      expect(container.firstElementChild?.getAttribute("style")).toContain("isolation: isolate");
+    },
+  );
+
   it("without inFrame the root takes its natural content height", () => {
     const { container } = render(<SplashPage design={MIXED} screen="landing" mode="preview" />);
     expect((container.firstElementChild as HTMLElement).style.minHeight).toBe("");
@@ -232,6 +240,8 @@ describe("SplashPage photo credit", () => {
       expect(follows(line, heading)).toBe(true);
       expect(follows(line, form)).toBe(true);
       expect(form.contains(line)).toBe(false);
+      // The mode reaches the credit: plain text in the export (T-006-export-credit-plain-text).
+      expect(line.querySelectorAll("a")).toHaveLength(mode === "export" ? 0 : 2);
     },
   );
 
