@@ -106,8 +106,8 @@ describe("ExportButton", () => {
     const user = userEvent.setup();
     render(<ExportButton />);
 
+    const clicked = useStore.getState().design;
     await user.click(button());
-    const clicked = build.mock.calls[0][0];
     act(() => {
       useStore.getState().setName("Renamed Mid Build");
       useStore.getState().updateBackground({ type: "colour", colour: "#123456" });
@@ -220,12 +220,8 @@ describe("ExportButton", () => {
     build.mockReturnValue(new Promise((r) => (resolve = r)));
     render(<ExportButton />);
 
-    // Two clicks in one tick, before `busy` re-renders: only the `running` ref can stop the second.
+    // aria-disabled doesn't block clicks, so only the running ref can stop the second export.
     fireEvent.click(button());
-    fireEvent.click(button());
-    expect(build).toHaveBeenCalledTimes(1);
-    // And a click once it shows as busy does nothing either.
-    await act(async () => {});
     expect(button()).toHaveAttribute("aria-disabled", "true");
     fireEvent.click(button());
     expect(build).toHaveBeenCalledTimes(1);

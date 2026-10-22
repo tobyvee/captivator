@@ -31,7 +31,7 @@ const TONES: Record<Toast["tone"], string> = {
 export function ExportButton() {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
-  // The real double-export guard: `busy` only reaches the DOM after a re-render.
+  // The only double-export guard: aria-disabled leaves the button clickable.
   const running = useRef(false);
 
   // A within-budget toast hides itself; a new toast restarts the timer.
