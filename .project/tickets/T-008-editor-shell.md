@@ -2,7 +2,7 @@
 title: "T-008: Editor shell, top bar, inspector router and component slots"
 type: ticket
 project: captivator
-status: todo
+status: done
 priority: P0
 milestone: 2
 estimate: 20
@@ -23,8 +23,9 @@ touches:
   - src/editor/panels/FieldsPanel.tsx
   - src/editor/panels/TermsPanel.tsx
   - src/editor/panels/ButtonPanel.tsx
+  - src/editor/editor.test.tsx
 cut_rank:
-updated: 2026-10-22
+updated: 2026-10-23
 tags: [project, captivator, ticket, editor]
 ---
 # T-008: Editor shell, top bar, inspector router and component slots
@@ -64,14 +65,14 @@ Build step 2 (Mobile/Desktop toggle) and the integration point for steps 3–8 (
 - **Out of scope:** the content of every stub; the screen switcher and checks (T-009).
 
 ## Acceptance criteria
-- [ ] `/editor` renders the skeleton on the server and first paint, then the three columns after `useHydrated()` is true, with no hydration warning in the console.
-- [ ] Editing the name updates the store; after a refresh the name and design are restored (T-004 persistence).
-- [ ] The Mobile/Desktop control announces its state (`aria-pressed`) and updates `device`.
-- [ ] Each selection kind shows its panel stub and header; Delete removes the selected block and the inspector falls back to Background.
-- [ ] The Terms switch in the header toggles `terms.mode` and announces `aria-checked`.
-- [ ] Every control is a real `<button>`, `<input>`, `<a>` or `<label>`, with at least a 44px tap target. The layout wraps to one column on narrow screens.
-- [ ] Panels and controls change state only through store actions.
-- [ ] `npm test`, `npx tsc --noEmit` and `npm run lint` pass.
+- [x] `/editor` renders the skeleton on the server and first paint, then the three columns after `useHydrated()` is true, with no hydration warning in the console.
+- [x] Editing the name updates the store; after a refresh the name and design are restored (T-004 persistence).
+- [x] The Mobile/Desktop control announces its state (`aria-pressed`) and updates `device`.
+- [x] Each selection kind shows its panel stub and header; Delete removes the selected block and the inspector falls back to Background.
+- [x] The Terms switch in the header toggles `terms.mode` and announces `aria-checked`.
+- [x] Every control is a real `<button>`, `<input>`, `<a>` or `<label>`, with at least a 44px tap target. The layout wraps to one column on narrow screens. *Checked from the classes in review; jsdom can't measure size or wrapping.*
+- [x] Panels and controls change state only through store actions.
+- [x] `npm test`, `npx tsc --noEmit` and `npm run lint` pass.
 
 ## Dependencies
 - T-004: `useStore`, `useHydrated`, `setName`, `setDevice`, `removeBlock`, `updateForm`, `selection` and `device`.
@@ -93,8 +94,26 @@ Build step 2 (Mobile/Desktop toggle) and the integration point for steps 3–8 (
 - Tailwind is fine here (editor chrome). Never import editor code into `src/splash/`.
 - The PreviewStage stub must not import `SplashPage` (this ticket doesn't depend on T-005).
 
+## Outcome
+- **Built:** the `/editor` page with a hydration skeleton; a complete TopBar (name, device, Templates link) and Inspector (headers, Delete, Terms switch, exhaustive panel routing); `Segmented` and `Switch`; and stubs for every later editor component. 328 tests pass; `tsc` and lint are clean.
+- **Merge:** blocked once because the new test failed `tsc` (`Element.append` is retyped by the Workers globals); fixed on the branch with `appendChild` and re-merged.
+- **Review:** approved with should-fixes. All were fixed in `5c587c0`: sibling landmarks, focus returning to the heading after Delete, and the inspector's wrap between 768px and 1052px. The nits were fixed too (hydration root unmounted, subtitle assertion, an `<h1>`). The review also found a store gap: turning terms on while Terms is selected leaves the preview on Landing. It's routed to T-025 ([`T-025-terms-switch-shows-terms-screen.md`](../decisions/T-025-terms-switch-shows-terms-screen.md)).
+- **Security:** not a trust-boundary ticket; no audit run.
+
+## Notes
+- The editor page is `"use client"`, so it can't export `metadata`; the tab title stays the root layout's "Captivator".
+- Between 1052px and about 1067px wide, with a classic scrollbar showing, the inspector can wrap without the wrap styles. Cosmetic.
+
 ## Decisions
 - [`T-008-editor-shell-creates-slots.md`](../decisions/T-008-editor-shell-creates-slots.md): The editor shell owns Inspector.tsx and TopBar.tsx and creates every later editor component as a stub
 - [`T-008-hydration-guard-in-step-2.md`](../decisions/T-008-hydration-guard-in-step-2.md): The hydration guard ships with the editor shell in build step 2
 - [`T-019-confirm-on-use-not-templates.md`](../decisions/T-019-confirm-on-use-not-templates.md): The confirm moves from the Templates button to Use on the picker
 - [`general-new-modules-beyond-project-structure.md`](../decisions/general-new-modules-beyond-project-structure.md): Planning adds small modules to the spec's project structure so each ticket owns its own files
+- [`T-008-blocked-on-typecheck.md`](../decisions/T-008-blocked-on-typecheck.md): the integrator blocked T-008 on a failed type-check (superseded)
+- [`T-008-unblocked-after-typing-fix.md`](../decisions/T-008-unblocked-after-typing-fix.md): the test uses appendChild, and T-008 is re-merged
+- [`T-008-editor-test-file-added.md`](../decisions/T-008-editor-test-file-added.md): the ticket adds a jsdom test file for the shell
+- [`T-008-inspector-keys-panels-by-block.md`](../decisions/T-008-inspector-keys-panels-by-block.md): the Inspector reads only its header's data and keys block panels by id
+- [`T-008-page-owns-column-layout.md`](../decisions/T-008-page-owns-column-layout.md): the page owns column sizes and borders (superseded)
+- [`T-008-landmarks-are-siblings.md`](../decisions/T-008-landmarks-are-siblings.md): the page still owns sizes, but only the stage is `<main>`, beside the side columns
+- [`T-008-use-client-on-stateful-modules.md`](../decisions/T-008-use-client-on-stateful-modules.md): where `"use client"` goes
+- [`T-025-terms-switch-shows-terms-screen.md`](../decisions/T-025-terms-switch-shows-terms-screen.md): the review's store gap goes to T-025

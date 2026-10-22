@@ -62,6 +62,7 @@ Build step 2 (PhoneFrame, BrowserFrame, live preview) and step 3's click-to-sele
 - The canvas caption says 375 × 760, but the guest-state artboards' inner viewport and the spec are 375 × 740; use 740.
 - `useFitCheck` is a `.tsx` file because T-028's probe renders JSX.
 - **Preview fields reset when Terms opens:** `SplashPage` re-mounts the landing inside the inert wrapper on the Terms screen, so test values typed into the preview's fields clear (T-021 splash re-audit). Accept it, or raise a ticket for SplashPage if it bothers the customer.
+- **Landmarks:** the page now wraps the stage in its own `<main>` ([`T-008-landmarks-are-siblings.md`](../decisions/T-008-landmarks-are-siblings.md)), so `PreviewStage` keeps its `<section aria-label="Preview">` root and never renders another `<main>`.
 - **Containing block for the Terms sheet:** `TermsSheet` uses `position: fixed; inset: 0` in every mode (T-021). Each frame needs a non-scrolling shell around its scroll container that establishes a containing block for fixed descendants: `transform` (BrowserFrame's scale already does, if it sits on the shell rather than the scroller) or `contain: layout` on PhoneFrame's viewport shell. Without one, the sheet covers the whole editor window. If the scroller itself carried the transform, the sheet would scroll away with the content.
 
 ## Decisions

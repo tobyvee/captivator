@@ -17,7 +17,6 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is bein
 
 ## Outstanding
 
-- [ ] T-008: Editor shell, top bar, inspector router and component slots
 - [ ] T-010: ColourField and Slider controls
 - [ ] T-023: Export HTML builder
 - [ ] T-018: Photo hero and Minimal templates
@@ -63,3 +62,4 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is bein
 - [x] T-021: Terms sheet for the preview and the no-JS export (2026-10-23)
 - [x] Cloudflare setup: API token and account ID secrets added; pushes deploy to app.captivator.workers.dev (2026-10-23)
 - [x] Wave 3 closed; wave-wide security audit found nothing (2026-10-23)
+- [x] T-008: Editor shell, top bar, inspector router and component slots (2026-10-23)
