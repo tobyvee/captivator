@@ -86,6 +86,16 @@ describe("Design schema", () => {
     expect(valid(design)).toBe(false);
   });
 
+  // Colours are written into CSS strings (gradients, swatches), so the pattern must stay anchored.
+  it.each(["#000000, url(https://example.com/x)", "#000000)", "#000000\n"])(
+    "rejects %j as a gradient stop",
+    (from) => {
+      const design = blank();
+      design.background = { type: "gradient", from, to: "#FFFFFF", direction: "down" };
+      expect(valid(design)).toBe(false);
+    },
+  );
+
   // The schema is the trust boundary: a stored design can be hand-edited in localStorage.
   describe.each([
     [
