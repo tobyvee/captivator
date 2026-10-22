@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Design } from "./design-schema";
 import {
   buildExportHtml,
+  DOWNLOAD_REVOKE_MS,
   downloadHtml,
   escapeHtml,
   ExportError,
@@ -72,6 +73,15 @@ describe("buildExportHtml: document shell", () => {
     expect(html).toContain('<meta name="viewport" content="width=device-width, initial-scale=1">');
     expect(html).toContain('<html lang="en">');
     expect(html).toContain('<meta charset="utf-8">');
+  });
+
+  it("stops iOS turning phone numbers into tel: links, and still passes the final check", async () => {
+    const d = withForm(["phone"]);
+    d.form.terms.body = "Questions? Call 020 7946 0000.";
+    const { html } = await build(d);
+    expect(html).toContain('<meta name="format-detection" content="telephone=no">');
+    expect(html).toContain("020 7946 0000");
+    expect(html).not.toContain("tel:");
   });
 
   it("has exactly one <style> block holding the .cv-root pair and the :target rule", async () => {
@@ -305,14 +315,25 @@ describe("buildExportHtml: background re-encode", () => {
   /** A raster data URL exactly `length` characters long. */
   const dataUrlOfLength = (length: number) => WEBP + "A".repeat(length - WEBP.length);
 
+  // An inlined background bigger than the whole budget, so it always needs re-encoding.
+  const BIG = dataUrlOfLength(PAGE_BUDGET * 2);
+  const bigInline = () => vi.fn<ExportDeps["inline"]>(async () => BIG);
+  const buildBig = (reencode: ExportDeps["reencode"]) =>
+    build(SPONSOR.design, "Sponsor", { inline: bigInline(), reencode });
+
   it("gives reencode the budget left after the rest of the page, so a result that size fits exactly", async () => {
     let allowance = 0;
     const reencode = vi.fn<ExportDeps["reencode"]>(async (_src, a) => {
       allowance = a;
       return { dataUrl: dataUrlOfLength(a), fits: true };
     });
-    const { bytes, overBudget, reencoded } = await build(SPONSOR.design, "Sponsor", { reencode });
-    expect(reencode).toHaveBeenCalledWith(`${WEBP}QkdC`, expect.any(Number));
+    // A multi-byte name in <title> checks the allowance counts UTF-8 bytes, not characters.
+    const { html, bytes, overBudget, reencoded } = await build(SPONSOR.design, "Café ☕", {
+      inline: bigInline(),
+      reencode,
+    });
+    expect(reencode).toHaveBeenCalledWith(BIG, expect.any(Number));
+    expect(html).toContain("<title>Café ☕</title>");
     expect(allowance).toBeGreaterThan(0);
     expect(allowance).toBeLessThan(PAGE_BUDGET);
     expect(bytes).toBe(PAGE_BUDGET);
@@ -320,31 +341,66 @@ describe("buildExportHtml: background re-encode", () => {
     expect(reencoded).toBe(true);
   });
 
-  it("is over budget when the fake can't fit", async () => {
+  it("ships a re-encode that can't fit when it's still smaller than the inlined copy", async () => {
     const reencode = vi.fn<ExportDeps["reencode"]>(async (_src, a) => ({
       dataUrl: dataUrlOfLength(a + 4),
       fits: false,
     }));
-    const { bytes, overBudget, reencoded } = await build(SPONSOR.design, "Sponsor", { reencode });
+    const { bytes, overBudget, reencoded } = await buildBig(reencode);
     expect(bytes).toBe(PAGE_BUDGET + 4);
     expect(overBudget).toBe(true);
     expect(reencoded).toBe(true);
+  });
+
+  it("keeps the inlined copy when the best re-encode is no smaller", async () => {
+    const reencode = vi.fn<ExportDeps["reencode"]>(async () => ({ dataUrl: dataUrlOfLength(BIG.length), fits: false }));
+    const { html, overBudget, reencoded } = await buildBig(reencode);
+    expect(reencode).toHaveBeenCalledOnce();
+    expect(reencoded).toBe(false);
+    expect(overBudget).toBe(true);
+    expect(imgSrcs(html)).toContain(BIG);
+  });
+
+  it("skips the re-encode when the inlined copy already fits", async () => {
+    const reencode = fakeReencode();
+    const { html, overBudget, reencoded } = await build(SPONSOR.design, "Sponsor", { reencode });
+    expect(reencode).not.toHaveBeenCalled();
+    expect(reencoded).toBe(false);
+    expect(overBudget).toBe(false);
+    expect(imgSrcs(html)).toContain(`${WEBP}QkdC`);
   });
 
   it("keeps the inlined background when reencode fails", async () => {
     const reencode = vi.fn<ExportDeps["reencode"]>(async () => {
       throw new Error("encode failed");
     });
-    const { html, reencoded } = await build(SPONSOR.design, "Sponsor", { reencode });
+    const { html, reencoded } = await buildBig(reencode);
+    expect(reencode).toHaveBeenCalledOnce();
     expect(reencoded).toBe(false);
-    expect(imgSrcs(html)).toContain(`${WEBP}QkdC`);
+    expect(imgSrcs(html)).toContain(BIG);
     expect(html).not.toContain("/templates/");
   });
 
-  it("ignores a reencode result that isn't a raster data URL", async () => {
-    const reencode = fakeReencode("https://images.unsplash.com/photo-1");
-    const { html, reencoded } = await build(SPONSOR.design, "Sponsor", { reencode });
+  it("keeps the inlined background when reencode never settles, after IMAGE_TIMEOUT_MS", async () => {
+    vi.useFakeTimers();
+    let started!: () => void;
+    const reencodeStarted = new Promise<void>((resolve) => (started = resolve));
+    const reencode = vi.fn<ExportDeps["reencode"]>(() => {
+      started();
+      return new Promise(() => {});
+    });
+    const result = buildBig(reencode);
+    await reencodeStarted; // the timeout is armed before reencode is called
+    await vi.advanceTimersByTimeAsync(IMAGE_TIMEOUT_MS);
+    const { html, reencoded } = await result;
     expect(reencoded).toBe(false);
+    expect(imgSrcs(html)).toContain(BIG);
+  });
+
+  it("ignores a reencode result that isn't a raster data URL", async () => {
+    const { html, reencoded } = await buildBig(fakeReencode("https://images.unsplash.com/photo-1"));
+    expect(reencoded).toBe(false);
+    expect(imgSrcs(html)).toContain(BIG);
     expect(html).not.toMatch(/https?:\/\//);
   });
 
@@ -383,7 +439,7 @@ describe("exportFileName", () => {
 });
 
 describe("downloadHtml", () => {
-  it("downloads a text/html blob under the safe file name, then revokes the URL", async () => {
+  it("downloads a text/html blob under the safe file name, then revokes the URL after DOWNLOAD_REVOKE_MS", async () => {
     vi.useFakeTimers();
     const anchor = { href: "", download: "", style: {} as Record<string, string>, click: vi.fn(), remove: vi.fn() };
     const appendChild = vi.fn();
@@ -400,6 +456,8 @@ describe("downloadHtml", () => {
     expect(anchor.download).toBe("cafe-wifi.html");
     expect(anchor.click).toHaveBeenCalledOnce();
     expect(anchor.remove).toHaveBeenCalledOnce();
+    vi.advanceTimersByTime(DOWNLOAD_REVOKE_MS - 1);
+    expect(revokeObjectURL).not.toHaveBeenCalled(); // Safari needs the URL a while after the click
     vi.runAllTimers();
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:export");
   });

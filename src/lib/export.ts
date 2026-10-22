@@ -26,6 +26,9 @@ export const MSG_UNSAFE_OUTPUT = "The page couldn't be built safely. Try again, 
 /** One slow host can't hang the export: each image step gives up after this long. */
 export const IMAGE_TIMEOUT_MS = 20_000;
 
+/** How long the download's blob URL lives. Safari can fail a download whose URL is revoked sooner. */
+export const DOWNLOAD_REVOKE_MS = 30_000;
+
 const DEFAULT_DEPS: ExportDeps = {
   inline: inlineFromUrl,
   reencode: (src, allowance) => reencodeToFit((edge, q) => encodeAt(src, edge, q), allowance),
@@ -109,27 +112,28 @@ async function toDataUrl(src: string, kind: ImageKind, inline: ExportDeps["inlin
 
 /** The design with every image `src` replaced by a raster data URL. */
 async function inlineImages(design: Design, inline: ExportDeps["inline"]): Promise<Design> {
-  const cache = new Map<string, Promise<string>>();
-  const get = (src: string, kind: ImageKind) => {
-    const key = `${kind} ${src}`;
-    let p = cache.get(key);
-    if (!p) cache.set(key, (p = toDataUrl(src, kind, inline)));
-    return p;
-  };
-
   const bg = design.background;
   const [background, blocks] = await Promise.all([
-    bg.type === "image" ? get(bg.src, "background").then((src) => ({ ...bg, src })) : bg,
+    bg.type === "image" ? toDataUrl(bg.src, "background", inline).then((src) => ({ ...bg, src })) : bg,
     Promise.all(
-      design.blocks.map((b) => (b.kind === "image" ? get(b.src, "image").then((src) => ({ ...b, src })) : b)),
+      design.blocks.map((b) =>
+        b.kind === "image" ? toDataUrl(b.src, "image", inline).then((src) => ({ ...b, src })) : b,
+      ),
     ),
   ]);
   return { ...design, background, blocks };
 }
 
+type FormAction = "[PORTAL_SUBMIT_URL]" | "[ROUTER_FORM_ACTION]";
+
 /** Where the form must post: guest details go to the portal service, never to the router. */
-const formAction = (design: Design) =>
+const formAction = (design: Design): FormAction =>
   design.form.fields.length > 0 ? "[PORTAL_SUBMIT_URL]" : "[ROUTER_FORM_ACTION]";
+
+const FORM_COMMENT: Record<FormAction, string> = {
+  "[PORTAL_SUBMIT_URL]": PORTAL_COMMENT,
+  "[ROUTER_FORM_ACTION]": ROUTER_COMMENT,
+};
 
 // The only URL-bearing attribute values the export may carry; srcset, formaction, poster, ping,
 // background and data none. `[\s:]` also catches namespaced forms such as xlink:href.
@@ -170,17 +174,17 @@ function assertSelfContained(markup: string, action: string): void {
 async function renderPage(design: Design, name: string): Promise<string> {
   const { renderToStaticMarkup } = await import("react-dom/server");
   let markup = renderToStaticMarkup(createElement(SplashPage, { design, screen: "landing", mode: "export" }));
+  const action = formAction(design);
 
   const formAt = markup.indexOf("<form");
-  if (formAt >= 0) {
-    const comment = design.form.fields.length > 0 ? PORTAL_COMMENT : ROUTER_COMMENT;
-    markup = markup.slice(0, formAt) + comment + markup.slice(formAt);
-  }
-  assertSelfContained(markup, formAction(design));
+  if (formAt >= 0) markup = markup.slice(0, formAt) + FORM_COMMENT[action] + markup.slice(formAt);
+  assertSelfContained(markup, action);
 
   const html =
     '<!doctype html><html lang="en"><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+    // Stops iOS turning phone numbers in the terms into tel: links.
+    '<meta name="format-detection" content="telephone=no">' +
     `<title>${escapeHtml(name.trim() || "WiFi login")}</title>` +
     `<style>${EXPORT_CSS}</style></head><body>${markup}</body></html>`;
   // The wrapper's fixed head adds exactly one <style>, and the body was checked to have none.
@@ -189,9 +193,10 @@ async function renderPage(design: Design, name: string): Promise<string> {
 }
 
 /**
- * Builds the standalone guest page. Every image is inlined first; a photo background is then
- * re-encoded to fit what's left of PAGE_BUDGET. Rejects with an ExportError (a message for the
- * customer) when an image can't be inlined; over budget only sets `overBudget`.
+ * Builds the standalone guest page. Every image is inlined first; a photo background that doesn't
+ * fit what's left of PAGE_BUDGET is then re-encoded, and the smaller of the two copies ships
+ * (T-023-reencode-only-when-needed). Rejects with an ExportError (a message for the customer)
+ * when an image can't be inlined; over budget only sets `overBudget`.
  */
 export async function buildExportHtml(
   design: Design,
@@ -207,17 +212,21 @@ export async function buildExportHtml(
     // The rest of the page, measured with the background reduced to a 1x1 pixel.
     const without = byteLength(await renderPage({ ...page, background: { ...bg, src: PIXEL } }, name));
     const allowance = Math.max(0, PAGE_BUDGET - (without - PIXEL.length));
-    try {
-      const { dataUrl } = await withTimeout(
-        Promise.resolve().then(() => reencode(bg.src, allowance)),
-        IMAGE_TIMEOUT_MS,
-      );
-      if (isRasterDataUrl(dataUrl)) {
-        page = { ...page, background: { ...bg, src: dataUrl } };
-        reencoded = true;
+    // Data URLs are ASCII, so their length is their size in bytes.
+    if (bg.src.length > allowance) {
+      try {
+        const { dataUrl } = await withTimeout(
+          Promise.resolve().then(() => reencode(bg.src, allowance)),
+          IMAGE_TIMEOUT_MS,
+        );
+        // A copy that fits is always smaller; one that doesn't ships only if it's still smaller.
+        if (isRasterDataUrl(dataUrl) && dataUrl.length < bg.src.length) {
+          page = { ...page, background: { ...bg, src: dataUrl } };
+          reencoded = true;
+        }
+      } catch {
+        // Keep the inlined background, which is already a raster data URL; the size toast warns.
       }
-    } catch {
-      // Keep the inlined background, which is already a raster data URL; the size toast warns.
     }
   }
 
@@ -238,7 +247,7 @@ export function downloadHtml(html: string, name: string): void {
     a.click();
   } finally {
     a.remove();
-    // Revoked on the next task, not synchronously, so Safari and Firefox have started the download.
-    setTimeout(() => URL.revokeObjectURL(url), 0);
+    // Revoked well after the click: Safari can fail a blob download whose URL goes away too soon.
+    setTimeout(() => URL.revokeObjectURL(url), DOWNLOAD_REVOKE_MS);
   }
 }
