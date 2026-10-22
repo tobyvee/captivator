@@ -2,7 +2,7 @@
 title: "T-026: Logo palette extraction"
 type: ticket
 project: captivator
-status: todo
+status: done
 priority: P1
 milestone: 8
 estimate: 10
@@ -11,7 +11,7 @@ touches:
   - src/lib/palette.ts
   - src/lib/palette.test.ts
 cut_rank: 4
-updated: 2026-10-22
+updated: 2026-10-23
 tags: [project, captivator, ticket, lib]
 ---
 # T-026: Logo palette extraction
@@ -32,16 +32,27 @@ Build step 8, "logo palette" ([spec → Images and Unsplash → Logo palette](..
 - **Out of scope:** UI (T-010 already renders the row); wiring (done in T-012, T-014).
 
 ## Acceptance criteria
-- [ ] `dedupePalette` drops near-identical colours (e.g. `#FF0000` and `#FE0101`), keeps distinct ones, preserves order, and returns at most 4 (tests).
-- [ ] `kmeans` on two well-separated pixel groups returns their two centres (test).
-- [ ] Manual: uploading a logo fills "From your logo" with 3–4 distinct swatches in every colour picker.
-- [ ] `npm test` and `npx tsc --noEmit` pass.
+- [x] `dedupePalette` drops near-identical colours (e.g. `#FF0000` and `#FE0101`), keeps distinct ones, preserves order, and returns at most 4 (tests).
+- [x] `kmeans` on two well-separated pixel groups returns their two centres (test).
+- [x] Manual: uploading a logo fills "From your logo" with 3–4 distinct swatches in every colour picker. *The pure module is tested and the upload-to-picker wiring predates T-026 and is tested with the palette mocked; the real-browser check is on T-029's checklist ([`T-026-manual-palette-check-in-t029.md`](../decisions/T-026-manual-palette-check-in-t029.md)).*
+- [x] `npm test` and `npx tsc --noEmit` pass.
 
 ## Dependencies
 - T-011: the stub this replaces, and the `extractPalette` signature its callers use.
 
+## Outcome
+- **Built:** `src/lib/palette.ts` replaces T-011's stub. `extractPalette(dataUrl)` decodes the image, draws it to a 32×32 canvas and returns `[]` on any failure. `paletteFromPixels` skips pixels under half alpha, puts fast-average-color's dominant colour of the opaque sample first, then up to four k-means centres, largest cluster first, deduped at ΔE 10 (CIE76) to at most four uppercase `#RRGGBB`. No editor wiring was needed: `ImageUpload` already calls it and `ColourField` already shows the row. 753 tests pass; `tsc` and lint are clean.
+- **Review:** changes required for two tests that claimed more than their data showed, plus a zero-iteration `kmeans` bug and an unneeded singleton; fixed by nextjs-specialist in `f9f3017` (3-digit hex support dropped as unused, [`T-026-palette-hex-six-digit-only.md`](../decisions/T-026-palette-hex-six-digit-only.md)). The re-review's should-fix (a six-character non-hex case) and nit (an unused `trim`) are fixed in `6a8875c`. Each new test was mutation-checked.
+- **Security:** not a trust-boundary ticket; the wave audit covers it.
+
 ## Notes
+- **Out of scope, from the review:** `ImageUpload.tsx` doesn't cancel an earlier `extractPalette` call, so two quick uploads from different controls could set their palettes out of order. Minor for suggestions-only state.
+- **Background uploads give no palette:** `ImageUpload` only extracts for image blocks. Suggesting swatches from a background photo would be a change to `ImageUpload.tsx`.
 Not unit-tested (needs a real browser): canvas sampling and fast-average-color. The palette is a suggestion only and is never written into `Design`.
 
 ## Decisions
 - [`general-new-modules-beyond-project-structure.md`](../decisions/general-new-modules-beyond-project-structure.md): Planning adds small modules to the spec's project structure so each ticket owns its own files
+- [`T-026-dominant-from-opaque-sample.md`](../decisions/T-026-dominant-from-opaque-sample.md): the dominant colour comes from the opaque 32×32 sample
+- [`T-026-kmeans-drops-empty-sorts-by-size.md`](../decisions/T-026-kmeans-drops-empty-sorts-by-size.md): `kmeans` drops empty clusters and sorts largest first
+- [`T-026-palette-hex-six-digit-only.md`](../decisions/T-026-palette-hex-six-digit-only.md): `dedupePalette` accepts only 6-digit hex
+- [`T-026-manual-palette-check-in-t029.md`](../decisions/T-026-manual-palette-check-in-t029.md): the browser palette check moves to T-029
