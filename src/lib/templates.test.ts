@@ -1,9 +1,11 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { BLANK as SCHEMA_BLANK, Design } from "./design-schema";
+import { BLANK as SCHEMA_BLANK, Design, Template } from "./design-schema";
 import {
   BLANK,
+  MINIMAL,
+  PHOTO_HERO,
   PLACEHOLDER_LOGO,
   PLACEHOLDER_SPONSOR,
   SPONSOR,
@@ -22,6 +24,24 @@ const pngSize = (dataUrl: string) => {
     width: bytes.readUInt32BE(16),
     height: bytes.readUInt32BE(20),
   };
+};
+
+// Compact (fit-check) content height by T-002's arithmetic: column padding 56 + 40 and gap 18
+// between column children; images by size; text at its line height per explicit line (wrapping
+// isn't modelled); the form as one child (48px inputs with gap 10, then gap 12 to the 44px terms
+// row and the 50px button). The measured check is the fit check (T-028).
+const IMAGE_HEIGHT = { sm: 72, md: 120, lg: 168 } as const;
+const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
+const compactHeight = ({ blocks, form }: Design) => {
+  const blockHeights = blocks.map((b) =>
+    b.kind === "image"
+      ? IMAGE_HEIGHT[b.size]
+      : b.text.split("\n").length * b.size * (b.role === "heading" ? 1.15 : 1.4),
+  );
+  const inputs = form.fields.length * 48 + Math.max(0, form.fields.length - 1) * 10;
+  const formParts = [inputs, form.terms.mode === "checkbox" ? 44 : 0, 50].filter(Boolean);
+  const children = [...blockHeights, sum(formParts) + (formParts.length - 1) * 12];
+  return 96 + sum(children) + (children.length - 1) * 18;
 };
 
 describe("templates", () => {
@@ -45,9 +65,41 @@ describe("templates", () => {
     expect(BLANK).toBe(SCHEMA_BLANK);
   });
 
-  it("lists Sponsor first and Blank last", () => {
-    expect(TEMPLATES[0]).toBe(SPONSOR);
-    expect(TEMPLATES.at(-1)).toBe(BLANK);
+  it("lists Sponsor, Photo hero, Minimal, then Blank", () => {
+    expect(TEMPLATES).toEqual([SPONSOR, PHOTO_HERO, MINIMAL, BLANK]);
+    expect(TEMPLATES.map((t) => t.id)).toEqual(["sponsor", "photo-hero", "minimal", "blank"]);
+  });
+
+  // templates.ts builds each template with Template.parse, so a broken one throws on import.
+  it("rejects a broken template", () => {
+    const badVersion = { ...PHOTO_HERO, design: { ...PHOTO_HERO.design, version: 3 } };
+    expect(() => Template.parse(badVersion)).toThrow();
+    const twoEmails = { ...MINIMAL.design.form, fields: ["email", "email"] };
+    const badFields = { ...MINIMAL, design: { ...MINIMAL.design, form: twoEmails } };
+    expect(() => Template.parse(badFields)).toThrow();
+  });
+
+  it("keeps every template's compact content within the 600px login sheet", () => {
+    expect(compactHeight(SPONSOR.design)).toBeCloseTo(598, 0);
+    for (const t of TEMPLATES) expect(compactHeight(t.design), t.id).toBeLessThanOrEqual(600);
+  });
+
+  it("starts Photo hero and Minimal with the placeholder logo", () => {
+    for (const t of [PHOTO_HERO, MINIMAL]) {
+      expect(t.design.blocks[0]).toMatchObject({
+        kind: "image",
+        src: PLACEHOLDER_LOGO,
+        alt: "Your logo",
+      });
+    }
+  });
+
+  it("collects email with terms on in Photo hero, and name and email in Minimal", () => {
+    expect(PHOTO_HERO.design.form.fields).toEqual(["email"]);
+    expect(PHOTO_HERO.design.form.terms.mode).toBe("checkbox");
+    expect(MINIMAL.design.form.fields).toEqual(["name", "email"]);
+    expect(MINIMAL.design.form.terms.mode).toBe("off");
+    expect(MINIMAL.design.form.button.variant).toBe("outline");
   });
 
   it("starts Blank with no blocks and terms off", () => {
@@ -71,6 +123,16 @@ describe("templates", () => {
     if (bg.type !== "image") return;
     expect(bg.src).toBe("/templates/sponsor.jpg");
     expect(bg.credit).toBeUndefined();
+  });
+
+  it("uses each template's own bundled photo", () => {
+    expect(PHOTO_HERO.design.background).toMatchObject({ src: "/templates/photo-hero.jpg" });
+    expect(MINIMAL.design.background).toMatchObject({ src: "/templates/minimal.jpg" });
+  });
+
+  it("credits Photo hero's and Minimal's photographers", () => {
+    expect(TEMPLATE_CREDITS["photo-hero"]?.name).toBe("Miguel Dominguez");
+    expect(TEMPLATE_CREDITS.minimal?.name).toBe("Woliul Hasan");
   });
 
   it("credits every template that has a bundled photo", () => {

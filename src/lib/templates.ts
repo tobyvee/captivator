@@ -15,6 +15,14 @@ export const PLACEHOLDER_SPONSOR =
 Template.parse(BLANK);
 export { BLANK };
 
+// Terms wording shared by the templates: bracketed prompts, never invented legal copy.
+const TERMS_PROMPTS = {
+  label: "I agree to the",
+  linkText: "terms of use",
+  body: "[Paste your terms of use here.]\n\n[For example: who provides the WiFi, what guests may not do on it, and how their details are handled.]",
+  version: 1,
+};
+
 export const SPONSOR: Template = Template.parse({
   id: "sponsor",
   name: "Sponsor",
@@ -61,21 +69,81 @@ export const SPONSOR: Template = Template.parse({
       fields: ["name", "email"],
       inputBg: "#FFFFFF",
       inputText: "#111111",
-      terms: {
-        mode: "checkbox",
-        label: "I agree to the",
-        linkText: "terms of use",
-        body: "[Paste your terms of use here.]\n\n[For example: who provides the WiFi, what guests may not do on it, and how their details are handled.]",
-        textColour: "#FFFFFF",
-        version: 1,
-      },
+      terms: { ...TERMS_PROMPTS, mode: "checkbox", textColour: "#FFFFFF" },
       button: { label: "CONNECT", bg: "#F97316", fg: "#111111", variant: "solid" },
     },
   },
 });
 
-// Picker order. Photo hero and Minimal go before Blank (T-018).
-export const TEMPLATES: Template[] = [SPONSOR, BLANK];
+export const PHOTO_HERO: Template = Template.parse({
+  id: "photo-hero",
+  name: "Photo hero",
+  description: "A full-screen venue photo with your message. Collects an email address.",
+  design: {
+    version: 2,
+    background: {
+      type: "image",
+      src: "/templates/photo-hero.jpg",
+      fit: "fill",
+      zoom: 1,
+      focus: { x: 50, y: 50 },
+      backdrop: "#0B1F2E",
+      overlay: { from: "#334155", to: "#050A1E", opacity: 0.75 },
+    },
+    blocks: [
+      { id: "photo-hero-logo", kind: "image", src: PLACEHOLDER_LOGO, alt: "Your logo", size: "sm" },
+      {
+        id: "photo-hero-heading",
+        kind: "text",
+        text: "WIFI IS\nON THE HOUSE",
+        role: "heading",
+        colour: "#FFFFFF",
+        size: 34,
+      },
+    ],
+    form: {
+      fields: ["email"],
+      inputBg: "#FFFFFF",
+      inputText: "#111111",
+      terms: { ...TERMS_PROMPTS, mode: "checkbox", textColour: "#FFFFFF" },
+      button: { label: "CONNECT", bg: "#FACC15", fg: "#111111", variant: "solid" },
+    },
+  },
+});
+
+// The white placeholder ring is faint on this light background; the customer replaces it
+// (T-018-minimal-keeps-white-placeholder-logo).
+export const MINIMAL: Template = Template.parse({
+  id: "minimal",
+  name: "Minimal",
+  description: "Just your logo on a soft abstract background, with an outline Connect button.",
+  design: {
+    version: 2,
+    background: {
+      type: "image",
+      src: "/templates/minimal.jpg",
+      fit: "fill",
+      zoom: 1,
+      focus: { x: 50, y: 50 },
+      backdrop: "#EDE9FE",
+      overlay: { from: "#FFFFFF", to: "#FFFFFF", opacity: 0.35 },
+    },
+    blocks: [
+      { id: "minimal-logo", kind: "image", src: PLACEHOLDER_LOGO, alt: "Your logo", size: "md" },
+    ],
+    form: {
+      fields: ["name", "email"],
+      inputBg: "#FFFFFF",
+      inputText: "#18181B",
+      terms: { ...TERMS_PROMPTS, mode: "off", textColour: "#18181B" },
+      // Outline: bg is the border, fg the label (T-007-outline-button-colours).
+      button: { label: "Connect", bg: "#18181B", fg: "#18181B", variant: "outline" },
+    },
+  },
+});
+
+// Picker order.
+export const TEMPLATES: Template[] = [SPONSOR, PHOTO_HERO, MINIMAL, BLANK];
 
 // Photographer credits for bundled template photos, shown on the picker cards and in the
 // README. Template backgrounds carry no `credit` (see T-002-template-photos-and-credits).
@@ -83,5 +151,13 @@ export const TEMPLATE_CREDITS: Partial<Record<string, { name: string; profileUrl
   sponsor: {
     name: "Marcel Strauß",
     profileUrl: "https://unsplash.com/@martzzl?utm_source=captivator&utm_medium=referral",
+  },
+  "photo-hero": {
+    name: "Miguel Dominguez",
+    profileUrl: "https://unsplash.com/@migueldominguez?utm_source=captivator&utm_medium=referral",
+  },
+  minimal: {
+    name: "Woliul Hasan",
+    profileUrl: "https://unsplash.com/@shotbywoliul?utm_source=captivator&utm_medium=referral",
   },
 };
