@@ -34,11 +34,17 @@ const photo = () => {
 const button = (name: string) => screen.getByRole("button", { name });
 const dot = () => screen.getByRole("button", { name: /^Focus point, / });
 
-// The dot travels over its parent, the box inset by the dot's radius: here 200×100px at (10, 20).
-const stubTrack = () =>
-  vi.spyOn(dot().parentElement!, "getBoundingClientRect").mockReturnValue(new DOMRect(10, 20, 200, 100));
-const pointer = (type: "pointerDown" | "pointerMove" | "pointerUp", clientX: number, clientY: number) =>
-  fireEvent[type](dot(), { pointerId: 1, button: 0, clientX, clientY });
+// The dot travels over the track, the box inset by the dot's radius: here 200×100px at (10, 20). The
+// dot's own 44px box is centred on 50%, 50%, at (110, 70), where every drag test starts.
+const stubTrack = () => {
+  const track = dot().closest("div");
+  if (!track) throw new Error("the dot has no track");
+  vi.spyOn(track, "getBoundingClientRect").mockReturnValue(new DOMRect(10, 20, 200, 100));
+  vi.spyOn(dot(), "getBoundingClientRect").mockReturnValue(new DOMRect(88, 48, 44, 44));
+};
+type PointerType = "pointerDown" | "pointerMove" | "pointerUp" | "pointerCancel" | "lostPointerCapture";
+const pointer = (type: PointerType, clientX: number, clientY: number, pointerId = 1) =>
+  fireEvent[type](dot(), { pointerId, button: 0, clientX, clientY });
 const pressedFocus = () =>
   within(screen.getByRole("group", { name: "Focus point" }))
     .getAllByRole("button")
@@ -201,7 +207,9 @@ describe("FocusGrid", () => {
     render(<FocusGrid value={{ x: 37, y: 62 }} onChange={vi.fn()} />);
     expect(dot()).toHaveAccessibleName("Focus point, 37% across, 62% down");
     expect(dot()).toHaveStyle({ left: "37%", top: "62%" });
-    expect(dot()).toHaveAccessibleDescription("Drag the dot for fine control, or tap a square.");
+    expect(dot()).toHaveAccessibleDescription(
+      "Drag the dot for fine control, or tap a square. Arrow keys move the dot 5%.",
+    );
   });
 
   it("drags the dot with rounded percentages, clamped to the photo, until the pointer lifts", () => {
@@ -223,6 +231,44 @@ describe("FocusGrid", () => {
     pointer("pointerUp", 110, 70);
     pointer("pointerMove", 210, 120);
     expect(onChange).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the dot under the pointer when it's grabbed off-centre", () => {
+    const onChange = vi.fn();
+    render(<FocusGrid value={{ x: 50, y: 50 }} onChange={onChange} />);
+    stubTrack();
+    pointer("pointerDown", 120, 85); // 10px right of and 15px below the dot's centre
+    pointer("pointerMove", 120, 85);
+    expect(onChange).not.toHaveBeenCalled();
+    pointer("pointerMove", 140, 95); // 20px right, 10px down: 10% and 10% of the track
+    expect(onChange).toHaveBeenLastCalledWith({ x: 60, y: 60 });
+  });
+
+  it.each(["pointerCancel", "lostPointerCapture"] as const)("ends the drag on %s", (end) => {
+    const onChange = vi.fn();
+    render(<FocusGrid value={{ x: 50, y: 50 }} onChange={onChange} />);
+    stubTrack();
+    pointer("pointerDown", 110, 70);
+    pointer(end, 110, 70);
+    pointer("pointerMove", 210, 120);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("ignores another pointer's moves during a drag", () => {
+    const onChange = vi.fn();
+    render(<FocusGrid value={{ x: 50, y: 50 }} onChange={onChange} />);
+    stubTrack();
+    pointer("pointerDown", 110, 70);
+    pointer("pointerMove", 210, 120, 2);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("leaves modified arrow keys to the browser", async () => {
+    const onChange = vi.fn();
+    render(<FocusGrid value={{ x: 50, y: 50 }} onChange={onChange} />);
+    act(() => dot().focus());
+    await userEvent.setup().keyboard("{Alt>}{ArrowLeft}{/Alt}{Meta>}{ArrowLeft}{/Meta}{Control>}{ArrowUp}{/Control}");
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it("ignores pointer moves that didn't start on the dot with the main button", () => {

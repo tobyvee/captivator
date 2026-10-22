@@ -20,11 +20,11 @@ const COLUMNS = ["left", "centre", "right"] as const;
 
 /** How far one arrow key press moves the dot, in percent. */
 const KEY_STEP = 5;
-const ARROWS: Record<string, FocusPoint> = {
-  ArrowLeft: { x: -KEY_STEP, y: 0 },
-  ArrowRight: { x: KEY_STEP, y: 0 },
-  ArrowUp: { x: 0, y: -KEY_STEP },
-  ArrowDown: { x: 0, y: KEY_STEP },
+const ARROWS: Partial<Record<string, { dx: number; dy: number }>> = {
+  ArrowLeft: { dx: -KEY_STEP, dy: 0 },
+  ArrowRight: { dx: KEY_STEP, dy: 0 },
+  ArrowUp: { dx: 0, dy: -KEY_STEP },
+  ArrowDown: { dx: 0, dy: KEY_STEP },
 };
 
 // "Focus top left" … "Focus bottom right"; the middle square is "Focus centre", not "middle centre".
@@ -53,6 +53,8 @@ export function FocusGrid({ value, onChange, src, describedBy }: Props) {
   // The dot's travel area: the box inset by the dot's radius, so a dot at 0% or 100% stays whole.
   const track = useRef<HTMLDivElement>(null);
   const dragging = useRef<number | null>(null);
+  // Where the pointer took hold, relative to the dot's centre, so grabbing off-centre doesn't jump.
+  const grab = useRef({ dx: 0, dy: 0 });
   // Read out after an arrow key moves the dot; empty otherwise, so a drag isn't narrated.
   const [announcement, setAnnouncement] = useState("");
 
@@ -62,6 +64,8 @@ export function FocusGrid({ value, onChange, src, describedBy }: Props) {
 
   const onPointerDown = (e: PointerEvent<HTMLButtonElement>) => {
     if (e.button !== 0) return;
+    const dot = e.currentTarget.getBoundingClientRect();
+    grab.current = { dx: e.clientX - (dot.left + dot.width / 2), dy: e.clientY - (dot.top + dot.height / 2) };
     e.currentTarget.setPointerCapture(e.pointerId);
     dragging.current = e.pointerId;
     setAnnouncement("");
@@ -71,8 +75,8 @@ export function FocusGrid({ value, onChange, src, describedBy }: Props) {
     const rect = track.current?.getBoundingClientRect();
     if (dragging.current !== e.pointerId || !rect || rect.width === 0 || rect.height === 0) return;
     move({
-      x: percent(((e.clientX - rect.left) / rect.width) * 100),
-      y: percent(((e.clientY - rect.top) / rect.height) * 100),
+      x: percent(((e.clientX - grab.current.dx - rect.left) / rect.width) * 100),
+      y: percent(((e.clientY - grab.current.dy - rect.top) / rect.height) * 100),
     });
   };
 
@@ -82,9 +86,10 @@ export function FocusGrid({ value, onChange, src, describedBy }: Props) {
 
   const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
     const step = ARROWS[e.key];
-    if (!step) return;
+    // Modified arrows belong to the browser (Alt+Left is Back) and to screen readers.
+    if (!step || e.altKey || e.metaKey || e.ctrlKey) return;
     e.preventDefault(); // the page would scroll
-    const next = { x: percent(value.x + step.x), y: percent(value.y + step.y) };
+    const next = { x: percent(value.x + step.dx), y: percent(value.y + step.dy) };
     move(next);
     setAnnouncement(position(next));
   };
@@ -150,7 +155,8 @@ export function FocusGrid({ value, onChange, src, describedBy }: Props) {
         </span>
       </div>
       <p id={helpId} className="text-xs leading-[1.45] text-zinc-600">
-        Drag the dot for fine control, or tap a square.
+        Drag the dot for fine control, or tap a square.{" "}
+        <span className="sr-only">Arrow keys move the dot 5%.</span>
       </p>
     </>
   );
