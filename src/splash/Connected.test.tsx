@@ -32,6 +32,8 @@ const design = (blocks: Design["blocks"], edit?: (d: Design) => void): Design =>
   return Design.parse(d);
 };
 
+const title = () => screen.getByRole("heading", { level: 1, name: "You're online" });
+
 const badge = () => {
   const el = screen.getByRole("status").previousElementSibling as HTMLElement | null;
   if (!el?.querySelector("svg")) throw new Error("no badge before the heading");
@@ -39,12 +41,14 @@ const badge = () => {
 };
 
 describe("Connected", () => {
-  it("shows the logo, then a tick badge and \"You're online\" as a status heading", () => {
+  it('shows the logo, then a tick badge and "You\'re online" as a heading in a status region', () => {
     render(<Connected design={design([image("logo")])} mode="preview" />);
-    const title = screen.getByRole("status");
-    expect(title.tagName).toBe("H1");
-    expect(title).toHaveTextContent("You're online");
-    expect(title).toHaveStyle({ fontSize: "40px", fontWeight: "800" });
+    const status = screen.getByRole("status");
+    expect(status.tagName).toBe("DIV");
+    expect(status).toHaveTextContent("You're online");
+    expect(status.children).toHaveLength(1);
+    expect(status.firstElementChild).toBe(title());
+    expect(title()).toHaveStyle({ fontSize: "40px", fontWeight: "800" });
     expect(screen.getByRole("img", { name: "Alt logo" })).toBeInTheDocument();
     expect(badge()).toHaveAttribute("aria-hidden", "true");
     expect(badge()).toHaveStyle({ width: "72px", height: "72px" });
@@ -57,7 +61,7 @@ describe("Connected", () => {
     render(<Connected design={d} mode="preview" />);
     expect(badge().style.background).toBe("rgb(198, 244, 50)");
     expect(badge().style.color).toBe("rgb(15, 42, 68)");
-    expect(screen.getByRole("status").style.color).toBe("rgb(198, 244, 50)");
+    expect(title().style.color).toBe("rgb(198, 244, 50)");
   });
 
   it("without a heading, uses the best text colour for the page", () => {
@@ -65,7 +69,43 @@ describe("Connected", () => {
     render(<Connected design={d} mode="preview" />);
     expect(badge().style.background).toBe("rgb(255, 255, 255)");
     expect(badge().style.color).toBe("rgb(11, 18, 32)");
-    expect(screen.getByRole("status").style.color).toBe("rgb(255, 255, 255)");
+    expect(title().style.color).toBe("rgb(255, 255, 255)");
+  });
+
+  it.each([
+    [
+      "fails 3:1 on a plain page",
+      "#1E293B",
+      { type: "colour", colour: "#0F2A44" },
+      "rgb(255, 255, 255)",
+    ],
+    [
+      "fails 3:1 on one gradient stop",
+      "#FFFFFF",
+      { type: "gradient", from: "#94A3B8", to: "#FDE68A", direction: "down" },
+      "rgb(17, 17, 17)",
+    ],
+  ] as const)(
+    "falls back to the best text colour when the heading colour %s",
+    (_, colour, bg, want) => {
+      render(
+        <Connected
+          design={design([heading(colour)], (x) => (x.background = { ...bg }))}
+          mode="preview"
+        />,
+      );
+      expect(title().style.color).toBe(want);
+      expect(badge().style.background).toBe(want);
+    },
+  );
+
+  it("keeps a heading colour that passes 3:1 though not 4.5:1, as 40px/800 is large text", () => {
+    const d = design(
+      [heading("#FFFFFF")],
+      (x) => (x.background = { type: "colour", colour: "#777777" }),
+    );
+    render(<Connected design={d} mode="preview" />);
+    expect(title().style.color).toBe("rgb(255, 255, 255)");
   });
 
   it("thanks the sponsor and shows the second image only when there is one", () => {

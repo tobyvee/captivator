@@ -1,5 +1,11 @@
 import type { CSSProperties, JSX } from "react";
-import { backgroundColours, bestTextColour, mainBackgroundColour } from "../lib/contrast";
+import {
+  backgroundColours,
+  bestTextColour,
+  mainBackgroundColour,
+  requiredRatio,
+  worstRatio,
+} from "../lib/contrast";
 import type { Design } from "../lib/design-schema";
 import type { ImageBlockSpec, RenderMode, TextBlockSpec } from "../lib/types";
 import { connectButtonStyle } from "./Form";
@@ -9,6 +15,9 @@ import { COLUMN } from "./layout";
 export type ConnectedProps = { design: Design; mode: RenderMode; onContinue?: () => void };
 
 const SPACER: CSSProperties = { flex: 1 };
+
+const TITLE_SIZE = 40;
+const TITLE_WEIGHT = 800;
 
 const BADGE: CSSProperties = {
   flexShrink: 0,
@@ -28,7 +37,12 @@ export function Connected({ design, mode, onContinue }: ConnectedProps): JSX.Ele
     (b): b is TextBlockSpec => b.kind === "text" && b.role === "heading",
   );
   const page = backgroundColours(design.background);
-  const accent = heading?.colour ?? bestTextColour(page);
+  // The first heading's colour when it reads on every page colour at the title's size (3:1, large
+  // text), otherwise near-black or white, as the terms sheet falls back (T-022-connected-heading-fallback).
+  const accent =
+    heading && worstRatio(heading.colour, page) >= requiredRatio(TITLE_SIZE, TITLE_WEIGHT)
+      ? heading.colour
+      : bestTextColour(page);
   // In the editor, clicks on empty space fall through to SplashPage's root, which selects the
   // background (T-022-connected-clicks-fall-through).
   const interactive = mode !== "export";
@@ -54,19 +68,21 @@ export function Connected({ design, mode, onContinue }: ConnectedProps): JSX.Ele
           <path d="M20 6 9 17l-5-5" />
         </svg>
       </div>
-      <h1
-        role="status"
-        style={{
-          margin: 0,
-          fontSize: 40,
-          lineHeight: 1.05,
-          fontWeight: 800,
-          letterSpacing: "0.01em",
-          color: accent,
-        }}
-      >
-        You&apos;re online
-      </h1>
+      {/* The live region wraps the heading, so it keeps its heading role (T-022-connected-status-wrapper). */}
+      <div role="status">
+        <h1
+          style={{
+            margin: 0,
+            fontSize: TITLE_SIZE,
+            lineHeight: 1.05,
+            fontWeight: TITLE_WEIGHT,
+            letterSpacing: "0.01em",
+            color: accent,
+          }}
+        >
+          You&apos;re online
+        </h1>
+      </div>
       <div aria-hidden="true" style={SPACER} />
       {sponsor && (
         <>
