@@ -4,7 +4,7 @@ Captivator is an editor for designing a branded guest Wi-Fi splash (captive port
 
 **Live:** https://app.captivator.workers.dev (the template picker is at `/` and the editor at `/editor`)
 
-![The Captivator editor: the block list on the left, a phone preview of a branded Wi-Fi sign-in page in the middle, and the inspector panel with colour and text controls on the right](docs/editor.png)
+![The Captivator editor: the block list on the left, a phone preview of a branded Wi-Fi sign-in page in the middle, and the Background inspector with photo search, size, focus point and darkening controls on the right](docs/editor.png)
 
 This is the Phase 0 MVP. The [product requirements (PRD)](.project/prd/Captive%20Portal%20Designer%20%E2%80%94%20PRD.md) cover the product, and the [tech spec](.project/spec/Captivator%20MVP%20%E2%80%94%20Tech%20Spec.md) covers this build. Tickets, decisions and reviews are in [`.project/`](.project/).
 
