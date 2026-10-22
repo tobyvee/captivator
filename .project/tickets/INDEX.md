@@ -121,7 +121,7 @@ None. Every dependency exists, there are no cycles, every `todo` ticket has `tou
 
 | Wave | ID | Title | Priority | Milestone | Estimate | depends_on | Status |
 |---|---|---|---|---|---|---|---|
-| 1 | [T-001](T-001-scaffold.md) | Scaffold the Next.js app on vinext, with dependencies, Vitest, the deploy workflow and schema tests | P0 | 1 | 30 | — | todo |
+| 1 | [T-001](T-001-scaffold.md) | Scaffold the Next.js app on vinext, with dependencies, Vitest, the deploy workflow and schema tests | P0 | 1 | 30 | — | done |
 | 2 | [T-002](T-002-blank-and-sponsor-templates.md) | Blank and Sponsor templates | P0 | 1 | 10 | T-001 | todo |
 | 2 | [T-005](T-005-splashpage-skeleton.md) | SplashPage skeleton with text and image blocks | P0 | 2 | 15 | T-001 | todo |
 | 2 | [T-011](T-011-image-upload-pipeline.md) | Image upload pipeline and ImageUpload control | P0 | 3 | 20 | T-001 | todo |

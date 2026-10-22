@@ -1,0 +1,44 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deploy at a time, in push order: a running deploy is never cancelled, and
+# later pushes queue behind it rather than replacing one another.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  deploy:
+    # A manual run can pick any branch; only main ever reaches production.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          check-latest: true # cf declares Node ^22.23.0; the runner's cached 22.x may be older
+          cache: npm
+
+      - run: npm ci
+
+      # vitest run && vite build: a failing test stops the workflow before anything deploys.
+      - run: npm run build
+
+      # Deploys the output built above; deploy's own build is the same production vite build.
+      - run: npm run deploy -- --skip-build
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

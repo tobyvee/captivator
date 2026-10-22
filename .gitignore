@@ -42,3 +42,8 @@ pnpm-debug.log*
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# vinext and Cloudflare build output
+/dist/
+.vinext/
+.cloudflare/

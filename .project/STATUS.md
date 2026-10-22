@@ -11,21 +11,20 @@ tags: [project, captivator, status]
 
 ## Summary
 
-Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is planned and ready to build. The PRD, tech spec and editor canvas are done. The build is split into 35 tickets in 11 parallel-safe waves (`tickets/INDEX.md`), with nothing cut and the stretch work scheduled. The app deploys to Cloudflare Workers with vinext, because Vercel couldn't be used, and each ticket is pushed and deployed as it lands. The only code so far is the design-phase schema. The next step is the user's Cloudflare setup, then wave 1: `T-001`, the scaffold.
+Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is being built. The PRD, tech spec and editor canvas are done. The build is split into 35 tickets in 11 parallel-safe waves (`tickets/INDEX.md`), with nothing cut and the stretch work scheduled. The app deploys to Cloudflare Workers with vinext, because Vercel couldn't be used, and each ticket is pushed and deployed as it lands. Wave 1 is done: `T-001` scaffolded the app on vinext with Vitest, the schema tests and the deploy workflow. Its first deploy needs the user's Cloudflare secrets. The next step is wave 2: `T-002`, `T-005`, `T-011` and `T-003`.
 
 ## In progress
 
 ## Outstanding
 
-- [ ] Cloudflare setup (user, before T-001 is pushed): an API token from the "Edit Cloudflare Workers" template, plus `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as GitHub Actions secrets
-- [ ] T-001: Scaffold the Next.js app on vinext, with dependencies, Vitest, the deploy workflow and schema tests
-
-## Planned
-
+- [ ] Cloudflare setup (user): an API token from the "Edit Cloudflare Workers" template, plus `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as GitHub Actions secrets, then re-run the Deploy workflow for T-001's push
 - [ ] T-002: Blank and Sponsor templates
 - [ ] T-005: SplashPage skeleton with text and image blocks
 - [ ] T-011: Image upload pipeline and ImageUpload control
 - [ ] T-003: Contrast helpers
+
+## Planned
+
 - [ ] T-004: Store with every action, and localStorage persistence
 - [ ] T-007: Form renderer: fields, terms row, Connect and render modes
 - [ ] T-006: Background renderer: colour, gradient and photo
@@ -62,3 +61,4 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is plan
 - [x] Repo created, `git init`, `.project/` set up (2026-10-21)
 - [x] PRD and tech spec written and reviewed (2026-10-21)
 - [x] Build planned and prioritised: 35 tickets in 11 waves (2026-10-22)
+- [x] T-001: Scaffold the Next.js app on vinext, with dependencies, Vitest, the deploy workflow and schema tests (2026-10-22)

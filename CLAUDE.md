@@ -10,7 +10,7 @@ Captivator is a Next.js editor where a non-technical customer designs a branded 
 - [Captivator editor canvas](https://claude.ai/artifact/AWrSjgB8dZV2KWn8kkDeYj#page-dcb81aee8d83): the design artifact for this project and the source of truth for how the editor looks. Read it with the Artifact tool, never WebFetch; see **Reading the canvas** below.
 - `.project/prd/Captive Portal Designer — PRD.md`: the product. The **Phase 0** section covers the MVP; everything from "System context" onward (Peplink router, Workers portal service, RADIUS, consent) is the production path and is **out of scope here**.
 
-The code has not been scaffolded yet. The commands and layout below are the ones the spec plans. Update this file once they exist.
+The scaffold and the commands below exist (T-001). The rest of the layout is the spec's plan, which the tickets fill in.
 
 ### Reading the canvas
 
@@ -31,9 +31,10 @@ The artboards are `.dc.html` files under `project/`, and `project/canvas.json` d
 
 Tickets name their artboard. If the Artifact tool isn't available, or a read fails, build from the spec alone and say so in your report.
 
-## Commands (planned)
+## Commands
 
-- `npm run dev`: local dev server (vinext on Vite).
+- `npm run dev`: local dev server (vinext on Vite) at http://localhost:5173.
+- `npm run start`: serves the production build locally (`vite preview`).
 - `npm test`: runs `vitest run`.
 - `npx vitest run src/lib/contrast.test.ts`: run one test file; add `-t "<name>"` to run a single case.
 - `npm run build`: runs `vitest run && vite build`, so a failing test fails the build.

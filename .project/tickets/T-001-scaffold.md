@@ -2,7 +2,7 @@
 title: "T-001: Scaffold the Next.js app on vinext, with dependencies, Vitest, the deploy workflow and schema tests"
 type: ticket
 project: captivator
-status: todo
+status: done
 priority: P0
 milestone: 1
 estimate: 30
@@ -70,16 +70,16 @@ The app deploys to Cloudflare Workers with [vinext](https://vinext.dev/), not Ve
 - **Out of scope:** editing `design-schema.ts`; templates (T-002); "All four templates parse" (T-002/T-018 in `templates.test.ts`); the README (T-030); the KV data cache (T-031); pushing (the main session pushes once the ticket is recorded; implementers don't push); the Cloudflare account, API token and GitHub secrets (the user sets those up).
 
 ## Acceptance criteria
-- [ ] `npm run dev` (vinext) serves `/` with a link to `/editor`.
-- [ ] `git diff` shows no change to `src/lib/design-schema.ts` or `CLAUDE.md`, and `.gitignore` only gains lines.
-- [ ] Schema tests pass: rejects a third image, a third field, a duplicate field, a bad hex (`#FFF`, `red`), text over 120 characters; accepts a `data:image/png;base64,…` src, a `/templates/sponsor.jpg` src and an `https:` src.
-- [ ] **Security (schema is the trust boundary):** tests show a `javascript:alert(1)` src, a `data:text/html;base64,…` src, a `data:image/svg+xml;base64,…` src, an `http:` src and `/templates/../evil.jpg` are rejected; a credit `profileUrl` not on `https://unsplash.com/` and a `downloadLocation` not on `https://api.unsplash.com/` are rejected.
-- [ ] A throwaway `// @vitest-environment jsdom` test rendering a component with Testing Library passes locally (proves the setup); don't commit it, because jsdom files are limited to two (`.claude/agents/test-writer.md`).
-- [ ] `npm run build` runs Vitest before `vite build`, and a deliberately failing test stops it. Check this locally, and don't commit the failing test.
-- [ ] `npx vinext check` flags nothing the MVP uses, or the report lists what it flags.
-- [ ] **Security (deploy workflow):** `deploy.yml` runs only on push to `main` and manual dispatch, has read-only `contents` permission, takes the Cloudflare token and account ID only from secrets, and runs the tests before deploying.
-- [ ] No `NEXT_PUBLIC_` variables; `.dev.vars.example` lists only `UNSPLASH_ACCESS_KEY`, and `.dev.vars` is gitignored.
-- [ ] `npm test`, `npx tsc --noEmit` and `npm run lint` pass.
+- [x] `npm run dev` (vinext) serves `/` with a link to `/editor`.
+- [x] `git diff` shows no change to `src/lib/design-schema.ts` or `CLAUDE.md`, and `.gitignore` only gains lines.
+- [x] Schema tests pass: rejects a third image, a third field, a duplicate field, a bad hex (`#FFF`, `red`), text over 120 characters; accepts a `data:image/png;base64,…` src, a `/templates/sponsor.jpg` src and an `https:` src.
+- [x] **Security (schema is the trust boundary):** tests show a `javascript:alert(1)` src, a `data:text/html;base64,…` src, a `data:image/svg+xml;base64,…` src, an `http:` src and `/templates/../evil.jpg` are rejected; a credit `profileUrl` not on `https://unsplash.com/` and a `downloadLocation` not on `https://api.unsplash.com/` are rejected.
+- [x] A throwaway `// @vitest-environment jsdom` test rendering a component with Testing Library passes locally (proves the setup); don't commit it, because jsdom files are limited to two (`.claude/agents/test-writer.md`).
+- [x] `npm run build` runs Vitest before `vite build`, and a deliberately failing test stops it. Check this locally, and don't commit the failing test.
+- [x] `npx vinext check` flags nothing the MVP uses, or the report lists what it flags.
+- [x] **Security (deploy workflow):** `deploy.yml` runs only on push to `main` and manual dispatch, has read-only `contents` permission, takes the Cloudflare token and account ID only from secrets, and runs the tests before deploying.
+- [x] No `NEXT_PUBLIC_` variables; `.dev.vars.example` lists only `UNSPLASH_ACCESS_KEY`, and `.dev.vars` is gitignored.
+- [x] `npm test`, `npx tsc --noEmit` and `npm run lint` pass.
 
 ## Dependencies
 None. The schema is already at `HEAD`.
@@ -113,8 +113,23 @@ export type Selection = { kind: SelectionKind; id?: string };
 
   Without them, the first deploy run fails; re-run it once they're added.
 
+**Outcome (recorded by the main session):**
+- **Fonts:** vinext 1.3.0 self-hosts `next/font/google`, serving Inter from `/_next/static/_vinext_fonts/`. It uses Google's CDN only as a fallback, so the scope's note about loading from the CDN at runtime is out of date.
+- **Dev server:** `npm run dev` serves on port 5173, and `npm run start` runs `vite preview`. `@vinext/cloudflare` stays in `dependencies`, where `vinext init` put it ([`T-001-vinext-standard-scripts.md`](../decisions/T-001-vinext-standard-scripts.md)).
+- **Security headers:** finding 2 (low) is deferred: the editor sends no security headers ([review](../review/2026-10-22-security-T-001-review.md), [`T-001-security-headers-deferred.md`](../decisions/T-001-security-headers-deferred.md)). Finding 1 (a manual workflow run could deploy another branch) is fixed by a `main`-only guard on the deploy job.
+- **`npm audit`:** the remaining `braces` and `fflate` entries are build-time only and accepted ([`T-001-vite-patched-release.md`](../decisions/T-001-vite-patched-release.md)).
+- **Deploy:** not exercised end to end locally. `vinext-cloudflare deploy --dry-run` and `cf deploy --prebuilt --dry-run` passed. The first real deploy runs on this ticket's push and needs the user's Cloudflare secrets.
+
 ## Decisions
+- [`T-001-deploy-workflow-reuses-build.md`](../decisions/T-001-deploy-workflow-reuses-build.md): The deploy workflow deploys the tested build with --skip-build and queues runs in push order
 - [`T-001-scaffold-owns-dependencies-and-shared-types.md`](../decisions/T-001-scaffold-owns-dependencies-and-shared-types.md): The scaffold ticket installs every dependency and creates the shared type file
+- [`T-001-security-headers-deferred.md`](../decisions/T-001-security-headers-deferred.md): Security headers on HTML responses are deferred, not added in the scaffold
+- [`T-001-tailwind-via-postcss.md`](../decisions/T-001-tailwind-via-postcss.md): Tailwind runs through PostCSS, and the Turbopack loader config is removed
+- [`T-001-testing-library-cleanup-in-setup.md`](../decisions/T-001-testing-library-cleanup-in-setup.md): vitest.setup.ts does Testing Library's auto-setup for jsdom tests
+- [`T-001-typecheck-without-generated-globals.md`](../decisions/T-001-typecheck-without-generated-globals.md): Type-checking includes vinext's generated Worker types but never depends on generated globals
+- [`T-001-unsplash-secret-binding-in-t031.md`](../decisions/T-001-unsplash-secret-binding-in-t031.md): T-031, not the scaffold, declares UNSPLASH_ACCESS_KEY as a secret binding
+- [`T-001-vinext-standard-scripts.md`](../decisions/T-001-vinext-standard-scripts.md): Scripts use vinext's standard names, and vinext init's dependency placement is kept
+- [`T-001-vite-patched-release.md`](../decisions/T-001-vite-patched-release.md): vite is raised to 8.3.3 to clear a dev-server advisory, and two transitive advisories are left for upstream
 - [`general-deploy-cloudflare-vinext.md`](../decisions/general-deploy-cloudflare-vinext.md): The MVP deploys to Cloudflare Workers with vinext, not Vercel
 - [`general-deploy-via-github-actions.md`](../decisions/general-deploy-via-github-actions.md): A GitHub Actions workflow tests and deploys every push to main
 - [`general-design-schema-committed.md`](../decisions/general-design-schema-committed.md): design-schema.ts from the design phase is committed at src/lib

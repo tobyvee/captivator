@@ -1,0 +1,7 @@
+# Unsplash access key: optional, and only needed if Unsplash search ships.
+# Server-only: the /api/unsplash route reads it from process.env. Never give it a
+# NEXT_PUBLIC_ prefix or read it in client code.
+#
+# Local dev: copy this file to .dev.vars (gitignored) and fill in the key.
+# Production: set it as a Worker secret on the Cloudflare Worker, never in a committed file.
+UNSPLASH_ACCESS_KEY=
