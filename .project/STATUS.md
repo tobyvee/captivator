@@ -2,7 +2,7 @@
 title: "captivator — Status"
 type: status
 project: captivator
-updated: 2026-10-22
+updated: 2026-10-23
 tags: [project, captivator, status]
 ---
 # captivator — Status
@@ -18,7 +18,6 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is bein
 ## Outstanding
 
 - [ ] Cloudflare setup (user): an API token from the "Edit Cloudflare Workers" template, plus `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as GitHub Actions secrets, then re-run the latest Deploy run (`gh run rerun` on the newest run in `gh run list --workflow deploy.yml`)
-- [ ] T-007: Form renderer: fields, terms row, Connect and render modes
 - [ ] T-006: Background renderer: colour, gradient and photo
 - [ ] T-021: Terms sheet for the preview and the no-JS export
 
@@ -62,3 +61,4 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is bein
 - [x] T-011: Image upload pipeline and ImageUpload control (2026-10-22)
 - [x] T-003: Contrast helpers (2026-10-22)
 - [x] T-004: Store with every action, and localStorage persistence (2026-10-22)
+- [x] T-007: Form renderer: fields, terms row, Connect and render modes (2026-10-23)

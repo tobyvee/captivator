@@ -11,7 +11,7 @@ touches:
   - src/lib/export.ts
   - src/lib/export.test.ts
 cut_rank:
-updated: 2026-10-22
+updated: 2026-10-23
 tags: [project, captivator, ticket, export, security]
 ---
 # T-023: Export HTML builder
@@ -76,8 +76,9 @@ export function downloadHtml(html: string, name: string): void;
   .cv-root{min-height:100vh;min-height:100dvh}
   .cv-terms{display:none}.cv-terms:target{display:block}
   .cv-root :focus-visible{outline:3px solid #FFFFFF;box-shadow:0 0 0 5px #111111}
+  .cv-root ::placeholder{color:inherit;opacity:.65}
   ```
-  The focus rule is review finding 21; the outline-plus-shadow ring shows on any background.
+  The placeholder rule makes the visible field labels readable on iOS ([`general-export-placeholder-colour.md`](../decisions/general-export-placeholder-colour.md)). The focus rule is review finding 21; the outline-plus-shadow ring shows on any background.
 - **`exportFileName`:**
   1. NFKD-normalise and strip diacritics.
   2. Lowercase.
@@ -87,6 +88,7 @@ export function downloadHtml(html: string, name: string): void;
 - `renderToStaticMarkup` works in the browser bundle and in Vitest's node environment.
 
 ## Decisions
+- [`general-export-placeholder-colour.md`](../decisions/general-export-placeholder-colour.md): The export's style block sets the placeholder colour, since placeholders are the visible field labels
 - [`general-export-background-reencode.md`](../decisions/general-export-background-reencode.md): The export re-encodes the background to fit the 100 KB budget
 - [`general-export-form-action.md`](../decisions/general-export-form-action.md): An export with guest fields posts to a portal-service placeholder, not the router
 - [`general-export-inlines-all-images.md`](../decisions/general-export-inlines-all-images.md): Export inlines every image that isn't already a data URL

@@ -10,7 +10,7 @@ depends_on: [T-012, T-013, T-014, T-015, T-017, T-019, T-020, T-024, T-025, T-02
 touches:
   - .project/review/phone-checklist.md
 cut_rank:
-updated: 2026-10-22
+updated: 2026-10-23
 tags: [project, captivator, ticket, docs]
 ---
 # T-029: Real-phone testing checklist
@@ -23,6 +23,11 @@ Build step 9, "Run through the testing checklist on a real phone" ([spec → Tes
 - Also check:
   - The exported `.html` file opened on the phone (from Files or AirDrop): the layout, the terms sheet via `#terms`, native `required` validation, and no network requests.
   - The production URL loads on mobile data, not just home Wi-Fi (spec *Deploy*).
+  - **The guest form in the iOS login sheet:**
+    - Tapping "terms of use" opens the sheet without ticking the box.
+    - Native `required` bubbles appear for an empty field and for the unticked checkbox.
+    - Borderless inputs show no native inset shadow.
+    - Placeholders are readable (T-007 splash audit, `general-export-placeholder-colour.md`).
 - Failures become new tickets via `/plan-tickets <description>`; don't fix them inside this ticket.
 - **Out of scope:** code changes; the README (T-030).
 

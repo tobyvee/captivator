@@ -12,7 +12,7 @@ touches:
   - src/lib/readability.test.ts
   - src/editor/checks/ReadabilityCheck.tsx
 cut_rank:
-updated: 2026-10-22
+updated: 2026-10-23
 tags: [project, captivator, ticket, lib, editor]
 ---
 # T-027: Readability check under the preview
@@ -26,6 +26,7 @@ Build step 8, "contrast check" ([spec → Checks → Contrast](../spec/Captivato
   - The terms label (14px/400) when terms are on.
   - The Connect label: `fg` on `bg` when solid, `fg` on the page background when outline.
   - Input text (16px/400) on `inputBg` when there are fields.
+  - The inputs' edge: `inputBg` against the page background, worst case, at 3:1, when there are fields. The message is "Fields: {ratio} on the background" ([`T-027-input-edge-contrast.md`](../decisions/T-027-input-edge-contrast.md)).
   - **Message:** the first failure as "{label}: {ratio} on the background" ("on the button" or "on the field" for those two). With no failures: "All text is readable", or "Check readability over your photo" (`status: "approximate"`) on photo backgrounds.
 - **`ReadabilityCheck({ design })`:**
   - Gets the photo's average colour with fast-average-color (`getColorAsync(src, { algorithm: "simple" })`), cached by `src` in a module-level `Map`; undefined until it resolves or if it fails.
@@ -61,6 +62,7 @@ export type ReadabilityResult = { status: "ok" | "approximate" | "fail"; message
 - Weights by role: 800 / 500 / 400. The Connect label is 16px/700, which isn't large text, so it needs 4.5:1.
 
 ## Decisions
+- [`T-027-input-edge-contrast.md`](../decisions/T-027-input-edge-contrast.md): The readability check also warns when the inputs blend into the page (3:1)
 - [`T-003-large-text-includes-bold.md`](../decisions/T-003-large-text-includes-bold.md): Large text for contrast is 24px, or 18.66px and bold
 - [`T-007-outline-button-colours.md`](../decisions/T-007-outline-button-colours.md): An outline Connect button uses bg as its border and fg as its text
 - [`general-new-modules-beyond-project-structure.md`](../decisions/general-new-modules-beyond-project-structure.md): Planning adds small modules to the spec's project structure so each ticket owns its own files

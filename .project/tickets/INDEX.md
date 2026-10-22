@@ -2,7 +2,7 @@
 title: "captivator — Ticket index"
 type: reference
 project: captivator
-updated: 2026-10-22
+updated: 2026-10-23
 tags: [project, captivator, reference, tickets]
 ---
 # captivator — Ticket index
@@ -127,7 +127,7 @@ None. Every dependency exists, there are no cycles, every `todo` ticket has `tou
 | 2 | [T-011](T-011-image-upload-pipeline.md) | Image upload pipeline and ImageUpload control | P0 | 3 | 20 | T-001 | done |
 | 2 | [T-003](T-003-contrast-helpers.md) | Contrast helpers | P1 | 1 | 10 | T-001 | done |
 | 3 | [T-004](T-004-store-and-persistence.md) | Store with every action, and localStorage persistence | P0 | 1 | 30 | T-002 | done |
-| 3 | [T-007](T-007-form-renderer.md) | Form renderer: fields, terms row, Connect and render modes | P0 | 2 | 15 | T-005 | todo |
+| 3 | [T-007](T-007-form-renderer.md) | Form renderer: fields, terms row, Connect and render modes | P0 | 2 | 15 | T-005 | done |
 | 3 | [T-006](T-006-background-renderer.md) | Background renderer: colour, gradient and photo | P0 | 2 | 10 | T-005 | todo |
 | 3 | [T-021](T-021-terms-sheet.md) | Terms sheet for the preview and the no-JS export | P1 | 6 | 15 | T-003, T-005 | todo |
 | 4 | [T-008](T-008-editor-shell.md) | Editor shell, top bar, inspector router and component slots | P0 | 2 | 20 | T-004 | todo |
