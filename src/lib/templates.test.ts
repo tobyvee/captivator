@@ -1,7 +1,8 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { BLANK as SCHEMA_BLANK, Design, Template } from "./design-schema";
+import { backgroundColours, worstRatio } from "./contrast";
+import { BLANK as SCHEMA_BLANK, Design } from "./design-schema";
 import {
   BLANK,
   MINIMAL,
@@ -70,14 +71,14 @@ describe("templates", () => {
     expect(TEMPLATES.map((t) => t.id)).toEqual(["sponsor", "photo-hero", "minimal", "blank"]);
   });
 
-  // templates.ts builds each template with Template.parse, so a broken one throws on import.
-  it("rejects a broken template", () => {
-    const badVersion = { ...PHOTO_HERO, design: { ...PHOTO_HERO.design, version: 3 } };
-    expect(() => Template.parse(badVersion)).toThrow();
-    const twoEmails = { ...MINIMAL.design.form, fields: ["email", "email"] };
-    const badFields = { ...MINIMAL, design: { ...MINIMAL.design, form: twoEmails } };
-    expect(() => Template.parse(badFields)).toThrow();
-  });
+  // Fields need a 3:1 edge against the page (T-027-input-edge-contrast), judged on the backdrop
+  // and overlay before a photo's average colour is known.
+  it.each(TEMPLATES.filter((t) => t.design.form.fields.length > 0).map((t) => [t.id, t] as const))(
+    "%s: its fields stand out from the page at 3:1",
+    (_id, t) => {
+      expect(worstRatio(t.design.form.inputBg, backgroundColours(t.design.background))).toBeGreaterThanOrEqual(3);
+    },
+  );
 
   it("keeps every template's compact content within the 600px login sheet", () => {
     expect(compactHeight(SPONSOR.design)).toBeCloseTo(598, 0);
@@ -117,12 +118,14 @@ describe("templates", () => {
     for (const t of TEMPLATES) expect(isBracketedPrompts(t.design.form.terms.body)).toBe(true);
   });
 
-  it("uses the bundled photo for Sponsor's background, with no guest-page credit", () => {
-    const bg = SPONSOR.design.background;
-    expect(bg.type).toBe("image");
-    if (bg.type !== "image") return;
-    expect(bg.src).toBe("/templates/sponsor.jpg");
-    expect(bg.credit).toBeUndefined();
+  it("uses the bundled photo for Sponsor's background", () => {
+    expect(SPONSOR.design.background).toMatchObject({ type: "image", src: "/templates/sponsor.jpg" });
+  });
+
+  it("puts no guest-page credit on any template photo", () => {
+    for (const { design } of TEMPLATES) {
+      if (design.background.type === "image") expect(design.background.credit).toBeUndefined();
+    }
   });
 
   it("uses each template's own bundled photo", () => {

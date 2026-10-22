@@ -133,8 +133,10 @@ export const MINIMAL: Template = Template.parse({
     ],
     form: {
       fields: ["name", "email"],
-      inputBg: "#FFFFFF",
-      inputText: "#18181B",
+      // Dark fields: no light colour reaches the 3:1 edge on this pale page
+      // (T-018-minimal-dark-inputs).
+      inputBg: "#18181B",
+      inputText: "#FFFFFF",
       terms: { ...TERMS_PROMPTS, mode: "off", textColour: "#18181B" },
       // Outline: bg is the border, fg the label (T-007-outline-button-colours).
       button: { label: "Connect", bg: "#18181B", fg: "#18181B", variant: "outline" },
