@@ -2,7 +2,8 @@
 
 import { Check, TriangleAlert } from "lucide-react";
 import { useId } from "react";
-import { backgroundColours, formatRatio, requiredRatio, worstRatio } from "@/lib/contrast";
+import { formatRatio } from "@/lib/contrast";
+import { rateText } from "@/lib/readability";
 import { useStore } from "@/lib/store";
 import type { TextBlockSpec } from "@/lib/types";
 import { WEIGHT } from "@/splash/blocks/TextBlock";
@@ -24,23 +25,6 @@ const STYLES: SegmentedOption<Role>[] = [
 
 const PRESET_SIZE: Record<Role, number> = { heading: 40, subheading: 20, body: 16 };
 
-type Readability =
-  | { kind: "photo" }
-  | { kind: "pass"; ratio: string; gradient: boolean }
-  | { kind: "fail"; ratio: string; required: number };
-
-/** Worst-case contrast of the block's colour against `bgs`, the background's colours (null for a photo). */
-function readability(block: TextBlockSpec, bgs: string[] | null): Readability {
-  // Photos are approximate (general-photo-contrast-approximate), so they never claim a pass.
-  if (!bgs) return { kind: "photo" };
-  const ratio = worstRatio(block.colour, bgs);
-  const required = requiredRatio(block.size, WEIGHT[block.role]);
-  // Pass/fail is decided on the unrounded ratio (T-003-format-ratio-rounds-down).
-  return ratio >= required
-    ? { kind: "pass", ratio: formatRatio(ratio), gradient: bgs.length > 1 }
-    : { kind: "fail", ratio: formatRatio(ratio), required };
-}
-
 // The canvas's green "Easy to read" box, and the amber notice style (T-009-notices-share-amber-style).
 const TONE = {
   pass: { box: "border-[#BBF7D0] bg-[#F0FDF4]", icon: "text-[#166534]", title: "text-[#14532D]", detail: "text-[#166534]" },
@@ -49,7 +33,8 @@ const TONE = {
 
 function ContrastLine({ block }: { block: TextBlockSpec }) {
   const background = useStore((s) => s.design.background);
-  const result = readability(block, background.type === "image" ? null : backgroundColours(background));
+  const result = rateText(block.colour, block.size, WEIGHT[block.role], background);
+  const ends = background.type === "gradient" ? " Checked at both ends of the gradient." : "";
   const pass = result.kind === "pass";
   const tone = TONE[pass ? "pass" : "warn"];
   const Icon = pass ? Check : TriangleAlert;
@@ -70,8 +55,8 @@ function ContrastLine({ block }: { block: TextBlockSpec }) {
         {result.kind !== "photo" && (
           <span className={`text-xs leading-[1.45] ${tone.detail}`}>
             {result.kind === "pass"
-              ? `${result.ratio} against the background.${result.gradient ? " Checked at both ends of the gradient." : ""}`
-              : `${result.ratio}, needs ${result.required}:1.`}
+              ? `${formatRatio(result.ratio)} against the background.${ends}`
+              : `${formatRatio(result.ratio)}, needs ${result.required}:1.`}
           </span>
         )}
       </div>

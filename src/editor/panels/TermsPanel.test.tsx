@@ -20,7 +20,11 @@ const linkInput = () => screen.getByRole("textbox", { name: "Link text" });
 const bodyInput = () => screen.getByRole("textbox", { name: "Terms text" });
 const colourInput = () => screen.getByRole("textbox", { name: "Checkbox text colour" });
 // The panel's own sample; the preview's terms row is the only other checkbox, and isn't disabled.
-const sample = () => screen.getAllByRole("checkbox").find((c) => (c as HTMLInputElement).disabled) as HTMLElement;
+function sample() {
+  const disabled = screen.getAllByRole("checkbox").filter((c) => c.hasAttribute("disabled"));
+  expect(disabled).toHaveLength(1);
+  return disabled[0];
+}
 const verdict = () => screen.getByRole("status");
 
 function setBackground(background: BackgroundSpec) {
@@ -199,8 +203,11 @@ describe("TermsPanel", () => {
     expect(verdict().parentElement).toHaveTextContent("Hard to read: 4.4:1, needs 4.5:1");
   });
 
-  it("checks both ends of a gradient", () => {
-    setBackground({ type: "gradient", from: "#000000", to: "#FFFFFF", direction: "down" });
+  it.each([
+    ["#000000", "#FFFFFF"],
+    ["#FFFFFF", "#000000"],
+  ])("checks both ends of a gradient from %s to %s", (from, to) => {
+    setBackground({ type: "gradient", from, to, direction: "down" });
     render(<TermsPanel />);
     expect(verdict().parentElement).toHaveTextContent("Hard to read: 1.0:1, needs 4.5:1");
   });

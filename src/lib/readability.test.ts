@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BLANK, type Design } from "./design-schema";
-import { checkDesign } from "./readability";
+import { checkDesign, rateText } from "./readability";
 import { TEMPLATES } from "./templates";
 import type { BackgroundSpec, FormSpec, TextBlockSpec } from "./types";
 
@@ -174,5 +174,36 @@ describe("checkDesign", () => {
 
   it("passes every template's text with its photo's backdrop", () => {
     for (const t of TEMPLATES) expect(checkDesign(t.design).status, t.name).not.toBe("fail");
+  });
+});
+
+describe("rateText", () => {
+  it("passes or fails on the unrounded ratio", () => {
+    expect(rateText("#FFFFFF", 16, 400, { type: "colour", colour: "#000000" })).toEqual({
+      kind: "pass",
+      ratio: 21,
+      required: 4.5,
+    });
+    // #777777 on white is 4.48:1: shown as 4.4, and a fail against 4.5.
+    const grey = rateText("#777777", 16, 400, { type: "colour", colour: "#FFFFFF" });
+    expect(grey).toMatchObject({ kind: "fail", required: 4.5 });
+  });
+
+  it.each([
+    ["#000000", "#FFFFFF"],
+    ["#FFFFFF", "#000000"],
+  ])("rates a gradient from %s to %s at its worse stop", (from, to) => {
+    expect(rateText("#FFFFFF", 16, 400, { type: "gradient", from, to, direction: "down" })).toMatchObject({
+      kind: "fail",
+      ratio: 1,
+    });
+  });
+
+  it("uses the large-text threshold", () => {
+    expect(rateText("#000000", 24, 400, { type: "colour", colour: "#000000" })).toMatchObject({ required: 3 });
+  });
+
+  it("never rates a photo", () => {
+    expect(rateText("#FFFFFF", 16, 400, PHOTO)).toEqual({ kind: "photo" });
   });
 });

@@ -2,7 +2,8 @@
 
 import { Check, Info, TriangleAlert } from "lucide-react";
 import { useId } from "react";
-import { backgroundColours, formatRatio, requiredRatio, worstRatio } from "@/lib/contrast";
+import { backgroundColours, formatRatio } from "@/lib/contrast";
+import { rateText, TERMS_TEXT } from "@/lib/readability";
 import { useStore } from "@/lib/store";
 import type { BackgroundSpec } from "@/lib/types";
 import { ANGLE } from "@/splash/Background";
@@ -12,10 +13,6 @@ import { useRequiredDraft } from "../controls/useRequiredDraft";
 const MAX_LABEL = 60;
 const MAX_LINK = 30;
 const MAX_BODY = 8000;
-
-// The guest's terms row is 14px at weight 400 (TERMS_ROW in src/splash/Form.tsx), so it needs 4.5:1.
-const ROW_SIZE = 14;
-const ROW_WEIGHT = 400;
 
 const count = (n: number) => n.toLocaleString("en-US");
 
@@ -76,12 +73,8 @@ function sampleBackground(bg: BackgroundSpec): string {
 
 /** The terms row's contrast against the page, in the T-013 pattern (T-013-contrast-verdict-live-region). */
 function ContrastLine({ colour, background }: { colour: string; background: BackgroundSpec }) {
-  // Photos are approximate (general-photo-contrast-approximate), so they never claim a pass.
-  const photo = background.type === "image";
-  const ratio = photo ? 0 : worstRatio(colour, backgroundColours(background));
-  const required = requiredRatio(ROW_SIZE, ROW_WEIGHT);
-  // Pass/fail is decided on the unrounded ratio (T-003-format-ratio-rounds-down).
-  const pass = !photo && ratio >= required;
+  const result = rateText(colour, TERMS_TEXT.size, TERMS_TEXT.weight, background);
+  const pass = result.kind === "pass";
   const Icon = pass ? Check : TriangleAlert;
 
   return (
@@ -90,10 +83,12 @@ function ContrastLine({ colour, background }: { colour: string; background: Back
       <span>
         {/* Only the verdict is live, so it's announced when it flips, not on every picker step. */}
         <span role="status" className="font-semibold">
-          {photo ? "Check readability over your photo" : pass ? "Easy to read" : "Hard to read"}
+          {result.kind === "photo" ? "Check readability over your photo" : pass ? "Easy to read" : "Hard to read"}
         </span>
-        {!photo &&
-          (pass ? `: ${formatRatio(ratio)} on the background` : `: ${formatRatio(ratio)}, needs ${required}:1`)}
+        {result.kind !== "photo" &&
+          (pass
+            ? `: ${formatRatio(result.ratio)} on the background`
+            : `: ${formatRatio(result.ratio)}, needs ${result.required}:1`)}
       </span>
     </p>
   );
@@ -120,15 +115,15 @@ export function TermsPanel() {
         </p>
       )}
 
-      <div className="flex flex-col gap-2">
-        <h3 className="text-[13px] font-semibold">Checkbox wording</h3>
+      <fieldset className="flex min-w-0 flex-col gap-2">
+        <legend className="mb-2 text-[13px] font-semibold">Checkbox wording</legend>
         <div className="flex gap-2">
           <WordingInput label="Before the link" maxLength={MAX_LABEL} field={label} className="flex-[3]" />
           <WordingInput label="Link text" maxLength={MAX_LINK} field={linkText} className="flex-[2]" />
         </div>
         {/* The stored wording, as the preview shows it. The box is never ticked. */}
         <label
-          className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-[13px]"
+          className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm"
           style={{ background: sampleBackground(background), color: terms.textColour }}
         >
           <input
@@ -136,7 +131,7 @@ export function TermsPanel() {
             disabled
             checked={false}
             readOnly
-            className="size-4 shrink-0"
+            className="size-5 shrink-0"
             style={{ accentColor: accent }}
           />
           <span>
@@ -144,7 +139,7 @@ export function TermsPanel() {
           </span>
         </label>
         <p className="text-xs text-zinc-600">How guests see it. The box always starts unticked.</p>
-      </div>
+      </fieldset>
 
       <div className="flex flex-col gap-1.5">
         <div className="flex items-baseline justify-between gap-2">

@@ -3,7 +3,7 @@
 import { WEIGHT } from "@/splash/blocks/TextBlock";
 import { backgroundColours, contrastRatio, formatRatio, requiredRatio, worstRatio } from "./contrast";
 import type { Design } from "./design-schema";
-import type { TextBlockSpec } from "./types";
+import type { BackgroundSpec, TextBlockSpec } from "./types";
 
 export type ReadabilityTarget =
   | { kind: "block"; id: string }
@@ -18,7 +18,8 @@ export type ReadabilityResult = {
 };
 
 // The rendered sizes and weights of the form's text (src/splash/Form.tsx).
-const TERMS = { size: 14, weight: 400 };
+/** The guest's terms row: 14px at weight 400, so it needs 4.5:1. */
+export const TERMS_TEXT = { size: 14, weight: 400 };
 const BUTTON = { size: 16, weight: 700 };
 const INPUT = { size: 16, weight: 400 };
 /** WCAG 1.4.11: a control's edge needs 3:1 against what's around it (T-027-input-edge-contrast.md). */
@@ -29,6 +30,21 @@ const ROLE_LABEL: Record<TextBlockSpec["role"], string> = {
   subheading: "Subheading",
   body: "Text",
 };
+
+/** One piece of text rated against the page, for the panels' contrast lines. */
+export type TextRating = { kind: "photo" } | { kind: "pass" | "fail"; ratio: number; required: number };
+
+/**
+ * Rates `colour` at `size`/`weight` against the page, at a gradient's worse stop. A photo is never
+ * rated (general-photo-contrast-approximate.md, T-013-photo-line-never-rates.md), and pass/fail uses
+ * the unrounded ratio (T-003-format-ratio-rounds-down.md).
+ */
+export function rateText(colour: string, size: number, weight: number, background: BackgroundSpec): TextRating {
+  if (background.type === "image") return { kind: "photo" };
+  const ratio = worstRatio(colour, backgroundColours(background));
+  const required = requiredRatio(size, weight);
+  return { kind: ratio >= required ? "pass" : "fail", ratio, required };
+}
 
 type Check = ReadabilityFailure & { on: "background" | "button" | "field" };
 
@@ -64,7 +80,7 @@ export function checkDesign(design: Design, photoAverage?: string): ReadabilityR
     checks.push({
       label: "Terms checkbox",
       ratio: worstRatio(terms.textColour, page),
-      required: requiredRatio(TERMS.size, TERMS.weight),
+      required: requiredRatio(TERMS_TEXT.size, TERMS_TEXT.weight),
       target: { kind: "terms" },
       on: "background",
     });
