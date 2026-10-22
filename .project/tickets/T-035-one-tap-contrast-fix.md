@@ -10,7 +10,7 @@ depends_on: [T-027]
 touches:
   - src/editor/checks/ReadabilityCheck.tsx
 cut_rank:
-updated: 2026-10-22
+updated: 2026-10-23
 tags: [project, captivator, ticket, editor]
 ---
 # T-035: One-tap contrast Fix
@@ -33,6 +33,9 @@ Stretch, scheduled at P2 ([`general-stretch-tickets-scheduled.md`](../decisions/
 
 ## Dependencies
 - T-027: `ReadabilityCheck.tsx`, `checkDesign`'s `target`, and the photo-average hook.
+
+## Notes
+- **From T-027:** put the Fix button in the failure `Notice`'s children in `ReadabilityCheck.tsx`. "Fields" (the inputs' edge) and "Field text" share `target: { kind: "inputs" }`; tell them apart by `label`, and give "Fields" no Fix ([`T-027-input-edge-contrast.md`](../decisions/T-027-input-edge-contrast.md)).
 
 ## Decisions
 - [`general-stretch-tickets-scheduled.md`](../decisions/general-stretch-tickets-scheduled.md): Stretch tickets are scheduled, not held until the build is ahead

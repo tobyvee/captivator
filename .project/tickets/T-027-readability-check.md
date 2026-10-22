@@ -2,7 +2,7 @@
 title: "T-027: Readability check under the preview"
 type: ticket
 project: captivator
-status: todo
+status: done
 priority: P1
 milestone: 8
 estimate: 15
@@ -11,6 +11,7 @@ touches:
   - src/lib/readability.ts
   - src/lib/readability.test.ts
   - src/editor/checks/ReadabilityCheck.tsx
+  - src/editor/checks/ReadabilityCheck.test.tsx
 cut_rank:
 updated: 2026-10-23
 tags: [project, captivator, ticket, lib, editor]
@@ -35,20 +36,26 @@ Build step 8, "contrast check" ([spec → Checks → Contrast](../spec/Captivato
 - **Out of scope:** the one-tap Fix (T-035, stretch); per-panel contrast lines (T-013, T-020).
 
 ## Acceptance criteria
-- [ ] Blank's design reports "All text is readable" (test).
-- [ ] White text on a white background reports "Heading: 1.0:1 on the background" (spec checklist; test).
-- [ ] A gradient uses the worse stop (test).
-- [ ] A passing photo design reports `approximate` with "Check readability over your photo" (test).
-- [ ] An outline button checks `fg` against the page background (test).
-- [ ] Each failure carries a `target` that T-035 can act on (test one per kind).
-- [ ] The check warns but never blocks editing.
-- [ ] `npm test`, `npx tsc --noEmit` and `npm run lint` pass.
+- [x] Blank's design reports "All text is readable" (test).
+- [x] White text on a white background reports "Heading: 1.0:1 on the background" (spec checklist; test).
+- [x] A gradient uses the worse stop (test).
+- [x] A passing photo design reports `approximate` with "Check readability over your photo" (test).
+- [x] An outline button checks `fg` against the page background (test).
+- [x] Each failure carries a `target` that T-035 can act on (test one per kind).
+- [x] The check warns but never blocks editing.
+- [x] `npm test`, `npx tsc --noEmit` and `npm run lint` pass.
 
 ## Dependencies
 - T-003: `backgroundColours`, `worstRatio`, `contrastRatio`, `requiredRatio`, `formatRatio`.
 - T-009: the `ReadabilityCheck` stub and its place under the frame.
 
+## Outcome
+- **Built:** `src/lib/readability.ts` (`checkDesign` with the ticket's result types) and `ReadabilityCheck` in the caption row under the preview. It samples a photo's average colour once per `src` with fast-average-color, caching up to 8 photos. A pass shows the canvas's green "All text is readable", a photo design that passes shows an amber "Check readability over your photo", and a failure shows the shared amber `Notice` with the ratio and what it needs. 578 tests pass; `tsc` and lint are clean.
+- **Review:** approved with three should-fixes, all fixed in `6da959f`. Only the verdict is live, so a colour drag that keeps failing isn't announced at every step ([`T-027-readability-verdict-live-only.md`](../decisions/T-027-readability-verdict-live-only.md)). A fitted photo is also checked against its backdrop ([`T-027-fitted-photo-checks-backdrop.md`](../decisions/T-027-fitted-photo-checks-backdrop.md)). The failure tests now prove that a failed or tainted sample is ignored and cached. The review's `useSyncExternalStore` nit was taken too: the photo-average hook reads the cache through it.
+- **Security:** not a trust-boundary ticket; no audit run.
+
 ## Notes
+- **Review nits left as they are:** `readability.ts` repeats the form's sizes and weights (14/400, 16/700, 16/400) from `src/splash/Form.tsx`; a ticket that owns `Form.tsx` could export them, as `WEIGHT` was. The photo cache evicts the oldest sampled photo, not the least recently used.
 - **From T-017:** warnings use the shared `src/editor/controls/Notice.tsx` ([`T-017-notice-shared-control.md`](../decisions/T-017-notice-shared-control.md)).
 - **From T-013:** import the role weights from `@/splash/blocks/TextBlock` (`WEIGHT` is exported; [`T-013-role-weights-shared-with-splash.md`](../decisions/T-013-role-weights-shared-with-splash.md)). The Text panel shows no ratio over a photo ([`T-013-photo-line-never-rates.md`](../decisions/T-013-photo-line-never-rates.md)), so this line is where a photo design's failure shows. If the photo average is cached, the panel could reuse it later.
 ```ts
@@ -71,3 +78,9 @@ export type ReadabilityResult = { status: "ok" | "approximate" | "fail"; message
 - [`general-photo-contrast-approximate.md`](../decisions/general-photo-contrast-approximate.md): The photo contrast check is labelled approximate
 - [`T-013-role-weights-shared-with-splash.md`](../decisions/T-013-role-weights-shared-with-splash.md): `WEIGHT` is exported from the renderer
 - [`T-013-photo-line-never-rates.md`](../decisions/T-013-photo-line-never-rates.md): the Text panel never rates a photo
+- [`T-027-readability-check-test-file-added.md`](../decisions/T-027-readability-check-test-file-added.md): adds `ReadabilityCheck.test.tsx`
+- [`T-027-line-states-and-notice.md`](../decisions/T-027-line-states-and-notice.md): inline caption for ok and approximate, the amber Notice for failures (superseded)
+- [`T-027-readability-verdict-live-only.md`](../decisions/T-027-readability-verdict-live-only.md): the same states, with only the verdict live
+- [`T-027-outline-button-message-on-background.md`](../decisions/T-027-outline-button-message-on-background.md): an outline button's failure reads "on the background"
+- [`T-027-photo-average-cache.md`](../decisions/T-027-photo-average-cache.md): one sampled average per photo, shared by every mount
+- [`T-027-fitted-photo-checks-backdrop.md`](../decisions/T-027-fitted-photo-checks-backdrop.md): a fitted photo is also checked against its backdrop
