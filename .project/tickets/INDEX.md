@@ -134,7 +134,7 @@ None. Every dependency exists, there are no cycles, every `todo` ticket has `tou
 | 4 | [T-010](T-010-colour-field-and-slider.md) | ColourField and Slider controls | P0 | 3 | 15 | T-004 | done |
 | 4 | [T-023](T-023-export-html-builder.md) | Export HTML builder | P0 | 7 | 25 | T-006, T-007, T-011, T-021 | done |
 | 4 | [T-018](T-018-photo-hero-and-minimal-templates.md) | Photo hero and Minimal templates | P1 | 5 | 10 | T-002 | done |
-| 5 | [T-009](T-009-preview-stage.md) | Preview stage with phone and browser frames | P0 | 2 | 20 | T-005, T-008 | todo |
+| 5 | [T-009](T-009-preview-stage.md) | Preview stage with phone and browser frames | P0 | 2 | 20 | T-005, T-008 | done |
 | 5 | [T-016](T-016-background-panel.md) | Background panel: colour, gradient and photo upload | P0 | 4 | 15 | T-008, T-010, T-011 | todo |
 | 5 | [T-012](T-012-block-list.md) | Block list with three zones, add, reorder and the Terms switch | P0 | 3 | 20 | T-003, T-008, T-011 | todo |
 | 5 | [T-014](T-014-image-panel.md) | Image panel | P0 | 3 | 10 | T-008, T-011 | todo |
