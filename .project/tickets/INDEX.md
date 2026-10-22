@@ -44,7 +44,7 @@ Waves follow the greedy rules in `/prioritise-tickets`, with one override: `T-02
 | ID | Title | Priority | Estimate | Touches |
 |---|---|---|---|---|
 | [T-008](T-008-editor-shell.md) | Editor shell, top bar, inspector router and component slots | P0 | 20 | `src/app/editor/page.tsx`, `src/editor/TopBar.tsx`, `src/editor/Inspector.tsx`, `src/editor/controls/Segmented.tsx`, `src/editor/controls/Switch.tsx`, `src/editor/BlockList.tsx`, `src/editor/PreviewStage.tsx`, `src/editor/UndoRedo.tsx`, `src/editor/ExportButton.tsx`, `src/editor/panels/BackgroundPanel.tsx`, `src/editor/panels/TextPanel.tsx`, `src/editor/panels/ImagePanel.tsx`, `src/editor/panels/FieldsPanel.tsx`, `src/editor/panels/TermsPanel.tsx`, `src/editor/panels/ButtonPanel.tsx`, `src/editor/editor.test.tsx` |
-| [T-010](T-010-colour-field-and-slider.md) | ColourField and Slider controls | P0 | 15 | `src/editor/controls/ColourField.tsx`, `src/editor/controls/Slider.tsx` |
+| [T-010](T-010-colour-field-and-slider.md) | ColourField and Slider controls | P0 | 15 | `src/editor/controls/ColourField.tsx`, `src/editor/controls/Slider.tsx`, `src/editor/controls/ColourField.test.tsx`, `src/editor/controls/Slider.test.tsx`, `src/app/globals.css` |
 | [T-023](T-023-export-html-builder.md) | Export HTML builder | P0 | 25 | `src/lib/export.ts`, `src/lib/export.test.ts` |
 | [T-018](T-018-photo-hero-and-minimal-templates.md) | Photo hero and Minimal templates | P1 | 10 | `src/lib/templates.ts`, `src/lib/templates.test.ts`, `public/templates/photo-hero.jpg`, `public/templates/minimal.jpg` |
 
@@ -131,7 +131,7 @@ None. Every dependency exists, there are no cycles, every `todo` ticket has `tou
 | 3 | [T-006](T-006-background-renderer.md) | Background renderer: colour, gradient and photo | P0 | 2 | 10 | T-005 | done |
 | 3 | [T-021](T-021-terms-sheet.md) | Terms sheet for the preview and the no-JS export | P1 | 6 | 15 | T-003, T-005 | done |
 | 4 | [T-008](T-008-editor-shell.md) | Editor shell, top bar, inspector router and component slots | P0 | 2 | 20 | T-004 | done |
-| 4 | [T-010](T-010-colour-field-and-slider.md) | ColourField and Slider controls | P0 | 3 | 15 | T-004 | todo |
+| 4 | [T-010](T-010-colour-field-and-slider.md) | ColourField and Slider controls | P0 | 3 | 15 | T-004 | done |
 | 4 | [T-023](T-023-export-html-builder.md) | Export HTML builder | P0 | 7 | 25 | T-006, T-007, T-011, T-021 | todo |
 | 4 | [T-018](T-018-photo-hero-and-minimal-templates.md) | Photo hero and Minimal templates | P1 | 5 | 10 | T-002 | todo |
 | 5 | [T-009](T-009-preview-stage.md) | Preview stage with phone and browser frames | P0 | 2 | 20 | T-005, T-008 | todo |

@@ -171,7 +171,6 @@ describe("ColourField picker", () => {
     const hue = within(dialog).getByRole("slider", { name: "Hue" });
 
     // react-colorful reads keyCode, not key.
-
     fireEvent.keyDown(saturation, { key: "ArrowRight", keyCode: 39 });
     fireEvent.keyDown(saturation, { key: "ArrowRight", keyCode: 39 });
     fireEvent.keyDown(hue, { key: "ArrowRight", keyCode: 39 });
@@ -326,7 +325,6 @@ describe("ColourField hex input", () => {
     expect(input).toHaveValue("#112233");
   });
 
-  // Added: the commit skips onChange when the text normalises to the current value.
   it("doesn't call onChange when the typed colour is the current one", () => {
     const onChange = renderField("#ABC123");
     const input = typeHex("abc123");
