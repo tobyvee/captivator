@@ -9,6 +9,11 @@ estimate: 20
 depends_on: [T-003, T-008, T-011]
 touches:
   - src/editor/BlockList.tsx
+  - src/editor/BlockList.test.tsx
+  - src/editor/controls/TermsSwitch.tsx
+  - src/editor/Inspector.tsx
+  - src/splash/Background.tsx
+  - src/lib/design-schema.test.ts
 cut_rank:
 updated: 2026-10-23
 tags: [project, captivator, ticket, editor]

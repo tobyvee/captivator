@@ -11,6 +11,9 @@ touches:
   - src/editor/panels/BackgroundPanel.tsx
   - src/editor/panels/PhotoAdjustments.tsx
   - src/editor/panels/UnsplashSearch.tsx
+  - src/editor/panels/BackgroundPanel.test.tsx
+  - src/editor/editor.test.tsx
+  - src/splash/Background.tsx
 cut_rank:
 updated: 2026-10-23
 tags: [project, captivator, ticket, editor]

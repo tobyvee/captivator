@@ -14,6 +14,8 @@ touches:
   - src/editor/ScreenSwitcher.tsx
   - src/editor/checks/ReadabilityCheck.tsx
   - src/editor/checks/useFitCheck.tsx
+  - src/editor/PreviewStage.test.tsx
+  - src/editor/controls/Segmented.tsx
 cut_rank:
 updated: 2026-10-23
 tags: [project, captivator, ticket, editor]
