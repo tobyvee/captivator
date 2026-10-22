@@ -1,0 +1,52 @@
+---
+title: "T-020: Terms panel"
+type: ticket
+project: captivator
+status: todo
+priority: P1
+milestone: 6
+estimate: 15
+depends_on: [T-003, T-008, T-010]
+touches:
+  - src/editor/panels/TermsPanel.tsx
+cut_rank:
+updated: 2026-10-22
+tags: [project, captivator, ticket, editor]
+---
+# T-020: Terms panel
+
+## Context
+Build step 6, "Terms row and panel" ([spec → Editor UI → Inspector panels → Terms](../spec/Captivator%20MVP%20%E2%80%94%20Tech%20Spec.md), *Limits*; PRD *Terms editing*). This replaces the `TermsPanel` stub from T-008. The on/off switch is in the Inspector header (T-008) and the block list (T-012). Selecting Terms already switches the preview to the sheet (store rule in T-004). Canvas artboard: `EditorTerms` (`project/EditorTerms.dc.html`). Decisions: [`T-013-panels-show-contrast-line.md`](../decisions/T-013-panels-show-contrast-line.md), [`T-004-store-rejects-invalid-designs.md`](../decisions/T-004-store-rejects-invalid-designs.md), [`T-004-terms-selection-switches-screen.md`](../decisions/T-004-terms-selection-switches-screen.md).
+
+## Scope
+`TermsPanel()` dispatches `updateForm({ terms: { … } })`. Sections:
+- **Checkbox wording:**
+  - "Before the link" input (`maxLength` 60) and "Link text" input (`maxLength` 30). Both are required: keep local drafts, dispatch only non-empty values, show "Required" while empty.
+  - A live sample: an unticked, disabled checkbox plus "{label} {linkText}" styled as a link, captioned "How guests see it. The box always starts unticked."
+- **Terms text:**
+  - `<textarea>` (`maxLength` 8000, required draft) with the counter "{n} of 8,000".
+  - Help text: "Type or paste your terms. A blank line starts a new paragraph. They open inside the login page, because guests are not online yet and links to websites would not load."
+- **Checkbox text colour:** `ColourField` (`terms.textColour`) with a contrast line (14px, weight 400 → needs 4.5:1): "Easy to read: {r} on the background", "Hard to read: {r}, needs 4.5:1", or "Check readability over your photo".
+- **Version:** "Version {n}" with "Changing the text after you publish starts a new version, so you can tell which terms each guest agreed to." The MVP has no publish step, so `version` isn't bumped.
+- **Marketing reminder:** "Collecting emails for marketing? That needs its own opt-in. It can't share this checkbox."
+- When `mode === "off"`: keep the wording editable and show "Terms are off. Turn them on with the switch above to show the checkbox."
+- **Out of scope:** the switch (T-008, T-012); the sheet's rendering (T-021).
+
+## Acceptance criteria
+- [ ] Editing either wording field updates the preview's terms row and the live sample on each keystroke.
+- [ ] The body textarea stops at 8,000 characters with a live counter, and blank lines become paragraphs in the Terms sheet once T-021 lands.
+- [ ] Emptying a required field shows "Required" and keeps the last stored value.
+- [ ] No rich text: the body is a plain textarea.
+- [ ] All controls are labelled and keyboard-reachable, with at least 44px tap targets.
+- [ ] `npm test`, `npx tsc --noEmit` and `npm run lint` pass.
+
+## Dependencies
+- T-003: contrast helpers for the colour line.
+- T-008: the stub and the Inspector header that holds the switch.
+- T-010: `ColourField`.
+
+## Decisions
+- [`T-004-store-rejects-invalid-designs.md`](../decisions/T-004-store-rejects-invalid-designs.md): Store actions drop any update that would make the design fail the schema
+- [`T-004-terms-selection-switches-screen.md`](../decisions/T-004-terms-selection-switches-screen.md): Selecting Terms switches the preview to the Terms sheet, in the store
+- [`T-008-editor-shell-creates-slots.md`](../decisions/T-008-editor-shell-creates-slots.md): The editor shell owns Inspector.tsx and TopBar.tsx and creates every later editor component as a stub
+- [`T-013-panels-show-contrast-line.md`](../decisions/T-013-panels-show-contrast-line.md): The Text and Terms panels show a per-item contrast line
