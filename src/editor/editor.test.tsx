@@ -160,7 +160,7 @@ describe("Inspector", () => {
   it("passes the selected block's id to its panel", () => {
     render(<Inspector />);
     select({ kind: "block", id: LOGO_ID });
-    expect(screen.getByText("Image settings are coming soon.")).toHaveAttribute("data-block-id", LOGO_ID);
+    expect(screen.getByRole("textbox", { name: "Alt text" })).toHaveValue("Your logo");
   });
 
   it("falls back to Background when the selected block doesn't exist", () => {
