@@ -195,6 +195,47 @@ describe("buildExportHtml: final check", () => {
     );
   });
 
+  it("refuses a CSS url() or image-set() in an inline style", async () => {
+    const unsafe = [
+      { background: "url(https://example.com/x.png)" },
+      { backgroundImage: 'image-set("https://example.com/x.png" 1x)' },
+    ];
+    for (const style of unsafe) {
+      await expect(buildWith(createElement("div", { style }))).rejects.toThrow(MSG_UNSAFE_OUTPUT);
+    }
+  });
+
+  it("refuses an SVG <image> with an xlink:href", async () => {
+    const svg = createElement("svg", null, createElement("image", { xlinkHref: "https://example.com/x.png" }));
+    await expect(buildWith(svg)).rejects.toThrow(MSG_UNSAFE_OUTPUT);
+  });
+
+  it("refuses a <meta> refresh and an extra <style> with @import", async () => {
+    const meta = createElement("meta", { httpEquiv: "refresh", content: "0;url=https://example.com" });
+    await expect(buildWith(meta)).rejects.toThrow(MSG_UNSAFE_OUTPUT);
+    const style = createElement("style", null, "@import url(https://example.com/x.css);");
+    await expect(buildWith(style)).rejects.toThrow(MSG_UNSAFE_OUTPUT);
+  });
+
+  it("refuses a ping attribute, even on an in-page link", async () => {
+    const a = createElement("a", { href: "#x", ping: "https://example.com" }, "x");
+    await expect(buildWith(a)).rejects.toThrow(MSG_UNSAFE_OUTPUT);
+  });
+
+  it("passes the real photo-background exports: gradients, 8-digit hex tints and the close icon", async () => {
+    const credited = unsplashDesign();
+    if (credited.background.type === "image") {
+      credited.background.overlay = { from: "#1E293B", to: "#080C18", opacity: 0.7 };
+    }
+    for (const design of [SPONSOR.design, credited]) {
+      const { html } = await build(design);
+      expect(html).toMatch(/linear-gradient\(/);
+      expect(html).toMatch(/#[0-9A-F]{8}\b/i);
+      expect(html).toMatch(/<svg[\s\S]*<path/);
+      expect(html.match(/<style/g)).toHaveLength(1);
+    }
+  });
+
   it("lets web addresses through as plain text, such as in the terms", async () => {
     const { html } = await buildWith(createElement("p", null, "See https://example.com"));
     expect(html).toContain("See https://example.com");

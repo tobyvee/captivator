@@ -127,24 +127,34 @@ async function inlineImages(design: Design, inline: ExportDeps["inline"]): Promi
   return { ...design, background, blocks };
 }
 
-// The only URL-bearing attribute values the export may carry; srcset, formaction and poster none.
+// The only URL-bearing attribute values the export may carry; srcset, formaction, poster, ping,
+// background and data none. `[\s:]` also catches namespaced forms such as xlink:href.
 const SAFE_ATTR: Record<string, (value: string) => boolean> = {
   src: isRasterDataUrl,
   href: (v) => v.startsWith("#"),
   action: (v) => v === "[PORTAL_SUBMIT_URL]" || v === "[ROUTER_FORM_ACTION]",
 };
+const URL_ATTR = /[\s:](src|srcset|href|action|formaction|poster|ping|background|data)="([^"]*)"/gi;
+
+// Elements that load, redirect or carry their own CSS. The wrapper adds the page's only <style>.
+const UNSAFE_TAG = /<(link|script|style|iframe|object|embed|base|meta|image|use|feimage)\b/i;
+
+// CSS that can load something. A backslash covers CSS escapes; hex colours never contain one.
+const UNSAFE_CSS = /url\(|image-set\(|@import|\\/i;
 
 /**
- * The last line of defence: no <link> or <script>, every src a raster data URL, every href an
- * in-page fragment and every form action one of the two placeholders. Text content isn't
- * checked, so terms that mention a web address still export as inert text.
+ * The last line of defence, run on the rendered body before it's wrapped: no element that loads
+ * or redirects, every src a raster data URL, every href an in-page fragment, every form action
+ * one of the two placeholders and no inline style that can fetch. Text content isn't checked, so
+ * terms that mention a web address still export as inert text.
  */
-function assertSelfContained(html: string): void {
-  if (/<(link|script|iframe|object|embed|base)\b/i.test(html)) {
-    throw new ExportError(MSG_UNSAFE_OUTPUT);
-  }
-  for (const [, attr, value] of html.matchAll(/\s(src|srcset|href|action|formaction|poster)="([^"]*)"/gi)) {
+function assertSelfContained(markup: string): void {
+  if (UNSAFE_TAG.test(markup)) throw new ExportError(MSG_UNSAFE_OUTPUT);
+  for (const [, attr, value] of markup.matchAll(URL_ATTR)) {
     if (!SAFE_ATTR[attr.toLowerCase()]?.(value)) throw new ExportError(MSG_UNSAFE_OUTPUT);
+  }
+  for (const [, css] of markup.matchAll(/\sstyle="([^"]*)"/gi)) {
+    if (UNSAFE_CSS.test(css)) throw new ExportError(MSG_UNSAFE_OUTPUT);
   }
 }
 
@@ -157,13 +167,16 @@ async function renderPage(design: Design, name: string): Promise<string> {
     const comment = design.form.fields.length > 0 ? PORTAL_COMMENT : ROUTER_COMMENT;
     markup = markup.slice(0, formAt) + comment + markup.slice(formAt);
   }
+  assertSelfContained(markup);
 
-  return (
+  const html =
     '<!doctype html><html lang="en"><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width, initial-scale=1">' +
     `<title>${escapeHtml(name.trim() || "WiFi login")}</title>` +
-    `<style>${EXPORT_CSS}</style></head><body>${markup}</body></html>`
-  );
+    `<style>${EXPORT_CSS}</style></head><body>${markup}</body></html>`;
+  // The wrapper's fixed head adds exactly one <style>, and the body was checked to have none.
+  if (html.match(/<style\b/gi)?.length !== 1) throw new ExportError(MSG_UNSAFE_OUTPUT);
+  return html;
 }
 
 /**
@@ -200,7 +213,6 @@ export async function buildExportHtml(
   }
 
   const html = await renderPage(page, name);
-  assertSelfContained(html);
   const bytes = byteLength(html);
   return { html, bytes, overBudget: bytes > PAGE_BUDGET, reencoded };
 }
