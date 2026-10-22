@@ -225,4 +225,24 @@ describe("TemplatePickerPage", () => {
     expect(design.blocks[0]).toMatchObject({ kind: "image", src: UPLOADED_LOGO });
     expect(push).toHaveBeenCalledExactlyOnceWith("/editor");
   });
+
+  it("treats a design edited in this session as saved, without a reload", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    const { unmount } = render(<TemplatePickerPage />);
+    expect(screen.queryByRole("heading", { name: "Continue your design" })).not.toBeInTheDocument();
+    unmount();
+
+    // As the editor would: pick a template, then edit it.
+    act(() => {
+      useStore.getState().loadTemplate(SPONSOR);
+      useStore.getState().setName("Harbourside Summit");
+    });
+    render(<TemplatePickerPage />);
+
+    expect(within(cards()[0]).getByRole("heading", { name: "Continue your design" })).toBeInTheDocument();
+    expect(within(cards()[0]).getByText("Harbourside Summit")).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Use Minimal" }));
+    expect(confirm).toHaveBeenCalledOnce();
+    expect(push).not.toHaveBeenCalled();
+  });
 });

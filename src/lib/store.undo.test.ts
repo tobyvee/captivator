@@ -162,7 +162,7 @@ describe("rehydration", () => {
     expect(history().pastStates).toHaveLength(1);
 
     await useStore.persist.rehydrate();
-    expect(state()).toMatchObject({ restored: true, hasHydrated: true });
+    expect(state()).toMatchObject({ hasSaved: true, hasHydrated: true });
     expect(background()).toEqual({ type: "colour", colour: "#654321" });
     expect(history().pastStates).toEqual([]);
     expect(history().futureStates).toEqual([]);

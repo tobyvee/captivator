@@ -40,7 +40,7 @@ export type EditorState = {
   screen: Screen;
   logoPalette: string[]; // suggestions only, never in Design
   hasHydrated: boolean;
-  restored: boolean; // a saved design was restored
+  hasSaved: boolean; // a design is saved: restored at load, or written this session
   restoreFailed: boolean; // "Couldn't restore your saved design"
   saveFailed: boolean; // "Couldn't save locally"
 
@@ -127,6 +127,11 @@ const storage: PersistStorage<Partial<Persisted>, void> = {
     if (value.state.design === synced.design && value.state.name === synced.name) return;
     synced = value.state;
     debouncedStorage.setItem(key, value);
+    // Once the customer's edit is saved, the picker offers "Continue your design" and asks
+    // before switching, without waiting for a reload (T-025-saved-means-written-this-session).
+    // Only after hydration: the editor can't edit before it, and a test's store reset isn't an edit.
+    const { hasHydrated, hasSaved } = useStore.getState();
+    if (hasHydrated && !hasSaved) useStore.setState({ hasSaved: true });
   },
   removeItem: debouncedStorage.removeItem,
 };
@@ -155,7 +160,7 @@ function mergeStored(persisted: unknown, current: EditorState): EditorState {
     typeof stored.name === "string" && stored.name.length <= MAX_NAME ? stored.name : current.name;
   const parsed = Design.safeParse(stored.design);
   return parsed.success
-    ? { ...current, design: parsed.data, name, restored: true }
+    ? { ...current, design: parsed.data, name, hasSaved: true }
     : { ...current, name, restoreFailed: true };
 }
 
@@ -183,7 +188,7 @@ export const useStore = create<EditorState>()(
           screen: "landing",
           logoPalette: [],
           hasHydrated: false,
-          restored: false,
+          hasSaved: false,
           restoreFailed: false,
           saveFailed: false,
 

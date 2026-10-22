@@ -120,7 +120,7 @@ describe("TopBar", () => {
     expect(confirm).not.toHaveBeenCalled();
   });
 
-  it("shows undo and redo as disabled until T-025, and a live Export HTML button", () => {
+  it("shows undo and redo disabled with no history yet, and a live Export HTML button", () => {
     render(<TopBar />);
     expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Redo" })).toBeDisabled();

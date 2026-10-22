@@ -29,7 +29,7 @@ function Placeholder() {
 
 function Picker() {
   const router = useRouter();
-  const restored = useStore((s) => s.restored);
+  const hasSaved = useStore((s) => s.hasSaved);
   const design = useStore((s) => s.design);
   const name = useStore((s) => s.name);
   const loadTemplate = useStore((s) => s.loadTemplate);
@@ -38,14 +38,14 @@ function Picker() {
   // design asks first (T-019-confirm-on-use-not-templates, T-004-template-switch-carry-rule).
   function switchTo(template: Template) {
     const message = `Switch to ${template.name}? Your text and uploaded images are kept; colours and layout change.`;
-    if (restored && !window.confirm(message)) return;
+    if (hasSaved && !window.confirm(message)) return;
     loadTemplate(template);
     router.push("/editor");
   }
 
   return (
     <div className={GRID}>
-      {restored && (
+      {hasSaved && (
         <TemplateCard
           template={{ id: "saved", name: "Continue your design", description: name || "Untitled design", design }}
           primaryLabel="Continue"

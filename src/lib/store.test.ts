@@ -60,7 +60,7 @@ describe("initial state", () => {
       screen: "landing",
       logoPalette: [],
       hasHydrated: false,
-      restored: false,
+      hasSaved: false,
       restoreFailed: false,
       saveFailed: false,
     });
@@ -371,7 +371,7 @@ describe("persistence", () => {
     expect(state()).toMatchObject({
       design: SPONSOR.design,
       hasHydrated: true,
-      restored: false,
+      hasSaved: false,
       restoreFailed: false,
     });
   });
@@ -383,7 +383,7 @@ describe("persistence", () => {
       design: customDesign,
       name: "Bob's Cafe",
       hasHydrated: true,
-      restored: true,
+      hasSaved: true,
       restoreFailed: false,
     });
   });
@@ -394,7 +394,7 @@ describe("persistence", () => {
     expect(state()).toMatchObject({
       design: SPONSOR.design,
       hasHydrated: true,
-      restored: false,
+      hasSaved: false,
       restoreFailed: true,
     });
   });
@@ -406,7 +406,7 @@ describe("persistence", () => {
       design: SPONSOR.design,
       name: "",
       hasHydrated: true,
-      restored: false,
+      hasSaved: false,
       restoreFailed: true,
     });
   });
@@ -421,7 +421,7 @@ describe("persistence", () => {
     expect(state()).toMatchObject({
       design: SPONSOR.design,
       hasHydrated: true,
-      restored: false,
+      hasSaved: false,
       restoreFailed: true,
     });
     state().dismissRestoreFailed();
@@ -450,6 +450,15 @@ describe("persistence", () => {
       await useStore.persist.rehydrate();
       vi.advanceTimersByTime(300);
       expect(storage.setItem).not.toHaveBeenCalled();
+    });
+
+    it("counts the design as saved once an edit after hydration is written, not before", async () => {
+      await useStore.persist.rehydrate();
+      state().setDevice("desktop");
+      expect(state().hasSaved).toBe(false);
+
+      state().setName("Harbourside");
+      expect(state().hasSaved).toBe(true);
     });
 
     it("writes nothing for UI state alone", () => {
