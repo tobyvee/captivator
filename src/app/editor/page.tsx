@@ -17,8 +17,10 @@ import { useHydrated } from "@/lib/store";
 // max-[1052px] variants are exact complements (T-036-row-stops-wrapping-when-side-by-side).
 // Each column reserves its scrollbar's gutter, so a classic scrollbar coming and going doesn't
 // shift its content or resize the Desktop preview; the stage reserves both edges so the phone
-// stays centred (T-036-reserve-scrollbar-gutter).
-const SCROLL = "min-[1052px]:overflow-y-auto";
+// stays centred (T-036-reserve-scrollbar-gutter). Each column is also positioned, so a visually
+// hidden status line (absolute) below a column's fold scrolls with it instead of lengthening the
+// page (T-041-columns-contain-hidden-text).
+const SCROLL = "min-[1052px]:relative min-[1052px]:overflow-y-auto";
 const SIDE = `flex flex-col bg-white border-zinc-200 max-md:max-w-none max-md:border-b ${SCROLL} min-[1052px]:[scrollbar-gutter:stable]`;
 const BLOCKS_COLUMN = `${SIDE} flex-[1_1_272px] max-w-[300px] md:border-r`;
 const STAGE_COLUMN = `flex flex-col flex-[1_1_480px] min-w-0 ${SCROLL} min-[1052px]:[scrollbar-gutter:stable_both-edges]`;

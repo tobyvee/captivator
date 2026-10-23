@@ -112,6 +112,9 @@ describe("EditorPage", () => {
     for (const column of columns) {
       expect(column).toHaveClass("min-[1052px]:overflow-y-auto");
       expect(column).not.toHaveClass("overflow-y-auto");
+      // Positioned, so visually hidden text below its fold doesn't lengthen the page.
+      expect(column).toHaveClass("min-[1052px]:relative");
+      expect(column).not.toHaveClass("relative");
     }
     // Each column reserves its scrollbar gutter, the stage on both edges so the phone stays centred.
     expect(columns[0]).toHaveClass("min-[1052px]:[scrollbar-gutter:stable]");
