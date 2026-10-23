@@ -21,10 +21,12 @@ export const COLUMN: CSSProperties = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  gap: 18,
+  // 14px gaps and 48px top padding (the spec has 18 and 56) leave every template room under the
+  // 600px small-phone fit (T-044-spacing-values-and-headroom.md).
+  gap: 14,
   maxWidth: 420,
   margin: "0 auto",
-  padding: "56px 28px 40px",
+  padding: "48px 28px 40px",
   // A separate key, not part of the shorthand: jsdom drops a declaration with env(), and would
   // lose the whole padding.
   paddingBottom: clearOfEdge("bottom", 40),

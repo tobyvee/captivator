@@ -27,7 +27,7 @@ const pngSize = (dataUrl: string) => {
   };
 };
 
-// Compact (fit-check) content height by T-002's arithmetic: column padding 56 + 40 and gap 18
+// Compact (fit-check) content height by T-002's arithmetic: column padding 48 + 40 and gap 14
 // between column children; images by size; text at its line height per explicit line (wrapping
 // isn't modelled); the form as one child (48px inputs with gap 10, then gap 12 to the 44px terms
 // row and the 50px button). The measured check is the fit check (T-028).
@@ -42,7 +42,7 @@ const compactHeight = ({ blocks, form }: Design) => {
   const inputs = form.fields.length * 48 + Math.max(0, form.fields.length - 1) * 10;
   const formParts = [inputs, form.terms.mode === "checkbox" ? 44 : 0, 50].filter(Boolean);
   const children = [...blockHeights, sum(formParts) + (formParts.length - 1) * 12];
-  return 96 + sum(children) + (children.length - 1) * 18;
+  return 88 + sum(children) + (children.length - 1) * 14;
 };
 
 describe("templates", () => {
@@ -80,9 +80,12 @@ describe("templates", () => {
     },
   );
 
-  it("keeps every template's compact content within the 600px login sheet", () => {
-    expect(compactHeight(SPONSOR.design)).toBeCloseTo(597.5, 0);
-    for (const t of TEMPLATES) expect(compactHeight(t.design), t.id).toBeLessThanOrEqual(600);
+  // Every template's estimate stays 20px inside the limit. The estimate runs about 5px under
+  // Chrome's measurement, so that leaves about 15px before the fit warning shows
+  // (T-044-spacing-values-and-headroom.md).
+  it("keeps every template's estimated compact height 20px inside the 600px login sheet", () => {
+    expect(compactHeight(SPONSOR.design)).toBeCloseTo(573.5, 0);
+    for (const t of TEMPLATES) expect(compactHeight(t.design), t.id).toBeLessThanOrEqual(580);
   });
 
   it("starts Photo hero and Minimal with the placeholder logo", () => {
