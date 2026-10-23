@@ -11,19 +11,17 @@ tags: [project, captivator, status]
 
 ## Summary
 
-Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is built and deployed to Cloudflare Workers with vinext at https://app.captivator.workers.dev. All 42 tickets in 11 waves are done, all nine milestones are closed, and nothing was cut, stretch work included (`tickets/INDEX.md`). The editor has a live phone and browser preview, the block list with drag to reorder, undo and redo, readability and small-phone fit checks with a one-tap contrast Fix, the logo palette, Unsplash search, and the Background, Text, Image, Fields, Connect button and Terms panels. It renders four guest screens from one `SplashPage` and exports a standalone HTML file under the 100 KB budget. Every ticket was reviewed and security-audited, and the guest page was splash-audited. The final full audit found one low, missing security headers, now fixed (`review/2026-10-23-security-full-review.md`). 883 tests pass, and the README describes what shipped, the key decisions and a path to production that assumes no router vendor or authentication method. You ran the real-phone checklist (`review/phone-checklist.md`): 14 checks passed and 7 were skipped, which are recorded as unverified. Its one failure, the preview sliding down when Unsplash results load, is fixed by `T-036`, and `T-037` stacks a failing readability warning under the preview caption, as you asked. `T-038` fixes the white strip you found under an exported page in Chrome on Android, and `T-039` makes the gradient direction icon-only, and `T-040` removes the `&quot;` from the exported font declaration, and `T-041` stops hidden status text making the desktop editor scroll past the window. The final deploy is green and the security headers are live. Still to do: re-check the T-036 and T-041 fixes in the deployed editor and the T-038 fix on the Android phone, and load the live URL on a phone's mobile data.
+Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is built and deployed to Cloudflare Workers with vinext at https://app.captivator.workers.dev. All 42 tickets in 11 waves are done, all nine milestones are closed, and nothing was cut, stretch work included (`tickets/INDEX.md`). The editor has a live phone and browser preview, the block list with drag to reorder, undo and redo, readability and small-phone fit checks with a one-tap contrast Fix, the logo palette, Unsplash search, and the Background, Text, Image, Fields, Connect button and Terms panels. It renders four guest screens from one `SplashPage` and exports a standalone HTML file under the 100 KB budget. Every ticket was reviewed and security-audited, and the guest page was splash-audited. The final full audit found one low, missing security headers, now fixed (`review/2026-10-23-security-full-review.md`). 883 tests pass, and the README describes what shipped, the key decisions and a path to production that assumes no router vendor or authentication method. You ran the real-phone checklist (`review/phone-checklist.md`): 15 checks passed, including the live URL over mobile data, and you accepted the other 6 as skipped, so they're recorded as unverified. Fixes you asked for after the run landed as `T-036` to `T-042`. The Unsplash fix passed its re-check, and the Android export fix (`T-038`) wasn't re-checked. The final deploy is green and the security headers are live. All 11 waves are closed.
 
 ## In progress
 
 ## Outstanding
-- [ ] Re-check the T-036 and T-041 fixes (Unsplash results in the deployed editor: the preview stays put and the page doesn't scroll) and record it in `review/phone-checklist.md`
-- [ ] Load the live URL on a phone's mobile data (skipped in T-029)
-- [ ] Re-export and open a page on the Android phone to re-check the T-038 fix, and record it in `review/phone-checklist.md`
 
 ## Planned
 
 ## Completed
 
+- [x] Wave 11 closed: the live URL loads on mobile data, the Unsplash fixes (T-036, T-041) pass their re-check, and the remaining checks are accepted as skipped (2026-10-23)
 - [x] Repo created, `git init`, `.project/` set up (2026-10-21)
 - [x] PRD and tech spec written and reviewed (2026-10-21)
 - [x] Build planned and prioritised: 35 tickets in 11 waves, plus T-036 from the checklist (2026-10-22)

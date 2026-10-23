@@ -28,10 +28,13 @@ Reported by the user with a screenshot after T-036 deployed: "On desktop, after 
 - [x] The fit probe adds no horizontal scroll to the stage.
 - [x] Below 1052px the columns aren't positioned.
 - [x] `npm test`, `npx tsc --noEmit` and `npm run lint` pass.
-- [ ] With Unsplash results loaded in the deployed editor, the page doesn't scroll. *Needs the user, with the T-036 re-check.*
+- [x] With Unsplash results loaded in the deployed editor, the page doesn't scroll. *Needs the user, with the T-036 re-check.*
 
 ## Outcome
 Each column contains its own hidden text, so the editor stays window-tall. 883 tests pass.
+
+## Notes
+- Re-checked by the user in the deployed editor on 2026-10-23: works.
 
 ## Decisions
 - [`T-041-columns-contain-hidden-text.md`](../decisions/T-041-columns-contain-hidden-text.md): Each editor column is positioned when side by side, so hidden text below its fold stays inside it

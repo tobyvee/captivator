@@ -43,9 +43,11 @@ The user reported, with a screenshot from Chrome on Android of an exported page:
 The exported page now runs under the gesture bar, with its content inside the safe area, in portrait and landscape. 881 tests pass. The security audit found nothing. The splash audit and the code review found that the terms sheet and credit sat under the notch in landscape, and that is fixed. Export size grows by about 300 bytes.
 
 ## Notes
+- **Re-check skipped:** the user skipped re-opening an export on the Android phone (2026-10-23), so the last criterion stays unticked ([`T-030-remaining-checks-accepted-as-skipped.md`](../decisions/T-030-remaining-checks-accepted-as-skipped.md)).
 - The iOS and Android login sheets haven't been tried on a device; the splash audit expects them to be no worse than before.
 - The spec's viewport meta line is now out of date ([`T-038-export-draws-under-gesture-bar.md`](../decisions/T-038-export-draws-under-gesture-bar.md)).
 
 ## Decisions
 - [`T-038-export-draws-under-gesture-bar.md`](../decisions/T-038-export-draws-under-gesture-bar.md): The export opts into viewport-fit=cover, and its edge content adds the safe-area insets
 - [`T-038-checklist-and-readme-in-touches.md`](../decisions/T-038-checklist-and-readme-in-touches.md): T-038 updates the phone checklist and the README's known gaps
+- [`T-030-remaining-checks-accepted-as-skipped.md`](../decisions/T-030-remaining-checks-accepted-as-skipped.md): The user accepted the remaining checks as skipped

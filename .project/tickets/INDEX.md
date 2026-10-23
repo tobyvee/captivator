@@ -104,7 +104,7 @@ Waves follow the greedy rules in `/prioritise-tickets`, with one override: `T-02
 
 ### Wave 11 (10 min)
 
-`T-030` ends with a manual check that the production URL loads on mobile data. `T-037` to `T-042` fix problems the user reported after T-030 landed, and touches none of T-030's files ([`T-037-lands-in-wave-11.md`](../decisions/T-037-lands-in-wave-11.md)).
+`T-030` ends with a manual check that the production URL loads on mobile data, which passed on 2026-10-23. `T-037` to `T-042` fix problems the user reported after T-030 landed, and touches none of T-030's files ([`T-037-lands-in-wave-11.md`](../decisions/T-037-lands-in-wave-11.md)).
 
 | ID | Title | Priority | Estimate | Touches |
 |---|---|---|---|---|
