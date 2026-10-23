@@ -87,3 +87,4 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is buil
 - [x] Final deploy green (run 39856955907); `/`, `/editor` and `/api/unsplash` send the three security headers (2026-10-23)
 - [x] Real-device checks finished: the live URL loads on mobile data, the Unsplash fixes (T-036, T-041) pass their re-check, and you accepted the rest as skipped (2026-10-23)
 - [x] T-043: Text can't be smaller than 16px (asked for after wave 11) (2026-10-23)
+- [x] Wave 11's closing security audit of T-037 to T-043 (`9650ed1..375bfef`): no findings (2026-10-23)

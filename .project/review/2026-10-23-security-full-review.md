@@ -7,7 +7,7 @@ tags: [project, captivator, review, security]
 ---
 # Security audit: full repo before the final deploy
 
-**Scope:** the full repo at `8035bda` (main), run by `security-auditor` for T-030's final full audit. Changes after that commit were audited separately: wave 10 (`8035bda..498fbf2`, T-029 and T-036) found nothing, and the SEC-1 re-audit covered `498fbf2..HEAD` (T-030). Together these cover the deployed code ([`T-030-full-audit-reused.md`](../decisions/T-030-full-audit-reused.md)).
+**Scope:** the full repo at `8035bda` (main), run by `security-auditor` for T-030's final full audit. Changes after that commit were audited separately: wave 10 (`8035bda..498fbf2`, T-029 and T-036) found nothing, and the SEC-1 re-audit covered `498fbf2..HEAD` (T-030). Together these cover the deployed code ([`T-030-full-audit-reused.md`](../decisions/T-030-full-audit-reused.md)). The fixes added to wave 11 after T-030 (T-037 to T-043, `9650ed1..375bfef`) were audited as a range at the wave's close and found nothing. The only open items are the build-time `npm audit` advisories already recorded below.
 
 **Totals:** 0 critical, 0 high, 0 medium, 1 low.
 
