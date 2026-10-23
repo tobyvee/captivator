@@ -202,7 +202,7 @@ function SwatchRow({
 }) {
   return (
     // The title sits above one unwrapped row: 30px-wide, 44px-tall targets around 24px dots, so
-    // eight colours fit the narrowest inspector (T-045-swatches-one-row.md).
+    // eight colours fit the narrowest inspector (T-045-swatch-width-departs-from-spec.md).
     <div role="group" aria-labelledby={id} className="flex flex-col gap-0.5">
       <span id={id} className="text-xs text-zinc-600">
         {title}
@@ -217,7 +217,7 @@ function SwatchRow({
               aria-label={c}
               aria-pressed={selected}
               onClick={() => onPick(c)}
-              className={`flex h-11 w-[30px] shrink-0 cursor-pointer items-center justify-center rounded-md ${FOCUS_RING}`}
+              className={`flex h-11 w-[30px] shrink-0 cursor-pointer items-center justify-center rounded-md ${FOCUS_RING} focus-visible:outline-offset-0`}
             >
               <span
                 aria-hidden="true"

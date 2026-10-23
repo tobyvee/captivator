@@ -31,4 +31,5 @@ The user, with a screenshot of the "In this design" suggestions: "The color chip
 The suggestions are a compact single row. 888 tests pass.
 
 ## Decisions
-- [`T-045-swatches-one-row.md`](../decisions/T-045-swatches-one-row.md): Colour suggestions sit in one unwrapped row under their title, as 30×44px targets around 24px dots
+- [`T-045-swatches-one-row.md`](../decisions/T-045-swatches-one-row.md): Colour suggestions sit in one unwrapped row under their title (superseded)
+- [`T-045-swatch-width-departs-from-spec.md`](../decisions/T-045-swatch-width-departs-from-spec.md): Narrower colour swatches are the user's call, and depart from the spec's 44px editor targets
