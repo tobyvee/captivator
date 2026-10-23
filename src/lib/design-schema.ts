@@ -55,13 +55,22 @@ const ImageBlock = z.object({
   size: z.enum(["sm", "md", "lg"]),
 });
 
+/** Text blocks are never smaller than 16px or larger than 56px (T-043-text-size-floor-16.md). */
+export const MIN_TEXT_SIZE = 16;
+export const MAX_TEXT_SIZE = 56;
+// Designs saved before the 16px floor allowed 12–15px; those are raised to it rather than failing
+// to restore. Anything outside the old range still fails.
+const LEGACY_MIN_TEXT_SIZE = 12;
+const raiseLegacySize = (v: unknown) =>
+  Number.isInteger(v) && (v as number) >= LEGACY_MIN_TEXT_SIZE && (v as number) < MIN_TEXT_SIZE ? MIN_TEXT_SIZE : v;
+
 const TextBlock = z.object({
   id: Id,
   kind: z.literal("text"),
   text: z.string().max(120),
   role: z.enum(["heading", "subheading", "body"]), // sets the default size/weight
   colour: Hex,
-  size: z.number().int().min(12).max(56), // brief: "adjust its size"
+  size: z.preprocess(raiseLegacySize, z.number().int().min(MIN_TEXT_SIZE).max(MAX_TEXT_SIZE)), // brief: "adjust its size"
 });
 
 export const Block = z.discriminatedUnion("kind", [ImageBlock, TextBlock]);

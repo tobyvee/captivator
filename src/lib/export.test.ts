@@ -301,7 +301,7 @@ describe("buildExportHtml: final check", () => {
       { id: "h1", kind: "text", text: "Hi", role: "heading", colour: "#111111", size: 30 },
       { id: "h2", kind: "text", text: "There", role: "heading", colour: "#111111", size: 24 },
       { id: "s", kind: "text", text: "Sub", role: "subheading", colour: "#111111", size: 16 },
-      { id: "b", kind: "text", text: "Body", role: "body", colour: "#111111", size: 14 },
+      { id: "b", kind: "text", text: "Body", role: "body", colour: "#111111", size: 16 },
       { id: "i1", kind: "image", src: `${WEBP}SU1H`, alt: "One", size: "sm" },
       { id: "i2", kind: "image", src: "/templates/sponsor.jpg", alt: "Two", size: "lg" },
     ];

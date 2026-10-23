@@ -81,7 +81,7 @@ describe("templates", () => {
   );
 
   it("keeps every template's compact content within the 600px login sheet", () => {
-    expect(compactHeight(SPONSOR.design)).toBeCloseTo(598, 0);
+    expect(compactHeight(SPONSOR.design)).toBeCloseTo(597.5, 0);
     for (const t of TEMPLATES) expect(compactHeight(t.design), t.id).toBeLessThanOrEqual(600);
   });
 

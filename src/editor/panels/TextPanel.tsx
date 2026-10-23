@@ -3,6 +3,7 @@
 import { Check, TriangleAlert } from "lucide-react";
 import { useId } from "react";
 import { formatRatio } from "@/lib/contrast";
+import { MAX_TEXT_SIZE, MIN_TEXT_SIZE } from "@/lib/design-schema";
 import { rateText } from "@/lib/readability";
 import { useStore } from "@/lib/store";
 import type { TextBlockSpec } from "@/lib/types";
@@ -14,8 +15,6 @@ import { Slider } from "../controls/Slider";
 type Role = TextBlockSpec["role"];
 
 const MAX_TEXT = 120;
-const MIN_SIZE = 12;
-const MAX_SIZE = 56;
 
 const STYLES: SegmentedOption<Role>[] = [
   { value: "heading", label: "Heading" },
@@ -111,8 +110,8 @@ export function TextPanel({ id }: { id: string }) {
       <Slider
         label="Size"
         value={block.size}
-        min={MIN_SIZE}
-        max={MAX_SIZE}
+        min={MIN_TEXT_SIZE}
+        max={MAX_TEXT_SIZE}
         unit=" px"
         onChange={(size) => updateBlock(id, { size })}
       />

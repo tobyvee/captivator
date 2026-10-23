@@ -115,6 +115,13 @@ describe("updateBlock", () => {
     });
   });
 
+  it("raises a 12–15px size to the 16px floor and refuses anything smaller", () => {
+    const id = textBlockId();
+    expect(state().updateBlock(id, { size: 12 })).toBe(true);
+    expect(state().design.blocks.find((b) => b.id === id)).toMatchObject({ size: 16 });
+    expect(state().updateBlock(id, { size: 11 })).toBe(false);
+  });
+
   it.each([
     ["text over 120 characters", { text: "x".repeat(121) }],
     ["a bad hex", { colour: "#FFF" }],
@@ -386,6 +393,12 @@ describe("persistence", () => {
       hasSaved: true,
       restoreFailed: false,
     });
+  });
+
+  it("restores a design saved with 14px text, raised to the 16px floor", async () => {
+    writeStored({ design: { ...customDesign, blocks: [{ ...customDesign.blocks[0], size: 14 }] }, name: "Old" });
+    await useStore.persist.rehydrate();
+    expect(state()).toMatchObject({ design: customDesign, hasSaved: true, restoreFailed: false });
   });
 
   it("falls back to Sponsor on corrupt JSON without throwing", async () => {

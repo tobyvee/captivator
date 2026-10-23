@@ -58,6 +58,22 @@ describe("Design schema", () => {
       design.blocks = [text("a", "x".repeat(121))];
       expect(valid(design)).toBe(false);
     });
+
+    it("keeps text sizes within 16–56px", () => {
+      const sized = (size: number) => ({ ...blank(), blocks: [{ ...text("a", "Hi"), size }] });
+      expect(Design.parse(sized(16)).blocks[0]).toMatchObject({ size: 16 });
+      expect(Design.parse(sized(56)).blocks[0]).toMatchObject({ size: 56 });
+      expect(valid(sized(57))).toBe(false);
+      expect(valid(sized(16.5))).toBe(false);
+    });
+
+    it("raises a 12–15px size saved before the 16px floor to 16, and still rejects smaller", () => {
+      const sized = (size: number) => ({ ...blank(), blocks: [{ ...text("a", "Hi"), size }] });
+      for (const size of [12, 15]) expect(Design.parse(sized(size)).blocks[0]).toMatchObject({ size: 16 });
+      expect(valid(sized(11))).toBe(false);
+      expect(valid(sized(15.5))).toBe(false);
+      expect(valid(sized(0))).toBe(false);
+    });
   });
 
   describe("form fields", () => {

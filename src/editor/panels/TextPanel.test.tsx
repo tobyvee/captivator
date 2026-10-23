@@ -50,8 +50,8 @@ describe("TextPanel", () => {
     expect(textArea()).toHaveValue("FREE WIFI");
     expect(screen.getByText("9 of 120 characters")).toBeInTheDocument();
     expect(within(styleGroup()).getByRole("button", { name: "Heading" })).toHaveAttribute("aria-pressed", "true");
-    expect(sizeSlider()).toHaveValue("36");
-    expect(sizeSlider()).toHaveAttribute("aria-valuetext", "36 px");
+    expect(sizeSlider()).toHaveValue("34");
+    expect(sizeSlider()).toHaveAttribute("aria-valuetext", "34 px");
     expect(colourInput()).toHaveValue("#C6F432");
     expect(screen.getByText(/Want a two-colour headline\?/)).toBeInTheDocument();
   });
@@ -97,17 +97,21 @@ describe("TextPanel", () => {
     expect(sizeSlider()).toHaveValue(String(size));
   });
 
-  it("adjusts the size within 12–56 after a preset, keeping the role, and the preview follows", async () => {
+  it("adjusts the size within 16–56 after a preset, keeping the role, and the preview follows", async () => {
     const user = userEvent.setup();
     const preview = renderWithPreview();
     await user.click(within(styleGroup()).getByRole("button", { name: "Body" }));
-    expect(sizeSlider()).toHaveAttribute("min", "12");
+    expect(sizeSlider()).toHaveAttribute("min", "16");
     expect(sizeSlider()).toHaveAttribute("max", "56");
 
     fireEvent.change(sizeSlider(), { target: { value: "30" } });
     expect(heading()).toMatchObject({ role: "body", size: 30 });
     expect(sizeSlider()).toHaveAttribute("aria-valuetext", "30 px");
     expect(preview.getByText("FREE WIFI")).toHaveStyle({ fontSize: "30px" });
+
+    // The slider can't go below 16px (T-043-text-size-floor-16.md).
+    fireEvent.change(sizeSlider(), { target: { value: "12" } });
+    expect(heading().size).toBe(16);
   });
 
   it("sets the colour from the hex input", async () => {

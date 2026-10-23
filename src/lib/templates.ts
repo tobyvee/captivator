@@ -47,7 +47,9 @@ export const SPONSOR: Template = Template.parse({
         text: "FREE WIFI",
         role: "heading",
         colour: "#C6F432",
-        size: 36,
+        // 34, not 36, so the subheading can meet the 16px floor and Sponsor still fits the iPhone
+        // SE's login sheet (T-043-text-size-floor-16.md).
+        size: 34,
       },
       {
         id: "sponsor-subheading",
@@ -55,7 +57,7 @@ export const SPONSOR: Template = Template.parse({
         text: "Proudly sponsored by",
         role: "subheading",
         colour: "#FFFFFF",
-        size: 15,
+        size: 16,
       },
       {
         id: "sponsor-partner-logo",
