@@ -1,5 +1,6 @@
 import type { CSSProperties, JSX } from "react";
 import type { BackgroundSpec, ImageBackground, RenderMode } from "../lib/types";
+import { clearOfEdge } from "./layout";
 
 export type BackgroundProps = { background: BackgroundSpec; mode: RenderMode };
 
@@ -27,12 +28,12 @@ const FILL: CSSProperties = { position: "absolute", inset: 0, width: "100%", hei
 // least 5.7:1 over any photo, and a long name ellipsizes instead of wrapping up over Connect.
 const CREDIT: CSSProperties = {
   position: "absolute",
-  right: 10,
-  bottom: 8,
+  right: clearOfEdge("right", 10),
+  bottom: clearOfEdge("bottom", 8),
   zIndex: 2,
   pointerEvents: "auto",
   boxSizing: "border-box",
-  maxWidth: "calc(100% - 20px)",
+  maxWidth: "calc(100% - 20px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))",
   margin: 0,
   padding: "2px 6px",
   borderRadius: 4,

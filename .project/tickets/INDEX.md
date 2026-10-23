@@ -7,7 +7,7 @@ tags: [project, captivator, reference, tickets]
 ---
 # captivator — Ticket index
 
-The run order for `/implement-parallel`: 37 tickets in 11 waves. Estimates add up to 570 minutes of agent work. The critical path, the sum of each wave's longest ticket, is 230 minutes before merging and review. Estimates size the work; they aren't a budget ([`general-time-budget-is-user-time.md`](../decisions/general-time-budget-is-user-time.md)).
+The run order for `/implement-parallel`: 38 tickets in 11 waves. Estimates add up to 580 minutes of agent work. The critical path, the sum of each wave's longest ticket, is 230 minutes before merging and review. Estimates size the work; they aren't a budget ([`general-time-budget-is-user-time.md`](../decisions/general-time-budget-is-user-time.md)).
 
 Waves follow the greedy rules in `/prioritise-tickets`, with one override: `T-029` and `T-030` run last ([`T-029-checklist-and-readme-run-last.md`](../decisions/T-029-checklist-and-readme-run-last.md)).
 
@@ -104,12 +104,13 @@ Waves follow the greedy rules in `/prioritise-tickets`, with one override: `T-02
 
 ### Wave 11 (10 min)
 
-`T-030` ends with a manual check that the production URL loads on mobile data. `T-037` fixes a layout problem the user reported after T-030 landed, and touches none of T-030's files ([`T-037-lands-in-wave-11.md`](../decisions/T-037-lands-in-wave-11.md)).
+`T-030` ends with a manual check that the production URL loads on mobile data. `T-037` and `T-038` fix problems the user reported after T-030 landed, and touches none of T-030's files ([`T-037-lands-in-wave-11.md`](../decisions/T-037-lands-in-wave-11.md)).
 
 | ID | Title | Priority | Estimate | Touches |
 |---|---|---|---|---|
 | [T-030](T-030-readme-and-final-deploy.md) | README and final deploy | P1 | 10 | `README.md`, `docs/editor.png`, `next.config.ts`, `src/app/security-headers.test.ts`, `.project/review/phone-checklist.md` |
 | [T-037](T-037-readability-notice-stacks-under-caption.md) | The failing readability Notice stacks under the preview caption | P1 | 5 | `src/editor/checks/ReadabilityCheck.tsx`, `src/editor/checks/ReadabilityCheck.test.tsx` |
+| [T-038](T-038-export-draws-under-gesture-bar.md) | The exported page draws under Android's gesture bar, inside the safe area | P1 | 10 | `src/lib/export.ts`, `src/splash/layout.ts`, `src/splash/Background.tsx`, `src/splash/TermsSheet.tsx`, their tests, `.project/review/phone-checklist.md`, `README.md` |
 
 ## Cut
 
@@ -160,3 +161,4 @@ None. Every dependency exists, there are no cycles, every `todo` ticket has `tou
 | 10 | [T-036](T-036-editor-columns-scroll-independently.md) | Editor columns scroll independently, so the preview stays put | P1 | 9 | 15 | — | done |
 | 11 | [T-030](T-030-readme-and-final-deploy.md) | README and final deploy | P1 | 9 | 10 | T-029 | done |
 | 11 | [T-037](T-037-readability-notice-stacks-under-caption.md) | The failing readability Notice stacks under the preview caption | P1 | 9 | 5 | — | done |
+| 11 | [T-038](T-038-export-draws-under-gesture-bar.md) | The exported page draws under Android's gesture bar, inside the safe area | P1 | 9 | 10 | — | done |

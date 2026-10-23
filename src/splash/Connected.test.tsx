@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { render, screen } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { BLANK, Design } from "../lib/design-schema";
@@ -144,11 +145,14 @@ describe("Connected", () => {
     expect(onContinue).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps at least 28px below CONTINUE for the photo credit", () => {
+  it("keeps 40px plus the bottom safe area below CONTINUE for the photo credit", () => {
     render(<Connected design={design([])} mode="preview" />);
     const column = screen.getByRole("button", { name: "CONTINUE" }).parentElement!;
     expect(column.lastElementChild).toBe(screen.getByRole("button", { name: "CONTINUE" }));
-    expect(parseFloat(column.style.paddingBottom)).toBeGreaterThanOrEqual(28);
+    // jsdom drops env(), so read the rendered style attribute.
+    expect(renderToStaticMarkup(<Connected design={design([])} mode="preview" />)).toContain(
+      "padding-bottom:calc(40px + env(safe-area-inset-bottom, 0px))",
+    );
   });
 
   it("renders the design's text as text, never markup", () => {

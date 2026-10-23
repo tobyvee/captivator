@@ -67,10 +67,12 @@ afterEach(() => {
 });
 
 describe("buildExportHtml: document shell", () => {
-  it("starts with a doctype and has the viewport meta", async () => {
+  it("starts with a doctype and has the viewport meta, drawing under the gesture bar", async () => {
     const { html } = await build(BLANK.design);
     expect(html.startsWith("<!doctype html>")).toBe(true);
-    expect(html).toContain('<meta name="viewport" content="width=device-width, initial-scale=1">');
+    expect(html).toContain(
+      '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
+    );
     expect(html).toContain('<html lang="en">');
     expect(html).toContain('<meta charset="utf-8">');
   });

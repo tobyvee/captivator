@@ -229,7 +229,9 @@ async function renderPage(design: Design, name: string): Promise<string> {
 
   const html =
     '<!doctype html><html lang="en"><head><meta charset="utf-8">' +
-    '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+    // `viewport-fit=cover` lets the page draw under Android Chrome's gesture bar instead of leaving
+    // a white strip there; the splash keeps its content clear with the bottom safe area.
+    '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">' +
     // Stops iOS turning phone numbers in the terms into tel: links.
     '<meta name="format-detection" content="telephone=no">' +
     `<title>${escapeHtml(name.trim() || "WiFi login")}</title>` +

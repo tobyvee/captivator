@@ -87,11 +87,11 @@ The editor is the first piece. The [PRD](.project/prd/Captive%20Portal%20Designe
 
 **Deferred:** the fade-direction control for the photo overlay. The schema stores no direction, so adding one means a schema version bump and a migration ([decision](.project/decisions/T-006-overlay-two-stop-wash.md)).
 
-**Known gaps from the checklist run.** 14 checks passed and 8 were skipped, which are recorded as unverified ([checklist](.project/review/phone-checklist.md), [decision](.project/decisions/T-029-skipped-checks-unverified.md)). The one failure, where the preview slid down when Unsplash results loaded, has a fix (T-036) that hasn't yet been re-checked in the deployed editor. These remain unchecked on a device, and unit tests are the only evidence for them:
+**Known gaps from the checklist run.** 14 checks passed, 7 were skipped, which are recorded as unverified, and one skipped check was later run ([checklist](.project/review/phone-checklist.md), [decision](.project/decisions/T-029-skipped-checks-unverified.md)). Two failures have fixes that haven't yet been re-checked: the preview sliding down when Unsplash results loaded (T-036), and a white strip under the exported page behind Android's gesture bar (T-038). These remain unchecked on a device, and unit tests are the only evidence for them:
 
 - The image and field limits, and a 4 MB phone photo landing under 150 KB.
 - Keyboard-only use, and VoiceOver announcing switch and segmented-control state.
-- Opening the exported file on a phone, including `100dvh`.
+- Opening the exported file on an iPhone, including `100dvh`.
 - The exported terms sheet opening and closing, with the box unticked.
 - Native `required` messages and the focus ring.
 - Input styling and placeholder readability.

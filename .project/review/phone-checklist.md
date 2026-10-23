@@ -9,7 +9,7 @@ tags: [project, captivator, review, testing, checklist]
 
 Run by the user against production (https://app.captivator.workers.dev, deploy of `8035bda`) on 2026-10-23, recorded on a private checklist page and read back by the main session. No item failed on the page, one failure was reported in chat, and none of the shipped features was cut. Eight items were skipped. Those weren't checked on a device, so they're listed as **unverified** below. The unit tests named next to each one are the only evidence for it ([`T-029-skipped-checks-unverified.md`](../decisions/T-029-skipped-checks-unverified.md)).
 
-**Totals:** 14 pass · 0 fail (plus 1 failure reported in chat, fixed by T-036) · 8 skipped · 0 cut.
+**Totals:** 14 pass · 0 fail (plus 2 failures reported in chat, fixed by T-036 and T-038) · 7 skipped · 0 cut.
 
 ## The spec's checklist
 
@@ -41,7 +41,7 @@ Run by the user against production (https://app.captivator.workers.dev, deploy o
 |---|---|---|
 | Download in Safari, Chrome and iOS; file name matches the design name | Pass | |
 | The file makes no network requests (DevTools Network panel empty) | Pass | |
-| Opens correctly on the phone | Skipped, unverified | `export.test.ts` checks the single-file output and the flex layout. The `100dvh` rule is unchecked on a device |
+| Opens correctly on the phone | Fail, fixed | **Failure (reported in chat, Chrome on Android):** a white strip under the page, behind the gesture bar. The layout was otherwise correct. Fixed by [T-038](../tickets/T-038-export-draws-under-gesture-bar.md); re-check on Android, and on an iPhone, which hasn't been tried |
 | Terms sheet opens and closes via `:target`; the box stays unticked | Skipped, unverified | `export.test.ts` and `SplashPage` tests check the `#terms` markup and the `:target` rule |
 | Native `required` messages; focus ring | Skipped, unverified | Tests check the `required` attributes and the `:focus-visible` rule |
 | Borderless inputs show no inner shadow; placeholder readable | Skipped, unverified | |
@@ -55,4 +55,5 @@ Run by the user against production (https://app.captivator.workers.dev, deploy o
 
 ## Follow-ups
 - [T-036](../tickets/T-036-editor-columns-scroll-independently.md): editor columns scroll independently, so the preview stays put. Landed on 2026-10-23. Re-check the Unsplash item in the deployed editor.
+- [T-038](../tickets/T-038-export-draws-under-gesture-bar.md): the exported page draws under Android's gesture bar, with its content kept inside the safe area. Landed on 2026-10-23. Re-export and re-open the file on the Android phone.
 - The README lists the unverified items as known gaps (T-030).

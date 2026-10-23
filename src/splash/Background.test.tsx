@@ -155,13 +155,13 @@ describe("Credit", () => {
     expect(textOf(html)).toBe("Photo: Alex S. / Unsplash");
   });
 
-  it("is one absolute line above the content, clickable, on a dark backing", () => {
+  it("is one absolute line inside the safe area above the content, clickable, on a dark backing", () => {
     const [line] = elements(credit("preview"));
     expect(line.tag).toBe("p");
     expect(line.style).toMatchObject({
       position: "absolute",
-      right: "10px",
-      bottom: "8px",
+      right: "calc(10px + env(safe-area-inset-right, 0px))",
+      bottom: "calc(8px + env(safe-area-inset-bottom, 0px))",
       "z-index": "2",
       "pointer-events": "auto",
       background: "rgba(0, 0, 0, 0.6)",
@@ -179,7 +179,7 @@ describe("Credit", () => {
       "white-space": "nowrap",
       overflow: "hidden",
       "text-overflow": "ellipsis",
-      "max-width": "calc(100% - 20px)",
+      "max-width": "calc(100% - 20px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))",
       "box-sizing": "border-box",
     });
     expect(html).toContain(`&lt;b&gt;${"x".repeat(497)}`);

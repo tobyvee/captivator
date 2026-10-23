@@ -3,6 +3,7 @@ import { contrastRatio, mainBackgroundColour, readableTextColour } from "../lib/
 import type { Design } from "../lib/design-schema";
 import type { RenderMode, TextBlockSpec } from "../lib/types";
 import { connectButtonStyle } from "./Form";
+import { clearOfEdge } from "./layout";
 
 export type TermsSheetProps = { design: Design; mode: RenderMode; onClose?: () => void };
 
@@ -34,6 +35,10 @@ const SHEET: CSSProperties = {
   flexDirection: "column",
   gap: 14,
   padding: "10px 24px 28px",
+  // Clear of the gesture bar, and in landscape the notch, which the export draws under.
+  paddingLeft: clearOfEdge("left", 24),
+  paddingRight: clearOfEdge("right", 24),
+  paddingBottom: clearOfEdge("bottom", 28),
   borderRadius: "22px 22px 0 0",
   textAlign: "left",
 };

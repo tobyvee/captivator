@@ -199,6 +199,12 @@ describe("TermsSheet render modes", () => {
       const markup = html(design(), mode);
       expect(markup).toMatch(/^<section[^>]*style="position:fixed;inset:0;z-index:10"/);
       expect(markup).toMatch(/style="position:absolute;left:0;right:0;bottom:0;height:82%/);
+      // Its text and buttons stay clear of the gesture bar and the notch the export draws under.
+      expect(markup).toContain(
+        "padding-left:calc(24px + env(safe-area-inset-left, 0px));" +
+          "padding-right:calc(24px + env(safe-area-inset-right, 0px));" +
+          "padding-bottom:calc(28px + env(safe-area-inset-bottom, 0px))",
+      );
     },
   );
 
