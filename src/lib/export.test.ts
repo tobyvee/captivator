@@ -77,6 +77,14 @@ describe("buildExportHtml: document shell", () => {
     expect(html).toContain('<meta charset="utf-8">');
   });
 
+  it("writes every template's style attributes without HTML entities", async () => {
+    for (const { design } of TEMPLATES) {
+      const { html } = await build(design);
+      for (const [, style] of html.matchAll(/style="([^"]*)"/g)) expect(style).not.toMatch(/&\w+;|&#/);
+    }
+    expect((await build(BLANK.design)).html).toContain("font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif");
+  });
+
   it("stops iOS turning phone numbers into tel: links, and still passes the final check", async () => {
     const d = withForm(["phone"]);
     d.form.terms.body = "Questions? Call 020 7946 0000.";

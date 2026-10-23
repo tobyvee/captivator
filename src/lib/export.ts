@@ -36,7 +36,7 @@ const DEFAULT_DEPS: ExportDeps = {
 
 // The file's only <style> block: rules inline styles can't express.
 const EXPORT_CSS = [
-  'body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}',
+  "body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}",
   ".cv-root{min-height:100vh;min-height:100dvh}",
   ".cv-terms{display:none}.cv-terms:target{display:block}",
   ".cv-root :focus-visible{outline:3px solid #FFFFFF;box-shadow:0 0 0 5px #111111}",

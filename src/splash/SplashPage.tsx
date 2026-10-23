@@ -25,7 +25,9 @@ export type SplashPageProps = {
 
 type BlockSpec = Design["blocks"][number];
 
-const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+// Unquoted: a family name made of plain words needs no quotes, and quotes would be escaped as
+// &quot; in the exported style attribute.
+const FONT = "system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
 const SELECT_BLUE = "#2563EB";
 
 // Wraps the landing page under the open terms sheet. Not positioned, so the background layers
