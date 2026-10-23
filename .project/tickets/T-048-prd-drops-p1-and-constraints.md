@@ -27,6 +27,3 @@ The user: "Remove "P1 — fast follow" section and the entire "Constraints" sect
 ## Acceptance criteria
 - [x] Neither section remains. *Checked against the PRD's heading list.*
 - [x] Nothing in the PRD, the spec, CLAUDE.md, the README or `.claude/` refers to them. *Checked with grep.*
-
-## Decisions
-- [`T-048-prd-drops-p1-and-constraints.md`](../decisions/T-048-prd-drops-p1-and-constraints.md): The PRD drops its P1 fast-follow list and its Constraints section (user)
