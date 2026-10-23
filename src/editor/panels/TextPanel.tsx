@@ -75,7 +75,6 @@ export function TextPanel({ id }: { id: string }) {
 
       <ColourField label="Colour" value={block.colour} onChange={(colour) => updateBlock(id, { colour })} />
 
-
       <p className="text-xs leading-normal text-zinc-600">
         Want a two-colour headline? Add a second Text block and give it its own colour.
       </p>

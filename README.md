@@ -28,7 +28,7 @@ Unsplash photo search is optional locally. To turn it on, copy `.dev.vars.exampl
 
 - **Logo upload:** PNG, JPEG, WebP or SVG, with required alt text. Uploads are downscaled in the browser, and SVGs are turned into raster images.
 - **Background image or colour:** a solid colour, a two-colour gradient in three directions, or a photo. A photo can fill the screen or show in full, and it has zoom, a focus point (presets or a draggable dot) and a darken slider.
-- **Text with colour and size:** heading, subheading and body styles, each with a size slider and a colour picker.
+- **Text with colour and size:** heading, subheading and body styles, each with a size slider (16px to 56px) and a colour picker.
 - **Up to two of Name, Email and Phone:** each field gets the right `type`, `autocomplete` and `inputmode`. You can set the input colours.
 - **Connect button colours:** button and text colour, solid or outline style, and the label.
 - **Live mobile and desktop preview:** a 375×740 phone frame and a 1280×800 browser frame. Both update as you type or drag.
@@ -66,6 +66,9 @@ Other decisions that changed scope or departed from the spec:
 - **Unsplash search cache:** results are cached for an hour in vinext's KV-backed data cache, because Workers don't cache on `s-maxage` ([decision](.project/decisions/T-031-search-cached-by-fetch-revalidate.md)).
 - **Unsplash rate limit:** each client is throttled to 10 calls per 60 s with a Workers Rate Limiting binding. On the demo tier, one client could still use up the hourly quota, and an IPv6 client could rotate addresses. Both risks are accepted for the demo ([quota](.project/decisions/T-031-unsplash-quota-risk-accepted.md), [IPv6](.project/decisions/T-031-ipv6-rotation-accepted.md)).
 - **Stretch work:** scheduled like the rest of the work rather than held back, so all of it shipped ([decision](.project/decisions/general-stretch-tickets-scheduled.md)).
+- **Smallest text size:** 16px, not the spec's 12px, so guest text stays readable. Saved designs with text from 12px to 15px are raised to 16px when they load ([decision](.project/decisions/T-043-text-size-floor-16.md)).
+- **Template spacing:** the guest page's gaps and padding were tightened so no template opens with the small-phone warning ([decision](.project/decisions/T-044-tighter-column-spacing.md)).
+- **Colour suggestion dots:** 30px wide and 44px tall, so a row of eight fits without wrapping. That's narrower than the spec's 44px editor targets, but above WCAG's 24px minimum ([decision](.project/decisions/T-045-swatch-width-departs-from-spec.md)).
 - **Editor layout:** on wide screens, each editor column scrolls independently, so the preview stays in place. This fixes a failure found during the checklist run ([decision](.project/decisions/T-036-columns-scroll-when-side-by-side.md)).
 
 ## Path to production

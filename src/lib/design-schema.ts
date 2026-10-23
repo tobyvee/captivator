@@ -104,7 +104,7 @@ const Form = z.object({
     label: z.string().min(1).max(60), // "I agree to the"
     linkText: z.string().min(1).max(30), // "terms of use"
     body: z.string().min(1).max(8000), // shown in an in-page sheet; external links won't load pre-auth
-    textColour: Hex, // contrast-checked against the background like any text
+    textColour: Hex, // the checkbox label's colour
     version: z.number().int().positive(), // bump on edit; recorded with each acceptance
   }),
   button: z.object({

@@ -1,8 +1,8 @@
 import type { CSSProperties, JSX } from "react";
 import type { TextBlockSpec } from "../../lib/types";
 
-// Font weight per role. The editor's contrast checks use it to decide whether text counts as large.
-export const WEIGHT: Record<TextBlockSpec["role"], number> = { heading: 800, subheading: 500, body: 400 };
+// Font weight per role.
+const WEIGHT: Record<TextBlockSpec["role"], number> = { heading: 800, subheading: 500, body: 400 };
 
 export type TextBlockProps = { block: TextBlockSpec; as: "h1" | "h2" | "p" };
 

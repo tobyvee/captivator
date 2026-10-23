@@ -113,9 +113,11 @@ describe("TextPanel", () => {
     expect(heading().colour).toBe("#123ABC");
   });
 
-  it("shows no contrast rating: the customer judges readability themselves", () => {
+  it("shows no contrast rating, even for white text on white (T-046)", () => {
+    useStore.getState().updateBackground({ type: "colour", colour: "#FFFFFF" });
+    useStore.getState().updateBlock(HEADING_ID, { colour: "#FFFFFF" });
     render(<TextPanel id={HEADING_ID} />);
-    expect(screen.queryByText(/Easy to read|Hard to read|Check readability/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/readab|hard to read|\d:1/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 

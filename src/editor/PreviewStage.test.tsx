@@ -45,12 +45,19 @@ function setTermsMode(mode: "checkbox" | "off") {
 }
 
 describe("PreviewStage", () => {
+  it("shows no contrast check, even for white text on white (T-046)", () => {
+    state().updateBackground({ type: "colour", colour: "#FFFFFF" });
+    state().updateBlock(HEADING_ID, { colour: "#FFFFFF" });
+    render(<PreviewStage />);
+    expect(screen.queryByText(/readab|hard to read|\d:1/i)).not.toBeInTheDocument();
+    // The stage's only live region holds no notice: the fit check is stubbed off and nothing failed.
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+  });
+
   it("renders the design in the phone frame and follows every store change", () => {
     render(<PreviewStage />);
     expect(heading()).toHaveTextContent("FREE WIFI");
     expect(screen.getByText("375 × 740, iPhone login sheet")).toBeInTheDocument();
-    // No contrast check under the preview.
-    expect(screen.queryByText(/readable|Hard to read|on the background/)).not.toBeInTheDocument();
 
     act(() => {
       state().updateBlock(HEADING_ID, { text: "HELLO" });

@@ -57,7 +57,7 @@ type: ticket
 project: captivator
 status: todo
 priority: P0            # P0 = the brief's minimum, Export HTML and persistence (never cut)
-                        # P1 = planned extras; P2 = stretch (Unsplash, dnd-kit, one-tap Fix)
+                        # P1 = planned extras; P2 = stretch (Unsplash, dnd-kit)
 milestone: 3            # spec build-plan step 1–9
 estimate: 20            # minutes
 depends_on: [T-001, T-002]
