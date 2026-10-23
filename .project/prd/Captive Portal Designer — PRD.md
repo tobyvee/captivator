@@ -433,14 +433,6 @@ All targets are proposed and will be set against a pilot baseline. Everything is
 | As far as we know, D1 and Durable Objects offer no Australian jurisdiction. Keep guest emails and phones in Cloudflare and meet APP 8 cross-border duties, or use an AU-region store? | Legal + Engineering | Yes |
 | Will Unsplash allow a resized self-hosted copy on publish? Its API guidelines require hotlinking. Ask api@unsplash.com; the fallback is whitelisting its CDN. | Product | No |
 
-## Phasing
-
-0. **Captivator MVP (test project).** The 4-hour Next.js editor in Phase 0: templates, block editor, live mobile/desktop preview with guest-screen switcher, localStorage persistence. *Gate: public repo with steady commits, plus a live deploy, submitted for review.*
-1. **Spike: prove one gateway loop.** One unit of the most common gateway in the fleet, a fixed external splash URL, its login step, and its redirect parameters captured. Test on iOS, Android and Windows. *Gate: guests get online and the OS marks the network online on all three; the redirect identifies the unit.*
-2. **Portal service plus a hard-coded design.** A Worker + Hono service with booking routing, all generated states, consent records and server-side analytics. *Gate: a pilot event run on a design provider staff configure in a file.*
-3. **Designer v1.** The MVP editor wired to publish and roll back, the validation gate and live counts. *Gate: three customer-built events with no staff build and no event-day portal incidents.*
-4. **Data capture and paid access.** Gated access on each supported gateway, per-sponsor opt-in, live export, payment, impersonation checks, i18n. *Gate: no guest gets online without a recorded submission when capture is on.*
-
 ## Sources
 
 - [Captivator editor canvas](https://claude.ai/artifact/AWrSjgB8dZV2KWn8kkDeYj)
