@@ -397,6 +397,14 @@ describe("ColourField suggestions", () => {
     expect(swatchLabels(designRow())).toEqual(["#ABCDEF", "#00AA00", "#FFFFFF", "#111111"]);
   });
 
+  it("lays the swatches out in one unwrapped row of 30px-wide, 44px-tall targets", () => {
+    renderField();
+    const buttons = within(designRow()).getAllByRole("button");
+    expect(buttons[0].parentElement).toHaveClass("flex-nowrap");
+    expect(buttons[0].parentElement).not.toHaveClass("flex-wrap");
+    for (const b of buttons) expect(b).toHaveClass("h-11", "w-[30px]", "shrink-0");
+  });
+
   it("follows the store when the design changes", () => {
     renderField();
     expect(swatchLabels(designRow())).not.toContain("#C0FFEE");

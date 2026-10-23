@@ -201,30 +201,33 @@ function SwatchRow({
   onPick: (colour: string) => void;
 }) {
   return (
-    <div role="group" aria-labelledby={id} className="flex flex-wrap items-center">
-      <span id={id} className="mr-1 text-xs text-zinc-600">
+    // The title sits above one unwrapped row: 30px-wide, 44px-tall targets around 24px dots, so
+    // eight colours fit the narrowest inspector (T-045-swatches-one-row.md).
+    <div role="group" aria-labelledby={id} className="flex flex-col gap-0.5">
+      <span id={id} className="text-xs text-zinc-600">
         {title}
       </span>
-      {colours.map((c) => {
-        const selected = c === current;
-        return (
-          // 44px tap target around the canvas's 24px dot.
-          <button
-            key={c}
-            type="button"
-            aria-label={c}
-            aria-pressed={selected}
-            onClick={() => onPick(c)}
-            className={`flex size-11 cursor-pointer items-center justify-center rounded-full ${FOCUS_RING}`}
-          >
-            <span
-              aria-hidden="true"
-              className="block size-6 rounded-full"
-              style={{ background: c, border: selected ? `2px solid ${BLUE}` : "1px solid #D4D4D8" }}
-            />
-          </button>
-        );
-      })}
+      <div className="-ml-[3px] flex flex-nowrap">
+        {colours.map((c) => {
+          const selected = c === current;
+          return (
+            <button
+              key={c}
+              type="button"
+              aria-label={c}
+              aria-pressed={selected}
+              onClick={() => onPick(c)}
+              className={`flex h-11 w-[30px] shrink-0 cursor-pointer items-center justify-center rounded-md ${FOCUS_RING}`}
+            >
+              <span
+                aria-hidden="true"
+                className="block size-6 rounded-full"
+                style={{ background: c, border: selected ? `2px solid ${BLUE}` : "1px solid #D4D4D8" }}
+              />
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
