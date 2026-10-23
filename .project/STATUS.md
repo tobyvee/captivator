@@ -21,7 +21,6 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is buil
 
 ## Completed
 
-- [x] Wave 11 closed: the live URL loads on mobile data, the Unsplash fixes (T-036, T-041) pass their re-check, and the remaining checks are accepted as skipped (2026-10-23)
 - [x] Repo created, `git init`, `.project/` set up (2026-10-21)
 - [x] PRD and tech spec written and reviewed (2026-10-21)
 - [x] Build planned and prioritised: 35 tickets in 11 waves, plus T-036 from the checklist (2026-10-22)
@@ -86,3 +85,4 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is buil
 - [x] Milestone 9 closed: real-phone checklist, README and final deploy, with security headers (2026-10-23)
 - [x] Wave 11 closed; the final full audit's one low (security headers) is fixed (2026-10-23)
 - [x] Final deploy green (run 39856955907); `/`, `/editor` and `/api/unsplash` send the three security headers (2026-10-23)
+- [x] Real-device checks finished: the live URL loads on mobile data, the Unsplash fixes (T-036, T-041) pass their re-check, and you accepted the rest as skipped (2026-10-23)
