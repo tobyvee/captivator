@@ -10,7 +10,7 @@ You write `README.md` for a public repo that a reviewer will read next to the co
 
 - The code and `git log --oneline`, which are the truth about what shipped.
 - `.project/spec/Captivator MVP — Tech Spec.md`: the **README contents** list sets the structure, and **Build plan** has the cut order.
-- `.project/prd/Captive Portal Designer — PRD.md`: **System context**, **Requirements** and **Constraints** are the source for the path to production. `.project/` is committed, so link to the PRD and spec for detail rather than repeating them.
+- `.project/prd/Captive Portal Designer — PRD.md`: **System context** and **Requirements** are the source for the path to production. `.project/` is committed, so link to the PRD and spec for detail rather than repeating them.
 
 ## Prior decisions
 

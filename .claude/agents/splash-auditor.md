@@ -6,7 +6,7 @@ tools: Read, Grep, Glob, Bash
 
 You audit what a guest's phone will actually load. The editor chrome is out of scope. You do not edit files; you report.
 
-The splash page runs in a stripped-down system WebView. The iOS login sheet has no URL bar, keeps nothing between sessions, blocks popups and `target=_blank`, and older iPhones pin older WebKit. Background and limits: the **Constraints** section of `.project/prd/Captive Portal Designer — PRD.md`, and the **Splash renderer**, **Export HTML** and **Checks** sections of `.project/spec/Captivator MVP — Tech Spec.md`.
+The splash page runs in a stripped-down system WebView. The iOS login sheet has no URL bar, keeps nothing between sessions, blocks popups and `target=_blank`, and older iPhones pin older WebKit. Background and limits: the **Splash renderer**, **Export HTML** and **Checks** sections of `.project/spec/Captivator MVP — Tech Spec.md`.
 
 ## Prior decisions
 

@@ -15,7 +15,7 @@ In this document, **the provider** is the business that rents out the Wi-Fi unit
 - **Late sponsor deals** can't be activated.
 - **Every change** costs staff time.
 - **Sponsor data** arrives after the event, when it's too late to act on.
-- **The headline sponsor metric is inflated.** "One connection = one website visit" assumes guests are redirected to the sponsor URL on their first browser request. The iOS Captive Network Assistant and HTTPS make that unreliable (see Constraints).
+- **The headline sponsor metric is inflated.** "One connection = one website visit" assumes guests are redirected to the sponsor URL on their first browser request. The iOS Captive Network Assistant and HTTPS make that unreliable.
 
 **Who has the problem.**
 
@@ -369,7 +369,7 @@ Customers design the skin; we own the flow. Everything below follows from that s
    - A state that fails to render.
    - [ ] Each failure names the block to fix, with an auto-fix where possible (e.g. adjust contrast, recompress an image).
 6. **Preview fidelity.** Previews use device frames emulating the iOS CNA sheet and the Android login app at 320–430px, with light, dark and landscape modes.
-   - [ ] A banner states that a real test needs the sandbox SSID (P1).
+   - [ ] A banner states that a real test needs a real phone on a test network.
 7. **Publish, version and roll back.** Every publish is immutable and versioned.
    - [ ] Rollback to any prior version takes one action and is live within 60 seconds.
    - [ ] A publish during an event never serves a half-updated page.
@@ -392,91 +392,12 @@ Customers design the skin; we own the flow. Everything below follows from that s
 12. **Success-screen CTA.** The success screen carries the sponsor message and one CTA link to the sponsor URL.
     - [ ] Essential information (a voucher, receipt or code) is never shown only on this screen; it's also sent by SMS or email.
 
-### P1 — fast follow
-
-- **Paid access.** Plan tiers by time or data, with payment through an inline card form. Requires gated access (see **Access modes**) on a gateway that enforces time and data quotas, and the payment provider's domains in the walled garden.
-  - [ ] Graceful fallback to a voucher when 3DS fails inside the CNA.
-- **Sandbox SSID test mode.** A test SSID on a demo unit, plus a QR handoff, so producers can test on a real phone in the real CNA before the event.
-- **Live export.** A CSV/API export of consented contacts, replacing the 12-hour spreadsheet.
-- **Brand-impersonation checks.** Flag uploaded logos and copy resembling banks, telcos or government, and route them to manual review.
-- **i18n.** Multiple languages with text-expansion headroom, and RTL support.
-- **Session status.** Time and data remaining, with an extend option where the plan allows.
-
 ### P2 — design for, don't build
 
 - **RFC 8908 Captive Portal API support** where the gateway exposes it, so modern iOS and Android open the portal without probe hijacking.
 - **More gateways.** Each new vendor is one adapter for its redirect parameters and login step, plus a spike.
 - **Multi-sponsor rotation** within one event.
 - **Passpoint/Hotspot 2.0** for returning guests at long-lease venues.
-
-## Constraints
-
-The portal runs inside a stripped-down system WebView on a phone, over an uplink that may be slow or metered, behind a gateway configured only once. Every requirement above traces to one of these.
-
-### Client platforms
-
-- **iOS Captive Network Assistant.** A modal sheet with no URL bar, ephemeral storage and no persistent cookies.
-  - It closes or shows Done as soon as the OS probe passes.
-  - `window.open`, `target=_blank`, downloads, and often `tel:`/`mailto:` links fail.
-  - App switching risks losing the session.
-- **Android.** The CaptivePortalLogin WebView opens only after the guest taps a "Sign in to Wi-Fi network" notification. Behaviour varies by OEM, especially Samsung.
-- **Silent fallback to mobile data.** Wi-Fi Assist (iOS) and adaptive connectivity (Android) can route guests over mobile data when Wi-Fi has no internet, so some guests never see the portal.
-- **Viewport and input.** Phone widths are 320–430px. Tap targets must be at least 44pt (iOS) or 48dp (Android). Inputs under 16px trigger zoom on iOS.
-- **MAC randomisation.** iOS Private Wi-Fi Address and Android per-SSID random MACs, especially rotating modes, break MAC-keyed sessions and force re-auth.
-- **Social login** is blocked in embedded WebViews ([Google policy](https://developers.googleblog.com/2021/06/upcoming-security-changes-to-googles-oauth-2.0-authorization-endpoint.html)).
-- **Payments.** 3DS redirects and Apple Pay/Google Pay are unreliable in these WebViews.
-
-### OS detection probes
-
-- **Pre-auth:** port-80 HTTP must be intercepted and redirected. The probe hosts must NOT be in the walled garden, or the OS assumes it's online and never shows the portal:
-  - Apple: `captive.apple.com/hotspot-detect.html`, expects "Success".
-  - Android/ChromeOS: `connectivitycheck.gstatic.com/generate_204`, expects 204.
-  - Windows: `www.msftconnecttest.com/connecttest.txt`.
-  - Firefox: `detectportal.firefox.com`.
-- **Post-auth:** probes must pass unmodified, so the OS marks the network online.
-- **HTTPS is never intercepted.** Doing so causes certificate errors and HSTS failures.
-- **DNS hijacking is fragile.** DoH/DoT, iCloud Private Relay and Android Private DNS bypass it.
-- **Standards path.** [RFC 8910](https://www.rfc-editor.org/rfc/rfc8910) and [RFC 8908](https://www.rfc-editor.org/rfc/rfc8908) let the network announce the portal directly. Recent iOS and Android honour them; gateway support varies.
-
-### Output and build
-
-- **No external requests before auth.** No Google Fonts, CDNs or analytics scripts unless walled-gardened; inline everything.
-- **Payload budget about 100 KB (proposed).** Pre-auth loads may cross a slow or metered uplink (below).
-- **Server-rendered.** No SPA routing, and state is kept server-side keyed to the portal session, never in localStorage or cookies.
-- **Theming.** Dark mode (`prefers-color-scheme`), safe-area insets and landscape must all work.
-
-### Network and uplink
-
-- **Metered data.** Where the uplink is metered, pre-auth page loads come out of the event's data allowance. A 2 MB hero image × 3,000 guests is about 6 GB.
-- **Latency.** Cellular and satellite uplinks add tens to hundreds of milliseconds per round trip, which argues for a single-request page.
-- **Capacity.** Each unit handles a limited number of concurrent guests, so large sites run several units. The design must be identical across units.
-- **Session roaming.** Whether auth on one unit carries to another depends on the gateway and the provider's controller setup (open question).
-- **Outages.** An uplink outage takes guests offline regardless of where the portal is hosted. Portal location isn't a resilience lever.
-
-### Gateway requirements
-
-Each supported gateway is checked against this list in its spike:
-
-- **External splash URL.** It can be set once in the captive portal profile, and the management tool doesn't overwrite it.
-- **Configuration.** If the management tool has no API for captive portal settings, the one-time setup is manual, and routing per event lives on our side.
-- **Login step.** It works from the guest's browser or from our service. If it's a browser request to a host that only resolves on the guest network, a cross-origin fetch fails, so use a form POST.
-- **TLS.** If the login host is HTTPS on the unit itself, each unit needs a valid certificate, which means issuance and renewal across the fleet.
-- **Login sheet settings.** Any setting that opens the portal in a popup or suppresses the OS login sheet is turned off, so the CNA appears.
-- **Walled garden.** It accepts our portal domain and payment provider domains, ideally matched by domain rather than resolved to IPs.
-- **Where the portal applies.** Some gateways bind the captive portal to an SSID, others to a VLAN.
-
-### Compliance (Australia)
-
-- **Collection notice.** Required under [APP 5](https://www.oaic.gov.au/privacy/australian-privacy-principles) whenever email or phone is collected, and it must name sponsors who receive the data.
-- **Marketing consent.** Opt-in must be express and unticked by default under the [Spam Act 2003](https://www.acma.gov.au/avoid-sending-spam), never bundled into T&Cs acceptance, and recorded per sponsor.
-- **Pre-auth access to terms.** T&Cs and the privacy policy must be reachable before auth: served inline, never as links to blocked sites.
-- **Audit trail.** Record which T&Cs and consent version each guest accepted.
-
-### Security and abuse
-
-- **A phishing kit by nature.** A brandable login page on open Wi-Fi is structurally an evil-twin phishing kit. Credential-shaped fields are limited to the system-defined auth types, and brand impersonation is screened (P1).
-- **Multi-tenant isolation.** No customer-supplied code. Uploaded assets are re-encoded, and SVGs are rasterised or sanitised.
-- **Cleartext pre-auth phase.** Never put personal data in URL parameters. Submit over HTTPS to our service only.
 
 ## Success metrics
 
@@ -506,7 +427,7 @@ All targets are proposed and will be set against a pilot baseline. Everything is
 | Which gating mechanism does each gateway support (an authentication server, an API or a token), and who runs any server it needs? | Engineering + Provider | No (blocks data capture and paid access) |
 | Does each gateway's walled garden match a domain on every request, or resolve it to IPs when configured? Cloudflare's anycast IPs aren't ours and can change. | Engineering | Yes |
 | Do the gateways in use advertise RFC 8910 or support RFC 8908? | Engineering | No |
-| Which payment provider, and which domains go in the walled garden? | Provider + Engineering | No (P1) |
+| Which payment provider, and which domains go in the walled garden? | Provider + Engineering | No (paid access) |
 | Who is the data controller for captured contacts: producer, sponsor or provider? This drives the notice wording. | Legal | Yes |
 | What is the per-unit concurrency and the guest volume per event, to size the portal service? | Provider | No |
 | As far as we know, D1 and Durable Objects offer no Australian jurisdiction. Keep guest emails and phones in Cloudflare and meet APP 8 cross-border duties, or use an AU-region store? | Legal + Engineering | Yes |
