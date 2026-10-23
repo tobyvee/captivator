@@ -7,7 +7,7 @@ tags: [project, captivator, reference, tickets]
 ---
 # captivator — Ticket index
 
-The run order for `/implement-parallel`: 41 tickets in 11 waves. Estimates add up to 595 minutes of agent work. The critical path, the sum of each wave's longest ticket, is 230 minutes before merging and review. Estimates size the work; they aren't a budget ([`general-time-budget-is-user-time.md`](../decisions/general-time-budget-is-user-time.md)).
+The run order for `/implement-parallel`: 42 tickets in 11 waves. Estimates add up to 600 minutes of agent work. The critical path, the sum of each wave's longest ticket, is 230 minutes before merging and review. Estimates size the work; they aren't a budget ([`general-time-budget-is-user-time.md`](../decisions/general-time-budget-is-user-time.md)).
 
 Waves follow the greedy rules in `/prioritise-tickets`, with one override: `T-029` and `T-030` run last ([`T-029-checklist-and-readme-run-last.md`](../decisions/T-029-checklist-and-readme-run-last.md)).
 
@@ -104,7 +104,7 @@ Waves follow the greedy rules in `/prioritise-tickets`, with one override: `T-02
 
 ### Wave 11 (10 min)
 
-`T-030` ends with a manual check that the production URL loads on mobile data. `T-037` to `T-041` fix problems the user reported after T-030 landed, and touches none of T-030's files ([`T-037-lands-in-wave-11.md`](../decisions/T-037-lands-in-wave-11.md)).
+`T-030` ends with a manual check that the production URL loads on mobile data. `T-037` to `T-042` fix problems the user reported after T-030 landed, and touches none of T-030's files ([`T-037-lands-in-wave-11.md`](../decisions/T-037-lands-in-wave-11.md)).
 
 | ID | Title | Priority | Estimate | Touches |
 |---|---|---|---|---|
@@ -114,6 +114,7 @@ Waves follow the greedy rules in `/prioritise-tickets`, with one override: `T-02
 | [T-039](T-039-direction-icons-only.md) | Gradient direction shows icons only | P1 | 5 | `src/editor/controls/Segmented.tsx`, `src/editor/panels/BackgroundPanel.tsx`, `src/editor/panels/BackgroundPanel.test.tsx` |
 | [T-040](T-040-font-stack-unquoted.md) | No HTML entities in the exported font declaration | P1 | 5 | `src/splash/SplashPage.tsx`, `src/lib/export.ts`, `src/lib/export.test.ts` |
 | [T-041](T-041-columns-contain-hidden-text.md) | Hidden status text can't make the editor page scroll past the window | P1 | 5 | `src/app/editor/page.tsx`, `src/editor/editor.test.tsx` |
+| [T-042](T-042-production-path-vendor-neutral.md) | README path to production without vendor assumptions | P1 | 5 | `README.md` |
 
 ## Cut
 
@@ -168,3 +169,4 @@ None. Every dependency exists, there are no cycles, every `todo` ticket has `tou
 | 11 | [T-039](T-039-direction-icons-only.md) | Gradient direction shows icons only | P1 | 9 | 5 | — | done |
 | 11 | [T-040](T-040-font-stack-unquoted.md) | No HTML entities in the exported font declaration | P1 | 9 | 5 | — | done |
 | 11 | [T-041](T-041-columns-contain-hidden-text.md) | Hidden status text can't make the editor page scroll past the window | P1 | 9 | 5 | — | done |
+| 11 | [T-042](T-042-production-path-vendor-neutral.md) | README path to production without vendor assumptions | P1 | 9 | 5 | — | done |

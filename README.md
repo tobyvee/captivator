@@ -72,14 +72,14 @@ Other decisions that changed scope or departed from the spec:
 
 ## Path to production
 
-The editor is the first piece. The [PRD](.project/prd/Captive%20Portal%20Designer%20%E2%80%94%20PRD.md#system-context) describes the full system. In short:
+The editor is the first piece. The [PRD](.project/prd/Captive%20Portal%20Designer%20%E2%80%94%20PRD.md#system-context) sketches one possible full system. The outline below doesn't assume a router vendor or an authentication method, because those depend on the hardware in use:
 
-- **Peplink external splash, routed on `sn`.** Each router's captive portal profile points once at a fixed URL that we host. The router adds its serial number (`sn`) to the redirect, and the portal service maps it to the active booking and serves that booking's published design. Nothing on the router changes per event.
-- **Capture takes two hops.** The guest's form posts to our portal service, which records the details and consent. The service then has the browser post a second form, with `command=login` and no personal data, to the router's `form_action`. Only the two known Peplink hosts are allowed as `form_action`. That's why an export with fields posts to a `[PORTAL_SUBMIT_URL]` placeholder, and only a click-through export posts to `[ROUTER_FORM_ACTION]` ([decision](.project/decisions/general-export-form-action.md)).
-- **A portal service on Cloudflare Workers + Hono.** It renders pages on the server at the edge. Designs and the `sn` map live in KV, the current-version pointer and consent records in D1, and there's a per-`sn` rate limit. The MVP already runs on Workers, and `SplashPage` has no editor or Next.js imports, so it can move across unchanged.
-- **RADIUS before any data capture.** Click-through can use Open Access. Any flow that collects data switches the router to User Authentication against our own RADIUS server (a FreeRADIUS pair or a hosted service), so only guests with a recorded submission get online. The router gets a one-time opaque token, never personal data.
+- **One fixed splash URL per router.** Most captive portal gateways can send guests to an external splash page, and add something that identifies the unit or venue to the redirect. That might be a serial number, a MAC address or a site ID. Each router points once at a URL we host, and the portal service maps that identifier to the active booking and serves its published design. Nothing on the router changes per event. Which identifier and redirect parameters are available varies by gateway, so each one we support needs a short spike.
+- **Guest details go to our service, never to the router.** The guest's form posts to our portal service, which records the details and consent. The service then completes the gateway's own login step, such as a form post or a redirect to an address the gateway supplied, without passing on personal data. Any address the gateway supplies is checked against that gateway's known hosts. That's why an export with fields posts to a `[PORTAL_SUBMIT_URL]` placeholder, and only a click-through export posts straight to the gateway, at `[ROUTER_FORM_ACTION]` ([decision](.project/decisions/general-export-form-action.md)). That click-through form's hidden login field and its comment are still written for one gateway, so they need adapting for each gateway we support.
+- **A portal service at the edge.** It renders pages on the server. Designs and the unit-to-booking map go in a key-value store, and the current-version pointer and consent records in a database, with a rate limit per unit. The MVP already runs on Cloudflare Workers, and `SplashPage` has no editor or Next.js imports, so it can move across unchanged.
+- **Guests get online only once their details are recorded.** A click-through page can use the gateway's open access mode. When a page collects data, the gateway must wait for the portal service to confirm the submission before letting the guest online. How depends on what the gateway supports, for example an external authentication server, a gateway API call or a one-time token. The gateway never receives personal data.
 - **Consent records and terms versions.** Each submission stores the terms version and consent text version the guest accepted, with a timestamp. Marketing opt-in is separate, unticked and recorded per sponsor.
-- **Unsplash self-hosting is pending confirmation.** The export inlines a resized copy of the photo, but Unsplash's guidelines expect hotlinking. Before publishing, we need Unsplash's confirmation, or the fallback of allowing its CDN through the walled garden. The exported credit is plain text, so a production portal could link it on the Connected page after sign-in. Search also needs Unsplash production approval and a global quota counter before wider use.
+- **Unsplash self-hosting is pending confirmation.** The export inlines a resized copy of the photo, but Unsplash's guidelines expect hotlinking. Before publishing, we need Unsplash's confirmation, or the fallback of adding its CDN to the gateway's walled garden (the hosts guests can reach before they sign in). The exported credit is plain text, so a production portal could link it on the Connected page after sign-in. Search also needs Unsplash production approval and a global quota counter before wider use.
 
 ## Next steps and cuts
 
@@ -100,8 +100,8 @@ The editor is the first piece. The [PRD](.project/prd/Captive%20Portal%20Designe
 
 **What I'd do next:**
 
-1. Run the unverified checks above on real iOS and Android devices, then do the Peplink spike: one router, the fixed splash URL, and a real form-POST login.
-2. Build the portal service with `sn` routing, the two-hop submit and consent records, and turn Export into publish and roll back.
+1. Run the unverified checks above on real iOS and Android devices. Then confirm which gateways are in use, and spike one: one router, the fixed splash URL and a real login.
+2. Build the portal service with routing by unit, the submit-then-login flow and consent records, and turn Export into publish and roll back.
 3. Apply for Unsplash production approval, and add a global quota counter.
 4. Measure photo contrast from the area behind the text instead of the photo's average colour, and add the overlay fade direction.
 
