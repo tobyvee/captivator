@@ -52,21 +52,20 @@ export function blend(base: string, over: string, alpha: number): string {
 }
 
 /**
- * The colours text may sit on for a background. Photos use their average colour (or the
- * backdrop when none is known yet) blended with both overlay stops (T-006-overlay-two-stop-wash.md).
- * Photo results are approximate (general-photo-contrast-approximate.md).
+ * The colours text may sit on for a background. Photos use their backdrop blended with both
+ * overlay stops (T-006-overlay-two-stop-wash.md), so the renderer's colour picks never wait on
+ * decoding the photo.
  */
-export function backgroundColours(bg: BackgroundSpec, photoAverage?: string): string[] {
+export function backgroundColours(bg: BackgroundSpec): string[] {
   switch (bg.type) {
     case "colour":
       return [bg.colour];
     case "gradient":
       return [bg.from, bg.to];
     case "image": {
-      const base = photoAverage ?? bg.backdrop;
-      const { overlay } = bg;
-      if (!overlay) return [base];
-      return [blend(base, overlay.from, overlay.opacity), blend(base, overlay.to, overlay.opacity)];
+      const { backdrop, overlay } = bg;
+      if (!overlay) return [backdrop];
+      return [blend(backdrop, overlay.from, overlay.opacity), blend(backdrop, overlay.to, overlay.opacity)];
     }
   }
 }
@@ -115,12 +114,4 @@ export function readableTextColour(bg: string | string[]): string {
 /** Light red on dark backgrounds, dark red on light ones, by the better worst-case ratio. */
 export function bestErrorColour(bg: string | string[]): string {
   return better(LIGHT_ERROR, DARK_ERROR, bg);
-}
-
-/**
- * One decimal, e.g. "2.1:1". Rounds down, so a failing 4.48 shows as "4.4:1", never as a
- * passing-looking "4.5:1" (T-003-format-ratio-rounds-down.md).
- */
-export function formatRatio(r: number): string {
-  return `${(Math.floor(r * 10 + 1e-9) / 10).toFixed(1)}:1`;
 }

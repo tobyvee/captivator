@@ -49,6 +49,8 @@ describe("PreviewStage", () => {
     render(<PreviewStage />);
     expect(heading()).toHaveTextContent("FREE WIFI");
     expect(screen.getByText("375 × 740, iPhone login sheet")).toBeInTheDocument();
+    // No contrast check under the preview.
+    expect(screen.queryByText(/readable|Hard to read|on the background/)).not.toBeInTheDocument();
 
     act(() => {
       state().updateBlock(HEADING_ID, { text: "HELLO" });

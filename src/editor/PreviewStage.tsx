@@ -2,7 +2,6 @@
 
 import { useStore } from "@/lib/store";
 import { SplashPage } from "@/splash/SplashPage";
-import { ReadabilityCheck } from "./checks/ReadabilityCheck";
 import { Notice } from "./controls/Notice";
 import { useFitCheck } from "./checks/useFitCheck";
 import { BrowserFrame } from "./frames/BrowserFrame";
@@ -58,10 +57,7 @@ export function PreviewStage() {
         <BrowserFrame title={name}>{page}</BrowserFrame>
       )}
 
-      <div className="flex flex-wrap justify-center gap-x-5 gap-y-2.5 text-center text-xs text-zinc-700">
-        <span>{CAPTIONS[device]}</span>
-        <ReadabilityCheck design={design} />
-      </div>
+      <p className="text-center text-xs text-zinc-700">{CAPTIONS[device]}</p>
 
       {/* One live region that is always mounted, so screen readers announce a notice when it
           appears. When it's empty, its negative margin cancels the stage's gap. */}

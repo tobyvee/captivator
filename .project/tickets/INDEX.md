@@ -7,7 +7,7 @@ tags: [project, captivator, reference, tickets]
 ---
 # captivator — Ticket index
 
-The run order for `/implement-parallel`: 45 tickets in 11 waves. Estimates add up to 625 minutes of agent work. The critical path, the sum of each wave's longest ticket, is 230 minutes before merging and review. Estimates size the work; they aren't a budget ([`general-time-budget-is-user-time.md`](../decisions/general-time-budget-is-user-time.md)).
+The run order for `/implement-parallel`: 46 tickets in 11 waves. Estimates add up to 635 minutes of agent work. The critical path, the sum of each wave's longest ticket, is 230 minutes before merging and review. Estimates size the work; they aren't a budget ([`general-time-budget-is-user-time.md`](../decisions/general-time-budget-is-user-time.md)).
 
 Waves follow the greedy rules in `/prioritise-tickets`, with one override: `T-029` and `T-030` run last ([`T-029-checklist-and-readme-run-last.md`](../decisions/T-029-checklist-and-readme-run-last.md)).
 
@@ -104,7 +104,7 @@ Waves follow the greedy rules in `/prioritise-tickets`, with one override: `T-02
 
 ### Wave 11 (10 min)
 
-`T-030` ends with a manual check that the production URL loads on mobile data, which passed on 2026-10-23. `T-037` to `T-045` fix problems the user reported after T-030 landed, and touches none of T-030's files ([`T-037-lands-in-wave-11.md`](../decisions/T-037-lands-in-wave-11.md)).
+`T-030` ends with a manual check that the production URL loads on mobile data, which passed on 2026-10-23. `T-037` to `T-046` fix problems the user reported after T-030 landed, and touches none of T-030's files ([`T-037-lands-in-wave-11.md`](../decisions/T-037-lands-in-wave-11.md)).
 
 | ID | Title | Priority | Estimate | Touches |
 |---|---|---|---|---|
@@ -118,6 +118,7 @@ Waves follow the greedy rules in `/prioritise-tickets`, with one override: `T-02
 | [T-043](T-043-text-size-floor-16.md) | Text can't be smaller than 16px | P1 | 10 | `src/lib/design-schema.ts`, `src/lib/templates.ts`, `src/editor/panels/TextPanel.tsx`, their tests |
 | [T-044](T-044-templates-open-without-fit-warning.md) | No template opens with the small-phone warning | P1 | 10 | `src/splash/layout.ts`, `src/lib/templates.test.ts` |
 | [T-045](T-045-swatches-one-row.md) | Colour suggestions in one tight row | P1 | 5 | `src/editor/controls/ColourField.tsx`, `src/editor/controls/ColourField.test.tsx` |
+| [T-046](T-046-remove-contrast-check.md) | Remove the contrast check | P1 | 10 | `src/lib/readability.ts`, `src/lib/contrast.ts`, `src/editor/checks/ReadabilityCheck.tsx`, `src/editor/PreviewStage.tsx`, `src/editor/panels/TextPanel.tsx`, `src/editor/panels/TermsPanel.tsx`, their tests, `README.md`, `CLAUDE.md` |
 
 ## Cut
 
@@ -176,3 +177,4 @@ None. Every dependency exists, there are no cycles, every `todo` ticket has `tou
 | 11 | [T-043](T-043-text-size-floor-16.md) | Text can't be smaller than 16px | P1 | 9 | 10 | — | done |
 | 11 | [T-044](T-044-templates-open-without-fit-warning.md) | No template opens with the small-phone warning | P1 | 9 | 10 | — | done |
 | 11 | [T-045](T-045-swatches-one-row.md) | Colour suggestions in one tight row | P1 | 9 | 5 | — | done |
+| 11 | [T-046](T-046-remove-contrast-check.md) | Remove the contrast check | P1 | 9 | 10 | — | done |

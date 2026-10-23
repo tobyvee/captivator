@@ -41,13 +41,12 @@ Unsplash photo search is optional locally. To turn it on, copy `.dev.vars.exampl
 - **Blocks:** add, remove and reorder text and up to two image blocks (for example a logo and a sponsor), using buttons or drag and drop.
 - **Terms:** an optional terms checkbox, never pre-ticked, with an editable terms sheet. The placeholder copy is bracketed prompts, not invented legal wording.
 - **Guest screens:** a switcher previews Landing, Terms, Error and Connected, all generated from the same design.
-- **Readability check:** WCAG contrast warnings, with a one-tap Fix. Over photos the check is approximate, and the message says so.
 - **Fit check:** a warning when the page won't fit the iPhone SE login sheet.
 - **Logo palette:** colour suggestions taken from your logo.
 - **Unsplash search:** search from the Photo tab, with the photographer credit and Unsplash's required download ping.
 - **Export HTML:** one file with no JavaScript and no network requests. Every image is inlined, and the background is re-encoded to keep the page near 100 KB. A toast shows the file size, and a page over budget gets a warning but still downloads.
 
-Every check warns and never blocks editing. Every page, API and public-file response sends `X-Content-Type-Options`, `Referrer-Policy` and a CSP with `frame-ancestors 'none'`.
+The fit check warns and never blocks editing. There's no contrast check, because a customer can make whatever design they want ([decision](.project/decisions/T-046-contrast-check-removed.md)). Every page, API and public-file response sends `X-Content-Type-Options`, `Referrer-Policy` and a CSP with `frame-ancestors 'none'`.
 
 ## Key decisions
 
@@ -63,7 +62,6 @@ Other decisions that changed scope or departed from the spec:
 - **Form target:** a form with guest fields posts to `[PORTAL_SUBMIT_URL]`, never to the router ([decision](.project/decisions/general-export-form-action.md); see the path to production below).
 - **Photo credit in the export:** plain text with no links, because a link can't load in the login sheet before sign-in ([decision](.project/decisions/T-006-export-credit-plain-text.md)).
 - **Photo overlay:** a top-to-bottom wash between its two colours. The fade-direction control is deferred ([decision](.project/decisions/T-006-overlay-two-stop-wash.md)).
-- **Photo contrast:** labelled approximate rather than reported as a pass ([decision](.project/decisions/general-photo-contrast-approximate.md)).
 - **Template photo credits:** kept beside the templates, not in the design, and shown on the picker cards ([decision](.project/decisions/T-002-template-photos-and-credits.md)).
 - **Unsplash search cache:** results are cached for an hour in vinext's KV-backed data cache, because Workers don't cache on `s-maxage` ([decision](.project/decisions/T-031-search-cached-by-fetch-revalidate.md)).
 - **Unsplash rate limit:** each client is throttled to 10 calls per 60 s with a Workers Rate Limiting binding. On the demo tier, one client could still use up the hourly quota, and an IPv6 client could rotate addresses. Both risks are accepted for the demo ([quota](.project/decisions/T-031-unsplash-quota-risk-accepted.md), [IPv6](.project/decisions/T-031-ipv6-rotation-accepted.md)).
@@ -83,7 +81,7 @@ The editor is the first piece. The [PRD](.project/prd/Captive%20Portal%20Designe
 
 ## Next steps and cuts
 
-**Cut:** nothing. No cut was requested. Everything in the spec's cut order shipped (Unsplash search, focus-point drag, the screen switcher, the logo palette and the fit check), and so did the rest of the stretch work (drag to reorder and the one-tap contrast Fix).
+**Cut:** nothing. No cut was requested. Everything in the spec's cut order shipped (Unsplash search, focus-point drag, the screen switcher, the logo palette and the fit check), and so did the rest of the stretch work (drag to reorder). The readability check and its one-tap Fix shipped, then were removed on request, because they confused customers and a customer may choose a hard-to-read design ([decision](.project/decisions/T-046-contrast-check-removed.md)).
 
 **Deferred:** the fade-direction control for the photo overlay. The schema stores no direction, so adding one means a schema version bump and a migration ([decision](.project/decisions/T-006-overlay-two-stop-wash.md)).
 
@@ -102,7 +100,7 @@ The editor is the first piece. The [PRD](.project/prd/Captive%20Portal%20Designe
 1. Run the unverified checks above on real iOS and Android devices. Then confirm which gateways are in use, and spike one: one router, the fixed splash URL and a real login.
 2. Build the portal service with routing by unit, the submit-then-login flow and consent records, and turn Export into publish and roll back.
 3. Apply for Unsplash production approval, and add a global quota counter.
-4. Measure photo contrast from the area behind the text instead of the photo's average colour, and add the overlay fade direction.
+4. Add the overlay fade direction.
 
 ## Credits
 

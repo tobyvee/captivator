@@ -5,7 +5,6 @@ import {
   bestTextColour,
   blend,
   contrastRatio,
-  formatRatio,
   isLargeText,
   luminance,
   mainBackgroundColour,
@@ -101,19 +100,13 @@ describe("backgroundColours", () => {
   });
 
   // Opacity 0.25, not 0.5, so swapping blend's base and overlay arguments would fail.
-  it("blends the backdrop with both overlay stops when there is no photo average", () => {
+  it("blends the backdrop with both overlay stops", () => {
     const bg = photo({ from: "#FFFFFF", to: "#000000", opacity: 0.25 });
     expect(backgroundColours(bg)).toEqual(["#A0A0A0", "#606060"]);
   });
 
-  it("prefers the photo average over the backdrop", () => {
-    const bg = photo({ from: "#000000", to: "#000000", opacity: 0.25 });
-    expect(backgroundColours(bg, "#FFFFFF")).toEqual(["#BFBFBF", "#BFBFBF"]);
-  });
-
-  it("returns the base alone when there is no overlay", () => {
+  it("returns the backdrop alone when there is no overlay", () => {
     expect(backgroundColours(photo(null))).toEqual(["#808080"]);
-    expect(backgroundColours(photo(null), "#123456")).toEqual(["#123456"]);
   });
 });
 
@@ -161,17 +154,5 @@ describe("bestErrorColour", () => {
   it("gives light red on navy and dark red on white", () => {
     expect(bestErrorColour(NAVY)).toBe("#FECACA");
     expect(bestErrorColour("#FFFFFF")).toBe("#B91C1C");
-  });
-});
-
-describe("formatRatio", () => {
-  it("shows one decimal", () => {
-    expect(formatRatio(2.14)).toBe("2.1:1");
-    expect(formatRatio(21)).toBe("21.0:1");
-    expect(formatRatio(4.5)).toBe("4.5:1");
-  });
-
-  it("never rounds a failing ratio up to a passing-looking one", () => {
-    expect(formatRatio(contrastRatio("#777777", "#FFFFFF"))).toBe("4.4:1");
   });
 });

@@ -84,9 +84,7 @@ Tickets name their artboard. If the Artifact tool isn't available, or a read fai
   - Encode as WebP 0.8, falling back to JPEG.
   - Rasterise SVGs; never store them as markup.
 - **Templates are `Design.parse`d at module load**, so a broken template fails the build. Switching templates keeps the customer's images and text.
-- **Checks warn but never block editing:**
-  - Contrast (WCAG 4.5:1, or 3:1 at 24px and up). Gradients use the worse stop; photos use their average colour blended with the overlay, which is approximate, so the message says to check readability over the photo rather than claiming a pass.
-  - Fit: warns when content passes 600px at 375px wide, the iPhone SE login sheet.
+- **The fit check warns but never blocks editing:** it warns when content passes 600px at 375px wide, the iPhone SE login sheet. There is no contrast check: the customer judges readability themselves (`T-046-contrast-check-removed.md`). `src/lib/contrast.ts` stays for the renderer's own colour picks (terms sheet heading, error text, Connected screen).
 - **Terms checkbox:**
   - It is never pre-ticked.
   - It is separate from any marketing opt-in.

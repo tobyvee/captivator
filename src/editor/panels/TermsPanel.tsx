@@ -1,9 +1,8 @@
 "use client";
 
-import { Check, Info, TriangleAlert } from "lucide-react";
+import { Info } from "lucide-react";
 import { useId } from "react";
-import { backgroundColours, formatRatio } from "@/lib/contrast";
-import { rateText, TERMS_TEXT } from "@/lib/readability";
+import { backgroundColours } from "@/lib/contrast";
 import { useStore } from "@/lib/store";
 import type { BackgroundSpec } from "@/lib/types";
 import { ANGLE } from "@/splash/Background";
@@ -63,35 +62,12 @@ function WordingInput({
 
 /**
  * The live sample's backdrop: the page's colour or gradient, or a photo's backdrop washed by its
- * overlay (the colours the contrast check uses), since the sample can't show the photo itself.
+ * overlay, since the sample can't show the photo itself.
  */
 function sampleBackground(bg: BackgroundSpec): string {
   if (bg.type === "gradient") return `linear-gradient(${ANGLE[bg.direction]}, ${bg.from}, ${bg.to})`;
   const [from, to = from] = backgroundColours(bg);
   return from === to ? from : `linear-gradient(180deg, ${from}, ${to})`;
-}
-
-/** The terms row's contrast against the page, in the T-013 pattern (T-013-contrast-verdict-live-region). */
-function ContrastLine({ colour, background }: { colour: string; background: BackgroundSpec }) {
-  const result = rateText(colour, TERMS_TEXT.size, TERMS_TEXT.weight, background);
-  const pass = result.kind === "pass";
-  const Icon = pass ? Check : TriangleAlert;
-
-  return (
-    <p className={`flex items-start gap-1.5 text-xs leading-normal ${pass ? "text-[#166534]" : "text-[#92400E]"}`}>
-      <Icon size={14} strokeWidth={2.4} aria-hidden="true" className="mt-0.5 shrink-0" />
-      <span>
-        {/* Only the verdict is live, so it's announced when it flips, not on every picker step. */}
-        <span role="status" className="font-semibold">
-          {result.kind === "photo" ? "Check readability over your photo" : pass ? "Easy to read" : "Hard to read"}
-        </span>
-        {result.kind !== "photo" &&
-          (pass
-            ? `: ${formatRatio(result.ratio)} on the background`
-            : `: ${formatRatio(result.ratio)}, needs ${result.required}:1`)}
-      </span>
-    </p>
-  );
 }
 
 /** Checkbox wording with a live sample, the terms body, the checkbox text colour and the version note. */
@@ -175,14 +151,11 @@ export function TermsPanel() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <ColourField
-          label="Checkbox text colour"
-          value={terms.textColour}
-          onChange={(textColour) => updateForm({ terms: { textColour } })}
-        />
-        <ContrastLine colour={terms.textColour} background={background} />
-      </div>
+      <ColourField
+        label="Checkbox text colour"
+        value={terms.textColour}
+        onChange={(textColour) => updateForm({ terms: { textColour } })}
+      />
 
       {/* The MVP has no publish step, so the version is shown but never bumped. */}
       <div className="flex gap-2.5 rounded-lg border border-[#BFDBFE] bg-[#EFF6FF] p-3">

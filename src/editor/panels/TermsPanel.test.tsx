@@ -3,7 +3,6 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { useStore } from "@/lib/store";
-import type { BackgroundSpec } from "@/lib/types";
 import { SplashPage } from "@/splash/SplashPage";
 import { TermsPanel } from "./TermsPanel";
 
@@ -24,11 +23,6 @@ function sample() {
   const disabled = screen.getAllByRole("checkbox").filter((c) => c.hasAttribute("disabled"));
   expect(disabled).toHaveLength(1);
   return disabled[0];
-}
-const verdict = () => screen.getByRole("status");
-
-function setBackground(background: BackgroundSpec) {
-  expect(useStore.getState().updateBackground(background)).toBe(true);
 }
 
 // The editor preview reads the same store, so this shows what the customer sees as they edit.
@@ -181,35 +175,6 @@ describe("TermsPanel", () => {
     expect(terms().textColour).toBe("#123456");
     expect(previewRow()).toHaveStyle({ color: "#123456" });
     expect(sample().closest("label")).toHaveStyle({ color: "#123456" });
-  });
-
-  it("never rates contrast over a photo", () => {
-    render(<TermsPanel />);
-    expect(verdict()).toHaveTextContent("Check readability over your photo");
-    expect(screen.queryByText(/:1/)).not.toBeInTheDocument();
-  });
-
-  it("rates the checkbox text against the background, needing 4.5:1", () => {
-    setBackground({ type: "colour", colour: "#0F2A44" });
-    render(<TermsPanel />);
-    expect(verdict()).toHaveTextContent("Easy to read");
-    expect(verdict().parentElement).toHaveTextContent(/^Easy to read: \d+\.\d:1 on the background$/);
-
-    // White on a mid grey is 4.48:1, just short of 4.5:1.
-    act(() => {
-      setBackground({ type: "colour", colour: "#777777" });
-    });
-    expect(verdict()).toHaveTextContent("Hard to read");
-    expect(verdict().parentElement).toHaveTextContent("Hard to read: 4.4:1, needs 4.5:1");
-  });
-
-  it.each([
-    ["#000000", "#FFFFFF"],
-    ["#FFFFFF", "#000000"],
-  ])("checks both ends of a gradient from %s to %s", (from, to) => {
-    setBackground({ type: "gradient", from, to, direction: "down" });
-    render(<TermsPanel />);
-    expect(verdict().parentElement).toHaveTextContent("Hard to read: 1.0:1, needs 4.5:1");
   });
 
   it("keeps the wording editable and explains how to show it when terms are off", async () => {
