@@ -106,13 +106,15 @@ export function ReadabilityCheck({ design }: { design: Design }) {
     else if (fix) updateForm(fix.patch);
   };
 
+  // In the caption row, the short passing line sits beside the caption, as on the canvas; the
+  // failure Notice takes the row's full width, so it wraps under the caption (T-037-failure-notice-under-caption.md).
   return (
-    <div className="flex justify-center">
+    <div className={`flex justify-center${result.status === "fail" ? " basis-full" : ""}`}>
       <span role="status" className="sr-only">
         {result.status === "fail" ? `${first.label} is hard to read` : result.message}
       </span>
       {result.status === "fail" ? (
-        <Notice className="max-w-[420px] text-left" title={result.message}>
+        <Notice className="w-full max-w-[420px] text-left" title={result.message}>
           <span className="text-xs leading-[1.45] text-[#92400E]">
             Needs {first.required}:1.{rest.length > 0 && ` ${rest.length} more to fix.`}
           </span>

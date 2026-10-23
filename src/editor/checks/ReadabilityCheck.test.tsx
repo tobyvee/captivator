@@ -59,6 +59,13 @@ describe("ReadabilityCheck", () => {
     expect(screen.getByText("Needs 3:1. 1 more to fix.")).toBeInTheDocument();
   });
 
+  it("takes the caption row's full width only when it fails, so the Notice stacks under the caption", () => {
+    const { container, rerender } = render(<ReadabilityCheck design={BLANK.design} />);
+    expect(container.firstChild).not.toHaveClass("basis-full");
+    rerender(<ReadabilityCheck design={design(BLANK.design.background, [heading("#FFFFFF")])} />);
+    expect(container.firstChild).toHaveClass("basis-full");
+  });
+
   it("announces only the verdict, so a colour drag that keeps failing stays quiet", () => {
     const { rerender } = render(<ReadabilityCheck design={design(BLANK.design.background, [heading("#FFFFFF")])} />);
     const status = screen.getByRole("status");
