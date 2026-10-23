@@ -4,7 +4,7 @@ Oct 21, 2026 · @Toby
 
 ## Overview
 
-Build a Next.js editor where a non-technical customer styles a WiFi splash page and sees it live on mobile and desktop, in 3 hours of coding, deployed to Cloudflare Workers with [vinext](https://vinext.dev/) from a public GitHub repo with steady commits. Design is done: the [editor canvas](https://claude.ai/artifact/AWrSjgB8dZV2KWn8kkDeYj) and the Phase 0 section of the [PRD](https://claude.ai/artifact/NBfeatpDNRTjMtHhJbFUNS) are the source of truth for what it looks like.
+Build a Next.js editor where a non-technical customer styles a WiFi splash page and sees it live on mobile and desktop, in 3 hours of coding, deployed to Cloudflare Workers with [vinext](https://vinext.dev/) from a public GitHub repo with steady commits. Design is done: the [editor canvas](https://claude.ai/artifact/AWrSjgB8dZV2KWn8kkDeYj) and the Phase 0 section of the [PRD](../prd/Captive%20Portal%20Designer%20%E2%80%94%20PRD.md) are the source of truth for what it looks like.
 
 **Must ship (the brief):**
 
@@ -19,7 +19,7 @@ Build a Next.js editor where a non-technical customer styles a WiFi splash page 
 
 **Planned on top, in priority order:** templates, gradient backgrounds, terms checkbox, localStorage persistence, undo/redo, logo palette, contrast and fit checks, guest-screen switcher, photo fit/zoom/focus, Unsplash search.
 
-**Out of scope:** router integration, RADIUS, consent storage, publishing, accounts. These go in the README's path to production.
+**Out of scope:** gateway integration, guest authentication, consent storage, publishing, accounts. These go in the README's path to production.
 
 **Ground rules for the 3 hours:**
 
@@ -233,8 +233,8 @@ The editor is three columns (block list 280px, preview stage, inspector 320px) u
    - This `<style>` block also holds the root's `min-height` pair (see **Layout**). It's the only `<style>` block in the file.
 5. **Validation without JS:** inputs and the terms checkbox get `required` (plus the right `type`), so the browser itself blocks submission and says why.
 6. **Form:** `method="post"` and an `action` placeholder that depends on whether the design collects guest data:
-   - **With fields:** `action="[PORTAL_SUBMIT_URL]"`, with an HTML comment explaining the two hops from the PRD (*Where the portal service runs*): the guest's details go to our portal service first, which records them and then posts a second form, with no personal data, to the router's `form_action`. Guest personal data is never posted to the router.
-   - **Click-through (no fields):** `action="[ROUTER_FORM_ACTION]"` with a hidden `command=login`, and a comment pointing to the Peplink `form_action` integration.
+   - **With fields:** `action="[PORTAL_SUBMIT_URL]"`, with an HTML comment explaining the two hops from the PRD (*Where the portal service runs*): the guest's details go to our portal service first, which records them and then logs the guest in at the router with no personal data. Guest personal data is never posted to the router.
+   - **Click-through (no fields):** `action="[ROUTER_FORM_ACTION]"`, the gateway's login address, with a hidden `command=login` and a comment explaining them. Both currently follow one vendor's login step, as an example; whether to make them vendor-neutral is waiting on the user (`T-047-export-comments-left-for-user.md`).
 7. **Download:** a `Blob` (`text/html`) through a temporary `<a download="<design-name>.html">`.
    - Show the file size against the 100 KB budget in the toast, noting when the background was re-encoded to fit.
    - Warn, but still download, if still over.
@@ -370,10 +370,10 @@ Every pure module gets Vitest unit tests, written by Claude Code in the same ste
    - Client-side downscaling.
    - The small-phone fit check.
 5. **Path to production:**
-   - Peplink external splash with routing on `sn`.
-   - Form POST to an allowlisted `form_action`.
+   - One fixed external splash URL per router, routing on whatever unit identifier the gateway sends.
+   - The gateway's login step, with its login hosts allowlisted.
    - Portal service on Cloudflare Workers + Hono.
-   - RADIUS before data capture.
+   - Gated access (whatever mechanism the gateway supports) before data capture.
    - Consent records and terms versions.
    - Unsplash self-hosting pending confirmation.
    - Link to the PRD for the rest.

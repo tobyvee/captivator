@@ -29,10 +29,10 @@ Follow CLAUDE.md's **Decision log → Reading the log** to find the decisions re
    - The small-phone fit check.
    - vinext on Cloudflare Workers instead of Vercel (`general-deploy-cloudflare-vinext.md`).
 5. **Path to production:**
-   - Peplink external splash with routing on `sn`.
-   - Capture takes two hops. The guest posts to the portal service, which records consent, then posts `command=login` with no personal data to the router's allowlisted `form_action`. That's why an export with fields uses `[PORTAL_SUBMIT_URL]` (`general-export-form-action.md`).
+   - One fixed external splash URL per router, routing on whatever unit identifier the gateway sends. Assume no router vendor or authentication method (`T-042-production-path-vendor-neutral.md`).
+   - Capture takes two hops. The guest posts to the portal service, which records consent, then completes the gateway's login step with no personal data, at an allowlisted login host. That's why an export with fields uses `[PORTAL_SUBMIT_URL]` (`general-export-form-action.md`).
    - A portal service on Cloudflare Workers + Hono.
-   - RADIUS before any data capture.
+   - Gated access, by whatever mechanism the gateway supports, before any data capture.
    - Consent records and terms versions.
    - Unsplash self-hosting pending confirmation.
    Summarise these in your own words; don't paste the PRD.

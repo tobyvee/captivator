@@ -7,7 +7,7 @@ tags: [project, captivator, reference, tickets]
 ---
 # captivator — Ticket index
 
-The run order for `/implement-parallel`: 46 tickets in 11 waves. Estimates add up to 635 minutes of agent work. The critical path, the sum of each wave's longest ticket, is 230 minutes before merging and review. Estimates size the work; they aren't a budget ([`general-time-budget-is-user-time.md`](../decisions/general-time-budget-is-user-time.md)).
+The run order for `/implement-parallel`: 47 tickets in 11 waves. Estimates add up to 650 minutes of agent work. The critical path, the sum of each wave's longest ticket, is 235 minutes before merging and review. Estimates size the work; they aren't a budget ([`general-time-budget-is-user-time.md`](../decisions/general-time-budget-is-user-time.md)).
 
 Waves follow the greedy rules in `/prioritise-tickets`, with one override: `T-029` and `T-030` run last ([`T-029-checklist-and-readme-run-last.md`](../decisions/T-029-checklist-and-readme-run-last.md)).
 
@@ -102,9 +102,9 @@ Waves follow the greedy rules in `/prioritise-tickets`, with one override: `T-02
 | [T-029](T-029-real-phone-checklist.md) | Real-phone testing checklist | P1 | 10 | `.project/review/phone-checklist.md` |
 | [T-036](T-036-editor-columns-scroll-independently.md) | Editor columns scroll independently, so the preview stays put | P1 | 15 | `src/app/editor/page.tsx`, `src/editor/editor.test.tsx`, `src/editor/PreviewStage.tsx`, `src/editor/controls/ColourField.tsx`, `src/editor/controls/ColourField.test.tsx` |
 
-### Wave 11 (10 min)
+### Wave 11 (15 min)
 
-`T-030` ends with a manual check that the production URL loads on mobile data, which passed on 2026-10-23. `T-037` to `T-046` fix problems the user reported after T-030 landed, and touches none of T-030's files ([`T-037-lands-in-wave-11.md`](../decisions/T-037-lands-in-wave-11.md)).
+`T-030` ends with a manual check that the production URL loads on mobile data, which passed on 2026-10-23. `T-037` to `T-047` fix problems the user reported after T-030 landed, and touches none of T-030's files ([`T-037-lands-in-wave-11.md`](../decisions/T-037-lands-in-wave-11.md)).
 
 | ID | Title | Priority | Estimate | Touches |
 |---|---|---|---|---|
@@ -119,6 +119,7 @@ Waves follow the greedy rules in `/prioritise-tickets`, with one override: `T-02
 | [T-044](T-044-templates-open-without-fit-warning.md) | No template opens with the small-phone warning | P1 | 10 | `src/splash/layout.ts`, `src/lib/templates.test.ts` |
 | [T-045](T-045-swatches-one-row.md) | Colour suggestions in one tight row | P1 | 5 | `src/editor/controls/ColourField.tsx`, `src/editor/controls/ColourField.test.tsx` |
 | [T-046](T-046-remove-contrast-check.md) | Remove the contrast check | P1 | 10 | `src/lib/readability.ts`, `src/lib/contrast.ts`, `src/editor/checks/ReadabilityCheck.tsx`, `src/editor/PreviewStage.tsx`, `src/editor/panels/TextPanel.tsx`, `src/editor/panels/TermsPanel.tsx`, their tests, `README.md`, `CLAUDE.md` |
+| [T-047](T-047-planning-docs-vendor-neutral.md) | PRD and tech spec without hardware or provider assumptions | P1 | 15 | the PRD, the tech spec, `CLAUDE.md`, `.claude/agents/readme-writer.md` |
 
 ## Cut
 
@@ -178,3 +179,4 @@ None. Every dependency exists, there are no cycles, every `todo` ticket has `tou
 | 11 | [T-044](T-044-templates-open-without-fit-warning.md) | No template opens with the small-phone warning | P1 | 9 | 10 | — | done |
 | 11 | [T-045](T-045-swatches-one-row.md) | Colour suggestions in one tight row | P1 | 9 | 5 | — | done |
 | 11 | [T-046](T-046-remove-contrast-check.md) | Remove the contrast check | P1 | 9 | 10 | — | done |
+| 11 | [T-047](T-047-planning-docs-vendor-neutral.md) | PRD and tech spec without hardware or provider assumptions | P1 | 9 | 15 | — | done |

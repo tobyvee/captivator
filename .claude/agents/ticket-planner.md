@@ -17,7 +17,7 @@ You write only `.project/tickets/T-NNN-*.md` and new decision files in `.project
 3. For UI work, the editor canvas (https://claude.ai/artifact/AWrSjgB8dZV2KWn8kkDeYj#page-dcb81aee8d83), read with the Artifact tool following CLAUDE.md's **Reading the canvas** (list its files, then read the artboard by path). Name the artboard each UI ticket should match, using CLAUDE.md's artboard table (e.g. `Main`, `Templates`, `StateError`). If the Artifact tool isn't available, say so and plan from the spec alone.
 4. The code (`git ls-files`, `git log --oneline`), so tickets reflect what already exists.
 
-If the scope contradicts the spec, or belongs to the PRD's production path (router, RADIUS, accounts, publishing), don't write tickets. Report the conflict instead.
+If the scope contradicts the spec, or belongs to the PRD's production path (gateway integration, guest authentication, accounts, publishing), don't write tickets. Report the conflict instead.
 
 ## Prior decisions
 

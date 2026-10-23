@@ -11,11 +11,17 @@ tags: [project, captivator, status]
 
 ## Summary
 
-Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is built and deployed to Cloudflare Workers with vinext at https://app.captivator.workers.dev. All 46 tickets in 11 waves are done, all nine milestones are closed, and nothing was cut, stretch work included (`tickets/INDEX.md`). The editor has a live phone and browser preview, the block list with drag to reorder, undo and redo, the small-phone fit check, the logo palette, Unsplash search, and the Background, Text, Image, Fields, Connect button and Terms panels. It renders four guest screens from one `SplashPage` and exports a standalone HTML file under the 100 KB budget. Every ticket was reviewed and security-audited, and the guest page was splash-audited. The final full audit found one low, missing security headers, now fixed (`review/2026-10-23-security-full-review.md`). 832 tests pass, and the README describes what shipped, the key decisions and a path to production that assumes no router vendor or authentication method. You ran the real-phone checklist (`review/phone-checklist.md`): 15 checks passed, including the live URL over mobile data, and you accepted the other 6 as skipped, so they're recorded as unverified. Fixes you asked for after the run landed as `T-036` to `T-046`: 16px is now the smallest text size, no template opens with the small-phone warning, and the contrast check is gone because it confused customers. The Unsplash fix passed its re-check, and the Android export fix (`T-038`) wasn't re-checked. The final deploy is green and the security headers are live. All 11 waves are closed.
+Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is built and deployed to Cloudflare Workers with vinext at https://app.captivator.workers.dev. All 47 tickets in 11 waves are done, all nine milestones are closed, and nothing was cut, stretch work included (`tickets/INDEX.md`). The editor has a live phone and browser preview, the block list with drag to reorder, undo and redo, the small-phone fit check, the logo palette, Unsplash search, and the Background, Text, Image, Fields, Connect button and Terms panels. It renders four guest screens from one `SplashPage` and exports a standalone HTML file under the 100 KB budget. Every ticket was reviewed and security-audited, and the guest page was splash-audited. The final full audit found one low, missing security headers, now fixed (`review/2026-10-23-security-full-review.md`). 832 tests pass, and the README describes what shipped, the key decisions and a path to production that assumes no router vendor or authentication method. You ran the real-phone checklist (`review/phone-checklist.md`): 15 checks passed, including the live URL over mobile data, and you accepted the other 6 as skipped, so they're recorded as unverified. Fixes you asked for after the run landed as `T-036` to `T-047`: 16px is now the smallest text size, no template opens with the small-phone warning, the contrast check is gone because it confused customers, and the PRD and spec no longer assume a hardware vendor or rental company. The Unsplash fix passed its re-check, and the Android export fix (`T-038`) wasn't re-checked. The final deploy is green and the security headers are live. All 11 waves are closed.
 
 ## In progress
 
 ## Outstanding
+
+Questions waiting on the user:
+- [ ] Should the guest page's fixed small text (terms row, terms body, sponsor thanks, photo credit) also be at least 16px?
+- [ ] Should the Unsplash credit stay visible on the page? Recommended: yes, as Unsplash's guidelines ask.
+- [ ] Should the export's click-through form be made vendor-neutral? It still writes one vendor's hidden `command=login` and comment (`T-047-export-comments-left-for-user.md`).
+- [ ] Should the exported HTML carry a Content-Security-Policy meta tag? Optional.
 
 ## Planned
 
@@ -91,3 +97,4 @@ Captivator, the Phase 0 MVP editor for branded guest Wi-Fi splash pages, is buil
 - [x] T-044: No template opens with the small-phone warning (asked for after wave 11) (2026-10-23)
 - [x] T-045: Colour suggestions in one tight row (asked for after wave 11) (2026-10-23)
 - [x] T-046: Remove the contrast check (asked for after wave 11) (2026-10-23)
+- [x] T-047: PRD and tech spec without hardware or provider assumptions (asked for after wave 11) (2026-10-23)

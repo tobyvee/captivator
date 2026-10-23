@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Captivator is a Next.js editor where a non-technical customer designs a branded guest Wi-Fi splash (captive portal) page for PopUp WiFi units. It has a live mobile and desktop preview and exports the page as standalone HTML. The code is a standard Next.js 16 App Router app, built by [vinext](https://vinext.dev/) (Vite) and deployed to Cloudflare Workers (`general-deploy-cloudflare-vinext.md`). This repo is the **Phase 0 MVP**, a time-boxed build. The spec is the source of truth for scope and build order:
+Captivator is a Next.js editor where a non-technical customer designs a branded guest Wi-Fi splash (captive portal) page for rented event Wi-Fi units. It has a live mobile and desktop preview and exports the page as standalone HTML. The code is a standard Next.js 16 App Router app, built by [vinext](https://vinext.dev/) (Vite) and deployed to Cloudflare Workers (`general-deploy-cloudflare-vinext.md`). This repo is the **Phase 0 MVP**, a time-boxed build. The spec is the source of truth for scope and build order:
 
 - `.project/spec/Captivator MVP — Tech Spec.md`: stack, structure, store, renderer, export, tests, build plan and cut order.
 - [Captivator editor canvas](https://claude.ai/artifact/AWrSjgB8dZV2KWn8kkDeYj#page-dcb81aee8d83): the design artifact for this project and the source of truth for how the editor looks. Read it with the Artifact tool, never WebFetch; see **Reading the canvas** below.
-- `.project/prd/Captive Portal Designer — PRD.md`: the product. The **Phase 0** section covers the MVP; everything from "System context" onward (Peplink router, Workers portal service, RADIUS, consent) is the production path and is **out of scope here**.
+- `.project/prd/Captive Portal Designer — PRD.md`: the product. The **Phase 0** section covers the MVP; everything from "System context" onward (gateway integration, the Workers portal service, guest authentication, consent) is the production path and is **out of scope here**.
 
 The scaffold and the commands below exist (T-001). The rest of the layout is the spec's plan, which the tickets fill in.
 

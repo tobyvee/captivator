@@ -9,7 +9,7 @@ Turn work into tickets in `.project/tickets/` that `/prioritise-tickets` can sch
 
 - **empty or `all`:** the whole **Build plan** in `.project/spec/Captivator MVP — Tech Spec.md`.
 - **`build step N`:** just that milestone.
-- **anything else:** a description of new or changed work. Check it against the spec first. If it contradicts the spec or belongs to the PRD's production path (router, RADIUS, accounts, publishing), say so and ask before ticketing it.
+- **anything else:** a description of new or changed work. Check it against the spec first. If it contradicts the spec or belongs to the PRD's production path (gateway integration, guest authentication, accounts, publishing), say so and ask before ticketing it.
 
 ## 1. Delegate the split
 

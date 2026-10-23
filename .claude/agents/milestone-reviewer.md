@@ -28,7 +28,7 @@ Follow CLAUDE.md's **Decision log → Reading the log** to find the decisions re
    - `FIELD_SPEC` owns input attributes; the `Design` never stores them.
    - Every template is `Design.parse`d at module load.
 5. For UI milestones, compare against the canvas: block-list zones, inspector controls, labels, the neutral-grey chrome, 44px tap targets, real `<button>`/`<input>`/`<label>` elements, `role="switch"` and `aria-current` where the spec names them.
-6. Flag scope creep: anything that belongs to a later milestone or to the PRD's production path (router, RADIUS, accounts, publishing).
+6. Flag scope creep: anything that belongs to a later milestone or to the PRD's production path (gateway integration, guest authentication, accounts, publishing).
 
 ## Report
 

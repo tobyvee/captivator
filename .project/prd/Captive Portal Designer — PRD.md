@@ -4,9 +4,11 @@ Oct 21, 2026 · @Toby
 
 ## Summary and problem
 
-Build a self-serve designer that lets event producers and sponsors brand the guest Wi-Fi login on PopUp WiFi units and publish it in minutes, replacing today's template-plus-seven-day manual process. Designs are hosted on our own HTTPS service and reach guests through the Peplink router's external splash page. Publishing a design never touches the device.
+Build a self-serve designer that lets event producers and sponsors brand the guest Wi-Fi login on rented event Wi-Fi units and publish it in minutes, replacing today's template-plus-seven-day manual process. Designs are hosted on our own HTTPS service and reach guests through the router's external captive portal (splash page) setting. Publishing a design never touches the device.
 
-**The problem today.** PopUp WiFi's [CAPTIVATE](https://popupwifi.com.au/captivate/) add-on needs sponsor assets at least 7 days before the event. PopUp staff then build the page from templates, and data-capture spreadsheets arrive within 12 hours of the event ending.
+In this document, **the provider** is the business that rents out the Wi-Fi units and runs the guest network, and **the gateway** is whatever router or controller runs the captive portal on a unit. Nothing here assumes a particular hardware vendor; what we need from a gateway is listed under **System context**.
+
+**The problem today.** The provider's branded-portal add-on needs sponsor assets at least 7 days before the event. Provider staff then build the page from templates, and data-capture spreadsheets arrive within 12 hours of the event ending.
 
 **What that costs.**
 
@@ -19,11 +21,11 @@ Build a self-serve designer that lets event producers and sponsors brand the gue
 
 - **Event producers** who sell guest Wi-Fi as sponsorship inventory.
 - **Sponsors** who need the activation to look on-brand and prove a return.
-- **PopUp WiFi's solutions team**, who currently do the build by hand.
+- **The provider's solutions team**, who currently do the build by hand.
 
 ## Phase 0: Captivator MVP
 
-The first deliverable is a test project: a Next.js visual editor for mocking up a branded splash page, built in up to 4 hours in total, 3 of them coding, pushed to a public GitHub repo throughout. The [MVP tech spec](../spec/Captivator%20MVP%20%E2%80%94%20Tech%20Spec.md) is the source of truth for its stack, build plan, scope and cut order; where this section and the spec differ, the spec wins. It tests editor UX for non-technical customers and scoping judgement, not the portal runtime. Everything from System context onward describes the product it leads to. Design references are the activations on the [CAPTIVATE page](https://popupwifi.com.au/captivate/).
+The first deliverable is a test project: a Next.js visual editor for mocking up a branded splash page, built in up to 4 hours in total, 3 of them coding, pushed to a public GitHub repo throughout. The [MVP tech spec](../spec/Captivator%20MVP%20%E2%80%94%20Tech%20Spec.md) is the source of truth for its stack, build plan, scope and cut order; where this section and the spec differ, the spec wins. It tests editor UX for non-technical customers and scoping judgement, not the portal runtime. Everything from System context onward describes the product it leads to. Design references are nine branded guest portals from past event activations.
 
 **Brief minimum.** A customer can:
 
@@ -35,11 +37,11 @@ The first deliverable is a test project: a Next.js visual editor for mocking up 
 
 The brief also asks for an instant live preview with mobile and desktop views, and an editor a non-technical customer finds intuitive.
 
-**Out of scope for the MVP.** Router integration, RADIUS, consent storage, publish/rollback, multi-tenancy and the real guest flow. These go in the README as the path to production.
+**Out of scope for the MVP.** Gateway integration, guest authentication, consent storage, publish/rollback, multi-tenancy and the real guest flow. These go in the README as the path to production.
 
 ### What the references show
 
-All nine CAPTIVATE examples share one layout: a centred column of logo → headline → optional sponsor block → 0–2 fields → Connect.
+All nine reference portals share one layout: a centred column of logo → headline → optional sponsor block → 0–2 fields → Connect.
 
 - **Backgrounds:** six use a full-bleed photo; three use a solid colour or gradient.
 - **Sponsor logo:** a third carry one as a second image.
@@ -97,7 +99,7 @@ Every screen is generated from the same design, with no extra customer input:
 - **Errors:** inline, in an error colour checked against the background.
 - **Connected:** may only flash before the iOS sheet closes, so it carries nothing essential.
 
-Connecting and the router failure states (401, 402, 500) are generated at runtime and left out of the MVP.
+Connecting and the gateway's failure states (such as invalid credentials, quota reached or an internal error) are generated at runtime and left out of the MVP.
 
 ### Terms editing
 
@@ -185,7 +187,7 @@ Targets below are proposed hypotheses, to be confirmed against a pilot baseline.
 
 **Goals**
 
-1. **Self-serve.** A standard design goes from first edit to live in under 30 minutes, with no PopUp staff involvement and no device reconfiguration.
+1. **Self-serve.** A standard design goes from first edit to live in under 30 minutes, with no provider staff involvement and no device reconfiguration.
 2. **Valid by construction.** Every published portal passes automated validation: payload budget, contrast, required compliance blocks, and every state renders.
 3. **Guests get online.** At least 85% of guests who see the portal reach the connected state.
 4. **Honest sponsor metrics.** Portal views, completions, opt-ins and CTA clicks are measured events, visible live during the event.
@@ -194,11 +196,11 @@ Targets below are proposed hypotheses, to be confirmed against a pilot baseline.
 **Non-goals (v1)**
 
 - **Freeform HTML, CSS or JS editing.** It breaks the iOS Captive Network Assistant, opens XSS into a multi-tenant service, and lets customers ship non-compliant consent.
-- **Social login (Google, Facebook).** Providers block OAuth inside embedded WebViews, which is where captive portals run.
-- **Pushing pages to devices.** Peplink's external splash model hosts pages on our side, and device config is set once.
+- **Social login (Google, Facebook).** Identity providers block OAuth inside embedded WebViews, which is where captive portals run.
+- **Pushing pages to devices.** With an external splash page, pages are hosted on our side, and device config is set once.
 - **First-browser-request redirect to a sponsor URL.** It can't be delivered over HTTPS or in the CNA. A success-screen call to action replaces it.
-- **Network monitoring.** That stays in PopUp's [Slipstream](https://popupwifi.com.au/slipstream/).
-- **Non-Peplink hardware and Passpoint/Hotspot 2.0.** The architecture shouldn't preclude them later (see P2).
+- **Network monitoring.** That stays in the provider's existing tools.
+- **Supporting every gateway at launch, and Passpoint/Hotspot 2.0.** v1 supports the gateways the spike proves; the architecture shouldn't preclude others later (see P2).
 
 ## Users and stories
 
@@ -215,7 +217,7 @@ Targets below are proposed hypotheses, to be confirmed against a pilot baseline.
 - As a sponsor, I want live counts of views, sign-ups, opt-ins and CTA clicks, so that I can compare this spend with other channels.
 - As a sponsor, I want opted-in contacts exported with the consent record attached, so that I can lawfully email them.
 
-**PopUp WiFi solutions and ops**
+**Provider solutions and ops**
 
 - As ops, I want a design bound to a booking and its units automatically, so that I don't hand-configure each event.
 - As ops, I want publish blocked when validation fails, so that support isn't paged on event day.
@@ -229,80 +231,55 @@ Targets below are proposed hypotheses, to be confirmed against a pilot baseline.
 
 ## System context
 
-The router intercepts and authorises guests; we host every page. The splash URL is configured once per PopUp captive portal profile and never changes per event. Peplink's InControl 2 API doesn't appear to expose captive portal or splash settings ([feature request](https://forum.peplink.com/t/incontrol-2-api-ability-to-retrieve-and-manage-captive-portal-and-splash-settings/24597)), so per-event device changes are designed out.
+The gateway intercepts and authorises guests; we host every page. The splash URL is configured once per captive portal profile and never changes per event. Not every management tool exposes captive portal settings through an API, and a fixed URL works on every gateway, so per-event device changes are designed out.
 
-**Hardware.** PopUp units bond 5G/4G across Telstra, Optus and Vodafone and are cloud-managed. The [Workhorse](https://popupwifi.com.au/products-pricing/the-workhorse/), for example, has 2 × 5G + 2 × 4G, up to 100 concurrent users, and 20–250 Mbps down at 30–100 ms. Guest Wi-Fi runs on a separate lower-priority network from the passworded production network.
+**What we need from a gateway.** The product assumes as little as possible about the hardware. A gateway is supported when it can:
+
+- **Send guests to an external splash URL** that we host, set once and not overwritten by the device's management tool.
+- **Identify the unit on the redirect,** for example with a serial number, a device MAC address or a site ID, so we can route to the right booking.
+- **Let a guest online on our say-so,** through a login step the guest's browser completes (typically a form POST to an address the gateway supplies) or through a server-side check against our service.
+- **Allow our domain before sign-in** (a walled garden), plus payment provider domains if paid access ships.
+
+**Network.** Units may run on cellular, satellite or fixed uplinks, which may be metered. Guest Wi-Fi is assumed to run on its own network, separate from any production network on the same unit.
 
 **Guest flow.**
 
 1. The guest joins the guest SSID. The OS probe is intercepted, and the CNA or Android login sheet opens.
-2. The router redirects to our fixed splash URL, appending session attributes ([Peplink external splash flow](https://forum.peplink.com/t/configuring-an-external-splash-page-for-captive-portal/7696)).
-3. Our portal service resolves the device and SSID to the active booking, then serves that booking's published design.
-4. The guest completes the flow. The browser authorises them with a top-level form POST to the `form_action` URL the router supplied (on Peplink, `captive-portal.peplink.com`).
-5. The router releases the client and the OS probe succeeds. The success screen shows briefly, and the sheet closes.
+2. The gateway redirects to our fixed splash URL, appending its session parameters.
+3. Our portal service resolves the unit identifier to the active booking, then serves that booking's published design.
+4. The guest completes the flow, and the guest is authorised through the gateway's login step (see **Gateway integration**).
+5. The gateway releases the client and the OS probe succeeds. The success screen shows briefly, and the sheet closes.
 
-&#91;embedded content: guest flow · router, portal service, one-time config\]
+&#91;embedded content: guest flow · gateway, portal service, one-time config\]
 
-Publishing a design only touches our portal service. InControl 2 holds the one-time config and isn't touched per event.
+Publishing a design only touches our portal service. The gateway's management tool holds the one-time config and isn't touched per event.
 
-### Router parameters
+### Gateway integration
 
-The router passes `sn` (device serial) on every redirect, so routing keys on `sn` to the booking. It also passes `browser`, so the portal knows when it's rendering inside the iOS CNA. Source: [Peplink external splash article](https://forum.peplink.com/t/configuring-an-external-splash-page-for-captive-portal/7696).
+Each gateway passes and expects different parameters, so each one sits behind an adapter, and each is proven in a short spike before it's supported. The concepts are the same across vendors:
 
-**Router → our page (steps 2–3, query string)**
+**Gateway → our page (steps 2–3)**
 
-| Attribute | Meaning | How we use it |
+| Concept | Typical form | How we use it |
 | --- | --- | --- |
-| `form_action` | URL for submitting the form | Target of the auth form POST; don't hard-code the router host |
-| `ip` | Client IP | Session context only |
-| `client_mac` | Client MAC | Session key; randomised per network on phones |
-| `orig_url` | URL the client originally requested | Pass through on submit |
-| `ssid` | Captive portal profile on the device (despite the name) | Sanity check against the booking |
-| `sn` | Device serial number | **Routing key: unit → booking** |
-| `host_mac` | Device MAC | Secondary unit identifier |
-| `host_ip` | Device IP | Diagnostics |
-| `time` | Device's current time | Clock-skew check |
-| `browser` | `cna` (Apple CNA), `google` (Android), `generic` (normal browser) | Pick the CNA-tuned rendering; segment analytics |
+| Unit identifier | Serial number, device MAC or site ID | **Routing key: unit → booking** |
+| Login address | A URL passed on the redirect, or fixed per vendor | Target of the login step; never taken unchecked from the request |
+| Original URL | The URL the client first requested | Pass through on login |
+| Client identifiers | Client MAC and IP | Session context; phone MACs are often randomised per network |
+| Browser hint, if sent | Which login sheet or browser is showing the page | Pick the CNA-tuned rendering; segment analytics |
+| Device time, if sent | The gateway's clock | Clock-skew check |
+| Portal profile or network, if sent | Which captive portal profile, SSID or VLAN the guest joined | Sanity check against the booking |
 
-**Our page → router (steps 4–5, form POST to `form_action`)**
+**Our page → gateway (step 4).** Usually a top-level form POST to the login address with the gateway's own login fields, plus a username and password or token when access is gated (see **Access modes**).
 
-| Attribute | Meaning |
-| --- | --- |
-| `command` | `login` or `logout` |
-| `orig_url` | Where to send the client after successful auth |
-| `username` | Optional in Open Access mode |
-| `password` | Optional in Open Access mode |
+**Gateway → our page with the result (if the gateway reports one).** Success or failure, with a reason such as invalid credentials, quota reached or an internal error. The reason drives the error state shown.
 
-**Router → our page with the result (step 7)**
+Cautions that apply to every gateway:
 
-| Attribute | Meaning | How we use it |
-| --- | --- | --- |
-| `type` | Echo of `command` | — |
-| `status` | `success` or `fail` | Success vs error state |
-| `auth_code` | 200 success, 401 invalid username/password, 402 access quota reached, 500 internal error | Drives the error state shown |
-| `host_mac` | Device MAC | Tie the result to the unit |
-| `time_left` | Remaining time quota for the client | Session status display |
-
-Two cautions from the docs:
-
-- **Step 7 is drawn as plain HTTP**, while step 3 is HTTPS. Confirm on hardware which scheme the router actually uses.
-- **Parameters arrive unsigned in the query string.** Anyone can hit our URL with a made-up `sn` or `status=success`. Treat them as hints: rate-limit by `sn`, and check that the request comes from the booking unit's public IP where PopUp's static IP allows.
-
-**From Peplink's PHP demo (portal\_demo.php, v1.0.0, 2015)**
-
-- **Extra parameters not in the article:**
-  - `name` (device name) on the redirect.
-  - `auth_msg` and `message` on the result.
-  - `browser` is missing from the demo; it was added later.
-- **form\_action fallbacks.** The demo ignores the passed `form_action` on Balance/MAX because older firmware sent a wrong value. It hard-codes the target per model:
-  - Balance/MAX: `https://captive-portal.peplink.com:8000/portal.cgi`.
-  - APs: `https://device.pepwave.com:8000/cgi-bin/portal.cgi`.
-- **Success page.** A plain GET form to `orig_url` ("Click to continue"). Logout is a `window.open` popup posting `command=logout`, which won't work in the CNA.
-- **Security requirement:**
-  - Allowlist the `form_action` host to those two Peplink hostnames.
-  - HTML-escape every parameter we render.
-  - The demo echoes `form_action`, `orig_url`, `message` and `auth_msg` unescaped, including inside a script block. That's reflected XSS.
-  - A crafted link with `form_action` pointing elsewhere would make our branded page post guest credentials to an attacker.
+- **Parameters usually arrive unsigned in the query string.** Anyone can hit our URL with a made-up unit identifier or a fake success result. Treat them as hints: rate-limit by unit, and check that requests come from the unit's public IP where the provider has static IPs.
+- **The login address is attacker-controllable.** A crafted link could point our branded page's form at another host. Allowlist each gateway's known login hosts.
+- **Escape everything we render.** Vendor sample portals have been seen echoing these parameters unescaped, which is reflected XSS.
+- **Confirm the scheme on hardware.** Some gateways return results over plain HTTP while the splash itself is HTTPS.
 
 **What deploys where.**
 
@@ -310,59 +287,51 @@ Two cautions from the docs:
 | --- | --- | --- | --- |
 | Publish or roll back a design | Our portal service | Designer publish | Any time, instant |
 | Bind a design to a booking and units | Our booking map | Designer or ops action | Per event |
-| Splash URL, access mode, RADIUS (optional) | PopUp's InControl 2 captive portal profile | Manual, once | Once per profile |
-| Walled garden: our domain, payment provider domains | InControl 2 Allowed Networks | Manual | When a provider changes |
-| TLS certificate for the portal hostname on each router | Each unit | Via InControl 2 | On renewal |
-| Guest SSID name and password | InControl 2 | PopUp's existing per-booking setup | Per event |
+| Splash URL, access mode, any authentication server | The gateway's captive portal profile | Manual, once | Once per profile |
+| Walled garden: our domain, payment provider domains | The gateway's walled-garden setting | Manual | When the payment provider changes |
+| TLS certificate for the gateway's login host, if needed | Each unit | Through the gateway's management tool | On renewal |
+| Guest SSID name and password | The gateway's management tool | The provider's existing per-booking setup | Per event |
 
-### Access modes and RADIUS
+### Access modes
 
-Click-through runs on Open Access. Anything that collects data, issues vouchers or charges money runs on User Authentication with our own RADIUS server, so only guests with a recorded submission get online.
+Click-through can use the gateway's open access mode. Anything that collects data, issues vouchers or charges money must be gated, so only guests with a recorded submission get online.
 
-**Peplink modes.**
+**How gating works depends on the gateway.** The options:
 
-- **The external splash supports two:**
-  - **Open Access:** any POST of `command=login` to `form_action` gets the guest online.
-  - **User Authentication:** the router checks the posted username/password against a RADIUS server.
-- **InControl 2's hosted portal adds six guest types:** Open Access, Social, Guest Account, Token, Email and SMS ([article](https://forum.peplink.com/t/configure-captive-portal-in-incontrol2/7664)). These only work on Peplink's own page, so choosing an external splash means rebuilding whatever we need beyond click-through.
-- **Peplink's default portal keeps no documented consent record.**
-  - It stores emails and names (or a social user ID) in InControl 2, exportable as CSV, plus MAC/IP sign-in events.
-  - Guests accept Peplink's own Wi-Fi privacy policy, which isn't logged per guest and doesn't name the event or sponsors.
-  - There's no documented way for an external page to write into those records, and the IC2 API appears read-only for captive portal ([thread](https://forum.peplink.com/t/icontrol2-api-reporting-and-controlling/58901)).
-  - So our store is the system of record.
+- **An external authentication server.** The gateway checks posted credentials against a server we run, for example over RADIUS.
+- **A gateway API.** Our service calls the gateway or its controller to authorise the client.
+- **A signed one-time token** that the gateway can verify against our service.
 
-**RADIUS flow.**
+**The gated flow, whatever the mechanism.**
 
-1. The guest submits on our portal; we store the details and consent, then mint a one-time opaque token as username and password.
-2. The page posts that token to `form_action`.
-3. The router sends an Access-Request to our RADIUS server, which checks the token and replies Accept, with limits, or Reject (`auth_code=401`).
-4. The router sends accounting Start, Interim and Stop messages carrying session time, bytes and client MAC against our token.
+1. The guest submits on our portal; we store the details and consent, then mint a one-time opaque token.
+2. Personal data never reaches the gateway. The gateway lets the guest online, with any limits, once our service vouches for them: by answering the gateway's credential check, by calling the gateway's API, or through a token the gateway can verify.
+3. A rejection shows as an error state.
+4. Where the gateway reports session accounting, we record session time and bytes against the token.
 
-**Router attribute support.** From a [2016 Peplink thread](https://forum.peplink.com/t/peplink-support-freeradius-attributes/6504) and [IronWiFi's guide](https://help.ironwifi.com/configuration-guides/other/peplink); test on current firmware.
+**Session limits** (time, data quotas, speed, concurrent devices) and remote disconnect vary by gateway and firmware, so each is confirmed in that gateway's spike before a plan relies on it.
 
-- **Time limits:** `Session-Timeout`, `Idle-Timeout` and `WISPr-Session-Terminate-Time`.
-- **Data quotas:** `ChilliSpot-Max-*-Octets`, 32-bit, so about 4 GB each.
-- **Speed limits:** `WISPr-Bandwidth-Max-Up/Down`, listed for APs only.
-- **Concurrent devices:** `Simultaneous-Use`, with accounting.
-- **No remote disconnect via IronWiFi:** it sends no CoA/Disconnect to Peplink, so sessions end by timeout.
+**A gateway's hosted portal features don't carry over.** Built-in guest types such as social, voucher, email or SMS login only work on the gateway's own page, so choosing an external splash means rebuilding whatever we need beyond click-through.
 
-**The RADIUS server is ours, not on the router.**
+**Our store is the system of record.** A gateway's built-in portal may keep its own guest list, but it won't hold our consent records or name the event's sponsors, so consent is recorded on our side.
 
-- The Peplink is only the RADIUS client.
-- RADIUS uses UDP 1812/1813, which a Worker can't listen on. Run [FreeRADIUS](https://freeradius.org) on a small AU-region VM with its REST module calling our API, or use a hosted service.
-- Run a primary and a secondary, because if RADIUS is down nobody gets online.
-- Classic RADIUS hides only the password; we found no evidence Peplink supports RadSec. So usernames stay opaque tokens with no personal data, with a long fleet secret, firewalled to PopUp's static IPs where available.
+**Any authentication server is ours, not on the gateway.**
+
+- The gateway is only its client.
+- A RADIUS server uses UDP, which a Worker can't listen on, so it would run on a small AU-region VM calling our API, or as a hosted service.
+- Run a primary and a secondary, because if it's down nobody gets online.
+- Keep credentials as opaque tokens with no personal data, with a long shared secret, firewalled to the provider's static IPs where available.
 
 ### Where the portal service runs
 
-[Cloudflare Workers](https://developers.cloudflare.com/workers/) with [Hono](https://hono.dev) fits: server-rendered HTML at the edge, close to guests on 30–100ms cellular links.
+[Cloudflare Workers](https://developers.cloudflare.com/workers/) with [Hono](https://hono.dev) fits: server-rendered HTML at the edge, close to guests on slow or high-latency uplinks.
 
-- **Designs and the `sn` → booking map** go in [KV](https://developers.cloudflare.com/kv/), as immutable design blobs. KV is eventually consistent (about 60s), so the current-version pointer for publish and rollback goes in [D1](https://developers.cloudflare.com/d1/) or a Durable Object.
+- **Designs and the unit → booking map** go in [KV](https://developers.cloudflare.com/kv/), as immutable design blobs. KV is eventually consistent (about 60s), so the current-version pointer for publish and rollback goes in [D1](https://developers.cloudflare.com/d1/) or a Durable Object.
 - **Consent records and submissions** go in D1.
 - **Funnel analytics** go in Analytics Engine.
-- **Per-`sn` rate limiting** uses the rate-limit binding.
+- **Per-unit rate limiting** uses the rate-limit binding.
 - **The unit's public IP** comes from `CF-Connecting-IP`, for spoof checks.
-- **Capture flows take two hops:** the guest posts to the Worker, which stores consent, then a form posts `command=login` + `orig_url` to `form_action`. Never 307 the guest's personal data on to the router.
+- **Capture flows take two hops:** the guest posts to the Worker, which stores consent, then completes the gateway's login step with no personal data. Never redirect the guest's personal data on to the gateway.
 
 ## Requirements
 
@@ -404,11 +373,11 @@ Customers design the skin; we own the flow. Everything below follows from that s
 7. **Publish, version and roll back.** Every publish is immutable and versioned.
    - [ ] Rollback to any prior version takes one action and is live within 60 seconds.
    - [ ] A publish during an event never serves a half-updated page.
-8. **Booking binding and routing.** A design is bound to a booking. The portal service maps the router's sn parameter (device serial) to the active booking and serves its design. When browser=cna, it serves the CNA-tuned rendering.
-   - [ ] Unknown or unbound devices get a neutral PopUp default portal that still authorises guests.
+8. **Booking binding and routing.** A design is bound to a booking. The portal service maps the gateway's unit identifier to the active booking and serves its design. When the gateway's browser hint or the user agent suggests the iOS CNA, it serves the CNA-tuned rendering, which also works in any other browser.
+   - [ ] Unknown or unbound devices get a neutral default portal that still authorises guests.
    - [ ] Multi-unit bookings serve the same design on every unit.
-9. **Peplink authorisation.** The guest authorises via a top-level HTML form POST to the router's form\_action URL (command=login, orig\_url), not via fetch/XHR. The step-7 auth\_code (401, 402, 500) selects the error state shown, which avoids the cross-origin failures third-party portals report.
-   - [ ] Verified on a Workhorse with iOS, Android and Windows clients.
+9. **Gateway authorisation.** The guest is authorised through the gateway's login step, behind a per-gateway adapter. Where that step is a browser request, it's a top-level HTML form POST, not fetch/XHR, which avoids the cross-origin failures third-party portals report. The gateway's result, where it reports one, selects the error state shown.
+   - [ ] Verified on each supported gateway with iOS, Android and Windows clients.
    - [ ] The OS marks the network online after auth.
 10. **Data capture and consent.**
     - Capture fields come from a fixed set: email, phone, name, and up to 3 survey questions.
@@ -425,9 +394,9 @@ Customers design the skin; we own the flow. Everything below follows from that s
 
 ### P1 — fast follow
 
-- **Paid access.** Plan tiers by time or data, with payment through an inline card form. Requires User Authentication with our RADIUS server (time/data quotas, auth\_code 402) and the payment provider's domains in the walled garden.
+- **Paid access.** Plan tiers by time or data, with payment through an inline card form. Requires gated access (see **Access modes**) on a gateway that enforces time and data quotas, and the payment provider's domains in the walled garden.
   - [ ] Graceful fallback to a voucher when 3DS fails inside the CNA.
-- **Sandbox SSID test mode.** A test SSID on a PopUp demo unit, plus a QR handoff, so producers can test on a real phone in the real CNA before the event.
+- **Sandbox SSID test mode.** A test SSID on a demo unit, plus a QR handoff, so producers can test on a real phone in the real CNA before the event.
 - **Live export.** A CSV/API export of consented contacts, replacing the 12-hour spreadsheet.
 - **Brand-impersonation checks.** Flag uploaded logos and copy resembling banks, telcos or government, and route them to manual review.
 - **i18n.** Multiple languages with text-expansion headroom, and RTL support.
@@ -435,14 +404,14 @@ Customers design the skin; we own the flow. Everything below follows from that s
 
 ### P2 — design for, don't build
 
-- **RFC 8908 Captive Portal API support** if Peplink firmware exposes it, so modern iOS and Android open the portal without probe hijacking.
-- **Hardware abstraction.** Keep the Peplink redirect and authorisation adapter behind an interface so other vendors (Meraki, UniFi) can be added.
+- **RFC 8908 Captive Portal API support** where the gateway exposes it, so modern iOS and Android open the portal without probe hijacking.
+- **More gateways.** Each new vendor is one adapter for its redirect parameters and login step, plus a spike.
 - **Multi-sponsor rotation** within one event.
 - **Passpoint/Hotspot 2.0** for returning guests at long-lease venues.
 
 ## Constraints
 
-The portal runs inside a stripped-down system WebView on a phone, over metered bonded cellular, behind a router we configure only once. Every requirement above traces to one of these.
+The portal runs inside a stripped-down system WebView on a phone, over an uplink that may be slow or metered, behind a gateway configured only once. Every requirement above traces to one of these.
 
 ### Client platforms
 
@@ -467,32 +436,34 @@ The portal runs inside a stripped-down system WebView on a phone, over metered b
 - **Post-auth:** probes must pass unmodified, so the OS marks the network online.
 - **HTTPS is never intercepted.** Doing so causes certificate errors and HSTS failures.
 - **DNS hijacking is fragile.** DoH/DoT, iCloud Private Relay and Android Private DNS bypass it.
-- **Standards path.** [RFC 8910](https://www.rfc-editor.org/rfc/rfc8910) and [RFC 8908](https://www.rfc-editor.org/rfc/rfc8908) let the network announce the portal directly. Recent iOS and Android honour them; Peplink support is unconfirmed.
+- **Standards path.** [RFC 8910](https://www.rfc-editor.org/rfc/rfc8910) and [RFC 8908](https://www.rfc-editor.org/rfc/rfc8908) let the network announce the portal directly. Recent iOS and Android honour them; gateway support varies.
 
 ### Output and build
 
 - **No external requests before auth.** No Google Fonts, CDNs or analytics scripts unless walled-gardened; inline everything.
-- **Payload budget about 100 KB (proposed).** Pre-auth loads cross the metered cellular link (below).
+- **Payload budget about 100 KB (proposed).** Pre-auth loads may cross a slow or metered uplink (below).
 - **Server-rendered.** No SPA routing, and state is kept server-side keyed to the portal session, never in localStorage or cookies.
 - **Theming.** Dark mode (`prefers-color-scheme`), safe-area insets and landscape must all work.
 
-### Network and backhaul
+### Network and uplink
 
-- **Metered data.** Pre-auth page loads come out of the event's data allowance: 40 GB included per unit, then $5/GB prepaid or $7/GB in overages (Workhorse). A 2 MB hero image × 3,000 guests is about 6 GB.
-- **Latency.** 30–100 ms per round trip on bonded cellular argues for a single-request page.
-- **Capacity.** A Workhorse handles 100 concurrent users, so large sites run several units. The design must be identical across units.
-- **Session roaming.** Whether auth on one unit carries to another depends on PopUp's controller setup (open question).
-- **Outages.** A total cellular outage takes guests offline regardless of where the portal is hosted. Portal location isn't a resilience lever.
+- **Metered data.** Where the uplink is metered, pre-auth page loads come out of the event's data allowance. A 2 MB hero image × 3,000 guests is about 6 GB.
+- **Latency.** Cellular and satellite uplinks add tens to hundreds of milliseconds per round trip, which argues for a single-request page.
+- **Capacity.** Each unit handles a limited number of concurrent guests, so large sites run several units. The design must be identical across units.
+- **Session roaming.** Whether auth on one unit carries to another depends on the gateway and the provider's controller setup (open question).
+- **Outages.** An uplink outage takes guests offline regardless of where the portal is hosted. Portal location isn't a resilience lever.
 
-### Peplink platform
+### Gateway requirements
 
-- **External splash only.** Pages are hosted by us at a fixed URL configured in the InControl 2 captive portal profile. Configuring this on the device directly gets overwritten by InControl ([forum](https://forum.peplink.com/t/external-splash-page/11433)).
-- **No config API.** The InControl 2 API doesn't appear to cover captive portal or splash settings, so routing per event lives on our side.
-- **Authorisation** is a browser POST to `captive-portal.peplink.com:8000/portal.cgi`, which only resolves on the guest network. A cross-origin fetch fails, so use a form POST ([forum](https://forum.peplink.com/t/external-splash-page-issue/44110)).
-- **TLS.** A valid TLS certificate must be installed on each router for the portal hostname ([IronWiFi](https://www.ironwifi.com/help/peplink)), which means issuance and renewal across the rental fleet.
-- **Popup Handling.** Both checkboxes must be unchecked, or the CNA won't appear ([IronWiFi](https://help.ironwifi.com/portal/en/kb/articles/peplink)).
-- **Walled garden.** It must include our portal domain and payment provider domains.
-- **Where the portal applies.** On Balance/MAX routers the captive portal binds to a VLAN, not an SSID ([forum](https://forum.peplink.com/t/applyng-ssid-on-captive-portal-in-incontrol-2-3-0/6712)).
+Each supported gateway is checked against this list in its spike:
+
+- **External splash URL.** It can be set once in the captive portal profile, and the management tool doesn't overwrite it.
+- **Configuration.** If the management tool has no API for captive portal settings, the one-time setup is manual, and routing per event lives on our side.
+- **Login step.** It works from the guest's browser or from our service. If it's a browser request to a host that only resolves on the guest network, a cross-origin fetch fails, so use a form POST.
+- **TLS.** If the login host is HTTPS on the unit itself, each unit needs a valid certificate, which means issuance and renewal across the fleet.
+- **Login sheet settings.** Any setting that opens the portal in a popup or suppresses the OS login sheet is turned off, so the CNA appears.
+- **Walled garden.** It accepts our portal domain and payment provider domains, ideally matched by domain rather than resolved to IPs.
+- **Where the portal applies.** Some gateways bind the captive portal to an SSID, others to a VLAN.
 
 ### Compliance (Australia)
 
@@ -514,47 +485,44 @@ All targets are proposed and will be set against a pilot baseline. Everything is
 | Metric | Type | Target | Measured as |
 | --- | --- | --- | --- |
 | Time from first edit to live | Leading | Under 30 min | Designer session start to first successful publish |
-| Self-serve rate | Leading | 80% of CAPTIVATE bookings with no staff build | Bookings published by a customer account |
+| Self-serve rate | Leading | 80% of branded-portal bookings with no staff build | Bookings published by a customer account |
 | Publish validation pass rate | Leading | 95% pass after auto-fix | Publish attempts passing all checks |
 | Guest completion rate | Leading | 85% or more | Connected ÷ portal views, deduplicated by session |
 | Auth failure rate | Leading | Under 5% | Error-state renders ÷ submissions, split by type |
 | Pre-auth payload | Leading | 100 KB or less median | Bytes served per portal view |
-| Event-day support contacts about the portal | Lagging | Down 50% versus pre-designer baseline | PopUp support tickets tagged CAPTIVATE |
-| CAPTIVATE attach rate | Lagging | Up versus baseline | CAPTIVATE add-ons ÷ rentals |
+| Event-day support contacts about the portal | Lagging | Down 50% versus pre-designer baseline | Provider support tickets tagged for the branded portal |
+| Branded-portal attach rate | Lagging | Up versus baseline | Branded-portal add-ons ÷ rentals |
 | Sponsor CTA click-through | Lagging | Reported, no target until baseline | CTA clicks ÷ connected |
 
 ## Open questions
 
 | Question | Owner | Blocking? |
 | --- | --- | --- |
-| Answered: the redirect carries sn (device serial) and host\_mac, so we route on sn (see Router parameters). Still to confirm in the spike: sn is present on a Workhorse's current firmware, and whether step 7 arrives over HTTP or HTTPS. | Engineering + PopUp | Yes |
-| Does PopUp manage units in one InControl 2 group or per booking? Can a single captive portal profile cover the whole fleet? | PopUp | Yes |
-| How will the TLS cert for the portal hostname be issued and renewed on every unit? | PopUp + Engineering | Yes |
-| Are guest sessions shared across units at multi-unit events, or does each router auth locally? | PopUp | No |
-| Does current Peplink firmware advertise RFC 8910 / support RFC 8908? | Engineering | No |
-| Which payment provider, and which domains go in the walled garden? | PopUp + Engineering | No (P1) |
-| Who is the data controller for captured contacts: producer, sponsor or PopUp? This drives the notice wording. | Legal | Yes |
-| What is the current per-unit concurrency and the guest volume per event, to size the portal service? | PopUp | No |
-| Does Peplink's Allowed Networks match a domain on every request, or resolve it to IPs when configured? Cloudflare's anycast IPs aren't ours and can change. | Engineering | Yes |
+| Which gateways are in the fleet, and which support an external splash URL with a unit identifier on the redirect? This decides the first spike. | Provider + Engineering | Yes |
+| For each gateway: which unit identifier and login address does current firmware send, and does any result arrive over HTTP or HTTPS? | Engineering | Yes (spike) |
+| Can one captive portal profile cover the whole fleet, or is it set per unit or per group? | Provider | Yes |
+| Does any gateway in use need a TLS certificate on each unit, and how would it be issued and renewed? | Provider + Engineering | Yes |
+| Are guest sessions shared across units at multi-unit events, or does each unit authorise locally? | Provider | No |
+| Which gating mechanism does each gateway support (an authentication server, an API or a token), and who runs any server it needs? | Engineering + Provider | No (blocks data capture and paid access) |
+| Does each gateway's walled garden match a domain on every request, or resolve it to IPs when configured? Cloudflare's anycast IPs aren't ours and can change. | Engineering | Yes |
+| Do the gateways in use advertise RFC 8910 or support RFC 8908? | Engineering | No |
+| Which payment provider, and which domains go in the walled garden? | Provider + Engineering | No (P1) |
+| Who is the data controller for captured contacts: producer, sponsor or provider? This drives the notice wording. | Legal | Yes |
+| What is the per-unit concurrency and the guest volume per event, to size the portal service? | Provider | No |
 | As far as we know, D1 and Durable Objects offer no Australian jurisdiction. Keep guest emails and phones in Cloudflare and meet APP 8 cross-border duties, or use an AU-region store? | Legal + Engineering | Yes |
-| Who runs RADIUS (our FreeRADIUS in AU or a hosted service), and does current Peplink firmware support RadSec or CoA/Disconnect? | Engineering + PopUp | No (blocks data capture and paid access) |
 | Will Unsplash allow a resized self-hosted copy on publish? Its API guidelines require hotlinking. Ask api@unsplash.com; the fallback is whitelisting its CDN. | Product | No |
-| Does current firmware send the browser parameter, and which form\_action value? Peplink's 2015 demo hard-codes the target per model. | Engineering | No (spike) |
 
 ## Phasing
 
 0. **Captivator MVP (test project).** The 4-hour Next.js editor in Phase 0: templates, block editor, live mobile/desktop preview with guest-screen switcher, localStorage persistence. *Gate: public repo with steady commits, plus a live deploy, submitted for review.*
-1. **Spike: prove the Peplink loop.** One Workhorse, a fixed external splash URL, form-POST authorisation, and the redirect parameters captured. Test on iOS, Android and Windows. *Gate: guests get online and the OS marks the network online on all three; `sn` identifies the unit.*
-2. **Portal service plus a hard-coded design.** A Worker + Hono service with booking routing, all generated states, consent records and server-side analytics. *Gate: a pilot event run on a design PopUp staff configure in a file.*
+1. **Spike: prove one gateway loop.** One unit of the most common gateway in the fleet, a fixed external splash URL, its login step, and its redirect parameters captured. Test on iOS, Android and Windows. *Gate: guests get online and the OS marks the network online on all three; the redirect identifies the unit.*
+2. **Portal service plus a hard-coded design.** A Worker + Hono service with booking routing, all generated states, consent records and server-side analytics. *Gate: a pilot event run on a design provider staff configure in a file.*
 3. **Designer v1.** The MVP editor wired to publish and roll back, the validation gate and live counts. *Gate: three customer-built events with no staff build and no event-day portal incidents.*
-4. **Data capture and paid access.** RADIUS (two instances), per-sponsor opt-in, live export, payment, impersonation checks, i18n. *Gate: no guest gets online without a recorded submission when capture is on.*
+4. **Data capture and paid access.** Gated access on each supported gateway, per-sponsor opt-in, live export, payment, impersonation checks, i18n. *Gate: no guest gets online without a recorded submission when capture is on.*
 
 ## Sources
 
-- [PopUp WiFi CAPTIVATE](https://popupwifi.com.au/captivate/) · [Workhorse specs](https://popupwifi.com.au/products-pricing/the-workhorse/) · [Captivator editor canvas](https://claude.ai/artifact/AWrSjgB8dZV2KWn8kkDeYj)
-- [Peplink: Configuring an External Splash Page](https://forum.peplink.com/t/configuring-an-external-splash-page-for-captive-portal/7696) and its [PHP demo](http://download.peplink.com/resources/portal_demo.zip) · [External splash and InControl](https://forum.peplink.com/t/external-splash-page/11433) · [CORS on portal.cgi](https://forum.peplink.com/t/external-splash-page-issue/44110) · [IC2 API feature request](https://forum.peplink.com/t/incontrol-2-api-ability-to-retrieve-and-manage-captive-portal-and-splash-settings/24597) · [IC2 API is read-only in practice](https://forum.peplink.com/t/icontrol2-api-reporting-and-controlling/58901) · [Captive portal on Balance/MAX VLANs](https://forum.peplink.com/t/applyng-ssid-on-captive-portal-in-incontrol-2-3-0/6712)
-- [Configure Captive Portal in InControl2](https://forum.peplink.com/t/configure-captive-portal-in-incontrol2/7664) · [IC2 collected e-mails export](https://forum.peplink.com/t/incontrol2-captive-portal-view-collected-e-mails/24456) · [Social Wi-Fi and privacy policy changes](https://forum.peplink.com/t/important-changes-to-social-wi-fi-and-privacy-policy/15880) · [Peplink RADIUS attributes](https://forum.peplink.com/t/peplink-support-freeradius-attributes/6504)
-- [IronWiFi Peplink setup](https://www.ironwifi.com/help/peplink) · [IronWiFi Peplink config guide](https://help.ironwifi.com/configuration-guides/other/peplink) · [Purple Peplink setup](https://support.purple.ai/hc/en-gb/articles/7580769540765)
-- [RFC 8910](https://www.rfc-editor.org/rfc/rfc8910) · [RFC 8908](https://www.rfc-editor.org/rfc/rfc8908) · [RFC 8952](https://www.rfc-editor.org/rfc/rfc8952) · [RFC 2865](https://www.rfc-editor.org/rfc/rfc2865) · [RFC 2866](https://www.rfc-editor.org/rfc/rfc2866) · [RFC 5176](https://www.rfc-editor.org/rfc/rfc5176) · [RFC 6614](https://www.rfc-editor.org/rfc/rfc6614)
+- [Captivator editor canvas](https://claude.ai/artifact/AWrSjgB8dZV2KWn8kkDeYj)
+- [RFC 8910](https://www.rfc-editor.org/rfc/rfc8910) · [RFC 8908](https://www.rfc-editor.org/rfc/rfc8908) · [RFC 8952](https://www.rfc-editor.org/rfc/rfc8952) · [RFC 2865 (RADIUS)](https://www.rfc-editor.org/rfc/rfc2865)
 - [Unsplash API guidelines](https://help.unsplash.com/en/articles/2511245-unsplash-api-guidelines) · [Google: OAuth in embedded WebViews](https://developers.googleblog.com/2021/06/upcoming-security-changes-to-googles-oauth-2.0-authorization-endpoint.html) · [Hono](https://hono.dev) · [Cloudflare Workers](https://developers.cloudflare.com/workers/) · [Zustand](https://zustand.docs.pmnd.rs) · [Zod](https://zod.dev)
 - [Australian Privacy Principles](https://www.oaic.gov.au/privacy/australian-privacy-principles) · [ACMA Spam Act guidance](https://www.acma.gov.au/avoid-sending-spam)
