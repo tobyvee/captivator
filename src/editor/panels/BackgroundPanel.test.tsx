@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useStore } from "@/lib/store";
 import type { BackgroundSpec, ImageBackground } from "@/lib/types";
@@ -105,6 +105,20 @@ describe("BackgroundPanel", () => {
       fireEvent.click(screen.getByRole("button", { name: new RegExp(label) }));
       expect(background()).toMatchObject({ type: "gradient", direction });
     }
+  });
+
+  it("shows the gradient directions as icons only, named and titled by their labels", () => {
+    setBackground({ type: "gradient", from: "#000000", to: "#FFFFFF", direction: "down" });
+    render(<BackgroundPanel />);
+    const group = screen.getByRole("group", { name: "Gradient direction" });
+    for (const label of ["Top to bottom", "Diagonal", "Left to right"]) {
+      const button = within(group).getByRole("button", { name: label });
+      expect(button).toHaveAttribute("title", label);
+      expect(button).toHaveTextContent("");
+      expect(button.querySelector("svg")).not.toBeNull();
+    }
+    // The tabs above keep their text.
+    expect(tab("Gradient")).toHaveTextContent("Gradient");
   });
 
   it("converts a gradient to a colour using its first stop", () => {

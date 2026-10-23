@@ -22,9 +22,9 @@ const TABS: SegmentedOption<Tab>[] = [
 ];
 
 const DIRECTIONS: SegmentedOption<Direction>[] = [
-  { value: "down", label: "Top to bottom", icon: <ArrowDown size={16} aria-hidden="true" /> },
-  { value: "diagonal", label: "Diagonal", icon: <ArrowDownRight size={16} aria-hidden="true" /> },
-  { value: "right", label: "Left to right", icon: <ArrowRight size={16} aria-hidden="true" /> },
+  { value: "down", label: "Top to bottom", icon: <ArrowDown size={18} aria-hidden="true" /> },
+  { value: "diagonal", label: "Diagonal", icon: <ArrowDownRight size={18} aria-hidden="true" /> },
+  { value: "right", label: "Left to right", icon: <ArrowRight size={18} aria-hidden="true" /> },
 ];
 
 const GRADIENT_TO = "#0E5E6F";
@@ -91,6 +91,7 @@ export function BackgroundPanel() {
             <Segmented
               label="Gradient direction"
               options={DIRECTIONS}
+              iconOnly
               value={bg.direction}
               onChange={(direction) => updateBackground({ ...bg, direction })}
             />

@@ -7,10 +7,12 @@ type Props<T extends string> = {
   options: SegmentedOption<T>[];
   value: T;
   onChange: (value: T) => void;
+  /** Shows only each option's icon; the label becomes its accessible name and tooltip. */
+  iconOnly?: boolean;
 };
 
 /** A row of toggle buttons where exactly one is pressed. Fills its container's width when it can. */
-export function Segmented<T extends string>({ label, options, value, onChange }: Props<T>) {
+export function Segmented<T extends string>({ label, options, value, onChange, iconOnly }: Props<T>) {
   return (
     <div role="group" aria-label={label} className="flex gap-0.5 rounded-lg bg-zinc-200 p-[3px]">
       {options.map((option) => {
@@ -20,6 +22,8 @@ export function Segmented<T extends string>({ label, options, value, onChange }:
             key={option.value}
             type="button"
             aria-pressed={pressed}
+            aria-label={iconOnly ? option.label : undefined}
+            title={iconOnly ? option.label : undefined}
             onClick={() => onChange(option.value)}
             className={[
               "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md px-3.5 text-[13px]",
@@ -30,7 +34,7 @@ export function Segmented<T extends string>({ label, options, value, onChange }:
             ].join(" ")}
           >
             {option.icon}
-            {option.label}
+            {!iconOnly && option.label}
           </button>
         );
       })}
